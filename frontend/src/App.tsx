@@ -47,7 +47,7 @@ export default function App() {
 
   return (
     <div
-      className={cameraOn ? 'app app--camera' : 'app'}
+      className={cameraOn ? 'app app--camera' : 'app app--auto'}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerEnd}
       onPointerCancel={onPointerEnd}

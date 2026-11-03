@@ -101,7 +101,8 @@ export function MicTest() {
   useEffect(() => stopAll, [stopAll])
 
   return (
-    <div className="mictest">
+    <div className="app app--auto">
+      <div className="mictest">
       <header className="topbar">
         <div className="chips">
           <Chip label={strings.chip.betaLong} />
@@ -133,6 +134,7 @@ export function MicTest() {
 
       <div className="home__bottom">
         <Button label={running ? t.stop : t.start} onClick={running ? stopAll : start} />
+      </div>
       </div>
     </div>
   )

@@ -15,6 +15,7 @@ body,
   color: var(--color-text);
   font-family: var(--font-family);
   font-size: var(--font-size-15);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-body);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: 100%;
@@ -61,6 +62,13 @@ p {
 
 .camera[hidden] {
   display: none;
+}
+
+/* Home / Settings / mic test: tokens follow appearance and text size; long text scrolls instead of clipping. */
+.app--auto {
+  overflow: visible;
+  background: var(--color-bg);
+  overflow-wrap: break-word; /* breaks a word only when it cannot fit a line on its own */
 }
 
 .app > :not(.camera, .box-layer) {
@@ -552,6 +560,8 @@ p {
 
 .settings__header {
   display: flex;
+  flex-wrap: wrap; /* at the largest text sizes "Done" moves under the title instead of squeezing it */
+  gap: 0 var(--space-12);
   justify-content: space-between;
   align-items: center;
   min-height: var(--size-icon-button);

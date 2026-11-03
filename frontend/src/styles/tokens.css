@@ -93,3 +93,68 @@
     --motion-pulse: 0ms;
   }
 }
+
+/* ---------- Appearance (Brief 7) ----------
+   The camera screen is always dark (the tokens above). Home, Settings and the mic test (.app--auto) follow the
+   phone's appearance: the light set below inverts the monochrome tokens; the traffic light keeps its colours. */
+:root {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:has(.app--auto) {
+    color-scheme: light;
+    --color-bg: #fff;
+    --color-surface: #f2f2f2;
+    --color-scrim: rgba(255, 255, 255, 0.72);
+    --color-hairline: rgba(0, 0, 0, 0.14);
+    --color-text: #000;
+    --color-text-muted: #6b6b6b;
+    --color-text-chip: rgba(0, 0, 0, 0.8);
+    --color-on-light: #fff;
+    --color-control-off: #b5b5b5;
+  }
+}
+
+/* Increase Contrast (iOS) / prefers-contrast: more - stronger hairlines and muted text. */
+@media (prefers-contrast: more) {
+  :root {
+    --color-hairline: rgba(255, 255, 255, 0.5);
+    --color-text-muted: #d0d0d0;
+    --color-text-chip: #fff;
+    --color-control-off: #9a9a9a;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: light) {
+  :root:has(.app--auto) {
+    --color-hairline: rgba(0, 0, 0, 0.5);
+    --color-text-muted: #333;
+    --color-text-chip: #000;
+    --color-control-off: #6b6b6b;
+  }
+}
+
+/* ---------- Text size (Brief 7) ----------
+   Home, Settings and the mic test scale with the iPhone's Larger Text: the root size comes from
+   -apple-system-body (17px at the default size) and these screens use rem sizes. The camera screen keeps px. */
+html {
+  font-size: 106.25%; /* 17px where -apple-system-body is not supported */
+}
+
+@supports (font: -apple-system-body) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
+.app--auto {
+  --font-size-11: calc(11rem / 17);
+  --font-size-13: calc(13rem / 17);
+  --font-size-15: calc(15rem / 17);
+  --font-size-18: calc(18rem / 17);
+  --font-size-20: calc(20rem / 17);
+  --font-size-22: calc(22rem / 17);
+  --font-size-28: calc(28rem / 17);
+  --font-size-34: calc(34rem / 17);
+}
