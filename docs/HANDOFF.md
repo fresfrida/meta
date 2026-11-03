@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test; $0.0678 spent in total). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test; $0.0821 spent in total; Brief 5b plain voice + side rule). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -29,7 +29,10 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   near/far stays the fallback). Live check (Brief 5, 10 calls): distance_m came
   back on every call. Real photos (6 calls, re-encoded without EXIF, never in the
   repo): step down from a deck and night stairs down/up all correct with metres;
-  a street photo with distant stairs gave the near curb instead (8.0 s).
+  a street photo with distant stairs gave the near curb instead (8.0 s). Brief 5b,
+  7 more photos: steps x2 and a car-park wheel stop correct; a top-down kerb called
+  step_up; a doorway bench missed; a bench boxed correctly but its side read
+  "ahead" (centre x 597 < 667).
 - Answers carry `box` ([x_min, y_min, x_max, y_max] on 0..1000, or null).
 - Side from box (backend, `resolve_side` in `schemas.py`): when a box is present,
   `side` comes from its centre x (<= `LEFT_MAX` 333 left, >= `RIGHT_MIN` 667 right,
@@ -48,10 +51,15 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   ~1.8 s instead of ~4.5 s. Stop ends it. `?loop=0` restores the single Capture
   button (every answer spoken, full timing panel).
 - No-repeat rule (`frontend/src/lib/announce.ts`): "Not sure" shown, never spoken;
-  with metres the key is hazard + side and the same key stays silent unless it is
-  >= 2 m (`REPEAT_CLOSER_M`) closer than when last spoken; without metres the same
-  phrase stays silent; >= 1.5 s between speech; a new warning cuts off speech,
-  "Clear" waits. Changing language resets the last spoken phrase.
+  a side change alone never re-speaks. With metres the key is the hazard type: the
+  same hazard stays silent unless it is >= 2 m (`REPEAT_CLOSER_M`) closer than when
+  last spoken. Without metres the key is hazard type + near/far: it speaks again on
+  a new hazard type or far -> near. >= 1.5 s between speech; a new warning cuts off
+  speech, "Clear" waits. Changing language resets it.
+- Screen vs voice: the screen shows the short phrase (`phraseFor`); speech says a
+  plain-language sentence (`speechFor`, the `voice` table per language in
+  `strings.ts`), e.g. "Steps going down, about 2 metres ahead." Box tags use the
+  short words. Settings "Test voice" says the plain version.
 - Design v2 (monochrome, `styles/tokens.css`): colour only in the traffic light
   (`components/TrafficLight.tsx`, rule in `lib/light.ts`: red = warning <= 2 m or
   near without metres, amber = other warning, green = clear, dark = unsure /

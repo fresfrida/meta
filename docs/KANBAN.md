@@ -1,10 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
-- Remaining 7 real-photo live calls (corridor/doorway/bench night photos, Curb1, Curb3, Steps1, Steps2): waiting for the Owner's go
-- Plain-language phrase templates: data change in `strings.ts` `phrases` once the Owner approves the wording
-- Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் phrases
-- Side flapping near the 333 / 667 lines (repeats speech); needs a rule decision
+- Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
+- Side thirds (333 / 667) read objects at the edge of the walkway (e.g. a bench at x 515-680) as "ahead"; Owner to decide if the lines should move
 - Brief 6: hands-free Ask / wake word
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
@@ -13,6 +11,7 @@
 - (none)
 
 ## Done
+- Brief 5b: plain-language voice table per language (screen unchanged), side change never re-speaks (flap test speaks once), 13 real-photo live calls reported; vitest x60 (3 Nov)
 - Brief 5: monochrome design v2 + traffic light, Home + Settings, 4 languages with approved templates, prompt v3 + `distance_m`, repeat rule with metres, 2-in-flight loop (1.75 s stagger, in-order, late answers dropped), mic test page `?mictest=1`; vitest x48, pytest x78; live check 10 calls (3 Nov)
 - Brief 4b live speed test: `backend/scripts/speed_test.py`, 18 streamed calls, $0.027; time = reasoning before first token; cap breaks answers; 320 px halves input tokens, no speed gain (3 Nov)
 - Brief 2 Part B live spike: connectivity OK, 10 image calls OK, $0.0169 total; schema + `minimal` accepted; boxes land on the hazards (3 Nov)
