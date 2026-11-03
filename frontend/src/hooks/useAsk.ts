@@ -11,6 +11,7 @@ import {
   SPEECH_LANGS,
   TIMING_HISTORY_SIZE,
 } from '../config'
+import { askFailureSpeech } from '../lib/askText'
 import { unlockAudio } from '../lib/audio'
 import { captureGuarded } from '../lib/camera'
 import { playEarcon } from '../lib/earcon'
@@ -19,7 +20,6 @@ import { type MicHandle, startMic } from '../lib/mic'
 import { speak } from '../lib/speech'
 import { pushHistory } from '../lib/timing'
 import { pickVoice } from '../lib/voices'
-import { strings } from '../strings'
 
 /** off: not listening · connecting · on: live ASR · mock: backend in mock mode (no questions) · stopped: lost after one
  *  reconnect · failed: no mic, no key or no budget. */
@@ -142,8 +142,7 @@ export function useAsk(o: AskOptions) {
       const questionAt = performance.now()
       setAskView({ status: 'thinking', question, answer: null })
       const lang = o.langRef.current
-      let text: string = strings.ask.sorry
-      let speechLang = SPEECH_LANGS.en // the fixed "sorry" is English only (no approved translation)
+      let { text, lang: speechLang } = askFailureSpeech(lang) // replaced by the answer below
       let modelMs: number | null = null
       let failed = true
       try {

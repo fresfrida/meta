@@ -41,6 +41,12 @@ def default_asr_connect(url: str) -> AbstractAsyncContextManager[Any]:
     return connect(url, open_timeout=ASR_HANDSHAKE_TIMEOUT_S, max_size=2**20)
 
 
+def language_bias(language: str) -> list[str]:
+    """English plus the chosen language: "Hey Eyes" is said in English inside a Chinese, Malay or Tamil question."""
+    chosen = LANGUAGE_NAMES[language]
+    return [chosen] if chosen == "English" else ["English", chosen]
+
+
 def handshake_message(settings: Settings, language: str) -> dict:
     """Docs (dev.meta.ai/docs/api-reference/voice/schemas): auth goes in this first JSON frame, not a header."""
     return {
@@ -48,7 +54,7 @@ def handshake_message(settings: Settings, language: str) -> dict:
         "model": settings.asr_model,
         "audioEncoding": "PCM_16KHZ",
         "mode": "ENDPOINTING",
-        "languageBias": [LANGUAGE_NAMES[language]],  # names, not codes (docs)
+        "languageBias": language_bias(language),  # names, not codes (docs)
         "keywords": [WAKE_PHRASE],
         "emitAudioProgress": False,
     }

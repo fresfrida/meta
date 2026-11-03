@@ -131,6 +131,46 @@ export const phrases: Record<Lang, PhraseLanguage> = {
   },
 }
 
+/**
+ * Asking a question, per language (shown on the card; `sorry` is also spoken in that language).
+ * Owner approved 4 Nov 2026 (Brief 8), verbatim. EN is final; ZH / MS / TA are final pending a native-speaker check.
+ * Example question (tests, demo): EN "Hey Eyes, what is there?" · ZH "Hey Eyes，前面有什么？" ·
+ * MS "Hey Eyes, apa yang ada di hadapan?" · TA "Hey Eyes, முன்னால் என்ன இருக்கிறது?"
+ */
+export interface AskText {
+  listening: string
+  thinking: string
+  youAsked: (question: string) => string
+  sorry: string
+}
+
+export const askText: Record<Lang, AskText> = {
+  en: {
+    listening: 'Listening for your question…',
+    thinking: 'Looking…',
+    youAsked: (q) => `You asked: ${q}`,
+    sorry: 'Sorry, I could not answer.',
+  },
+  zh: {
+    listening: '请说出您的问题…',
+    thinking: '正在查看…',
+    youAsked: (q) => `您问：${q}`,
+    sorry: '抱歉，我无法回答。',
+  },
+  ms: {
+    listening: 'Sila tanya soalan anda…',
+    thinking: 'Sedang melihat…',
+    youAsked: (q) => `Anda bertanya: ${q}`,
+    sorry: 'Maaf, saya tidak dapat menjawab.',
+  },
+  ta: {
+    listening: 'உங்கள் கேள்வியைக் கேளுங்கள்…',
+    thinking: 'பார்க்கிறேன்…',
+    youAsked: (q) => `நீங்கள் கேட்டது: ${q}`,
+    sorry: 'மன்னிக்கவும், என்னால் பதில் சொல்ல முடியவில்லை.',
+  },
+}
+
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */
 export const languages: Record<Lang, { name: string; english: string | null }> = {
   en: { name: 'English', english: null },
@@ -181,13 +221,8 @@ export const strings = {
     handsFreeLine: 'While running, microphone audio is sent to Meta to hear your questions.',
   },
 
-  // TENTATIVE (Brief 6): asking a question ("Hey Eyes, what is there?", or touch and hold)
+  // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.
   ask: {
-    listening: 'Listening for your question…',
-    thinking: 'Looking…',
-    youAsked: (question: string) => `You asked: ${question}`,
-    // Spoken in English for every language: no approved translation yet.
-    sorry: 'Sorry, I could not answer.',
     micChip: 'Listening',
     stopped: { title: 'Listening stopped', body: 'Touch and hold the screen to ask instead.' },
     micFailed: { title: 'Microphone not available', body: 'Touch and hold will not work either.' },
@@ -209,7 +244,7 @@ export const strings = {
     },
     permissionDenied: {
       title: 'Camera permission denied',
-      body: 'Allow camera access for this site in Safari settings, then tap Try again.',
+      body: 'Allow camera access for this site in your browser settings, then tap Try again.',
     },
     cameraUnavailable: {
       title: 'Camera not available',

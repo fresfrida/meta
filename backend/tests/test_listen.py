@@ -8,7 +8,7 @@ import logging
 import pytest
 from fastapi.testclient import TestClient
 
-from app.listen import BYTES_PER_SECOND, FRAME_BYTES
+from app.listen import BYTES_PER_SECOND, FRAME_BYTES, language_bias
 from app.main import create_app
 
 from .conftest import FAKE_KEY
@@ -101,11 +101,18 @@ def test_handshake_follows_the_docs(make_settings):
         "model": "muse-voice-transcribe-1.0",
         "audioEncoding": "PCM_16KHZ",
         "mode": "ENDPOINTING",
-        "languageBias": ["Tamil"],
+        "languageBias": ["English", "Tamil"],
         "keywords": ["Hey Eyes"],
         "emitAudioProgress": False,
     }
     assert fake.ended  # endStream sent before closing
+
+
+def test_language_bias_is_english_plus_the_chosen_language():
+    assert language_bias("en") == ["English"]
+    assert language_bias("zh") == ["English", "Mandarin Chinese"]
+    assert language_bias("ms") == ["English", "Malay"]
+    assert language_bias("ta") == ["English", "Tamil"]
 
 
 def test_wake_then_question_reaches_the_phone_and_other_speech_does_not(make_settings):

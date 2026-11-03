@@ -28,6 +28,41 @@ def test_wake_phrase_matches_tolerantly(turn, rest):
     assert match_wake(turn) == rest
 
 
+# Exactly as the live ASR wrote them (Brief 8, 4 Nov 2026: macOS `say` clips, bias English + the chosen language).
+# In every language "Hey Eyes" came back in Latin letters, so no other spellings were added.
+@pytest.mark.parametrize(
+    ("lang", "turn", "rest"),
+    [
+        ("en", "Hey eyes, what is there?", "what is there?"),
+        ("en", "Hey Eyes, what is there?", "what is there?"),
+        ("zh", "Hey eyes,前面有什么？", "前面有什么？"),
+        ("zh", "Hey Eyes,前面有什么。", "前面有什么。"),
+        ("zh", "Hey Eyes, 前面有什么?", "前面有什么?"),
+        ("ms", "Hey eyes, apa yang ada di hadapan?", "apa yang ada di hadapan?"),
+        ("ta", "Hey Eyes, முன்னால் என்ன இருக்கிறது?", "முன்னால் என்ன இருக்கிறது?"),
+        ("ta", "Hey Eyes, முன்னால் என்ன இருக்கிறது", "முன்னால் என்ன இருக்கிறது"),
+        ("ta", "Hey Eyes, Munnal என்ன இருக்கிறது", "Munnal என்ன இருக்கிறது"),
+    ],
+)
+def test_wake_phrase_as_the_asr_writes_it_per_language(lang, turn, rest):
+    assert match_wake(turn) == rest
+
+
+# The distractors from the same run (no wake phrase): never a question.
+@pytest.mark.parametrize(
+    "turn",
+    [
+        "I need to buy some milk later.",
+        "我等一下要去买牛奶。",
+        "Saya perlu membeli susu nanti.",
+        "நான் பிறகு போல் வாங்க வேண்டும்.",
+    ],
+)
+def test_measured_distractors_never_wake(turn):
+    assert match_wake(turn) is None
+    assert WakeTracker().on_turn(turn, 0) == []
+
+
 @pytest.mark.parametrize(
     "turn",
     [

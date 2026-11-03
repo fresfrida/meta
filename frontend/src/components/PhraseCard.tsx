@@ -2,6 +2,7 @@ import { useLayoutEffect, useRef } from 'react'
 import type { Lang } from '../config'
 import type { AskView } from '../hooks/useAsk'
 import type { Answer, Budget } from '../hooks/useSecondEyes'
+import { askLines } from '../lib/askText'
 import { languages, strings } from '../strings'
 import { AlertIcon } from './Icons'
 import { TrafficLight } from './TrafficLight'
@@ -93,6 +94,7 @@ export function PhraseCard({ answer, budget, slow, loop, lang, ask = null }: Phr
   const lamp = answer.kind === 'phrase' ? answer.lamp : 'off'
   const speaking = answer.kind === 'phrase' && answer.speaking
   const key = answer.kind === 'phrase' ? answer.id : answer.kind
+  const askView = ask ? askLines(ask, lang) : null
 
   return (
     <div className="card">
@@ -106,18 +108,11 @@ export function PhraseCard({ answer, budget, slow, loop, lang, ask = null }: Phr
           </span>
         </p>
         {hint && <p className="card__hint">{hint}</p>}
-        {ask && (
-          <div className="card__ask" aria-live="polite">
-            <p className="card__ask-question">
-              {ask.question ? strings.ask.youAsked(ask.question) : strings.ask.listening}
-            </p>
-            {ask.status === 'thinking' && <p className="card__ask-answer card__ask-answer--quiet">{strings.ask.thinking}</p>}
-            {ask.answer && (
-              <p className="card__ask-answer" lang={lang}>
-                {ask.answer}
-              </p>
-            )}
-            {ask.status === 'failed' && <p className="card__ask-answer">{strings.ask.sorry}</p>}
+        {askView && (
+          <div className="card__ask" aria-live="polite" lang={lang}>
+            <p className="card__ask-question">{askView.question}</p>
+            {askView.thinking && <p className="card__ask-answer card__ask-answer--quiet">{askView.thinking}</p>}
+            {askView.answer && <p className="card__ask-answer">{askView.answer}</p>}
           </div>
         )}
         {note && (
