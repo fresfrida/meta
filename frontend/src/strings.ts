@@ -61,6 +61,7 @@ export const strings = {
       body: 'Open this page with an https:// address.',
     },
     ready: 'Tap Capture',
+    watching: 'Watching…', // TENTATIVE (Brief 3): loop mode before the first answer
     waiting: 'Waiting for answer…',
     // TENTATIVE (Brief 2): live-mode copy below until the Owner approves it.
     modelSlow: {
@@ -102,6 +103,9 @@ export const strings = {
     none: 'No captures yet',
     breakdown: (frameMs: number, roundTripMs: number, modelMs: number, speechMs: number) =>
       `frame ${frameMs} · round trip ${roundTripMs} (model ${modelMs}) · speech ${speechMs}`,
+    // TENTATIVE (Brief 3)
+    counts: (spoken: number, silent: number) => `spoken ${spoken} · silent ${silent}`,
+    silentRoundTrip: (min: number, median: number, max: number) => `silent round trip ${min} / ${median} / ${max}`,
     // TENTATIVE (Brief 2)
     usage: (inputTokens: number, outputTokens: number, costUsd: number) =>
       `tokens in ${inputTokens} · out ${outputTokens} · $${costUsd.toFixed(4)}`,

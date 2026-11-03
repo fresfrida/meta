@@ -1,12 +1,14 @@
-import type { Usage } from '../hooks/useSecondEyes'
-import { type TimingRecord, stats } from '../lib/timing'
+import type { Timings, Usage } from '../hooks/useSecondEyes'
+import { stats } from '../lib/timing'
 import { strings } from '../strings'
 
 const t = strings.timing
 
-export function TimingPanel({ history, lastUsage }: { history: TimingRecord[]; lastUsage: Usage | null }) {
+export function TimingPanel({ timings, lastUsage }: { timings: Timings; lastUsage: Usage | null }) {
+  const history = timings.spoken
   const last = history[0]
   const s = stats(history.map((r) => r.totalMs))
+  const silent = stats(timings.silentRoundTrips)
 
   return (
     <section className="timing" aria-label={t.heading}>
@@ -41,6 +43,12 @@ export function TimingPanel({ history, lastUsage }: { history: TimingRecord[]; l
             ))}
           </ol>
         </>
+      )}
+      {timings.spokenCount + timings.silentCount > 0 && (
+        <div className="timing__row timing__breakdown">
+          <span>{t.counts(timings.spokenCount, timings.silentCount)}</span>
+          {silent && <span>{t.silentRoundTrip(silent.min, silent.median, silent.max)}</span>}
+        </div>
       )}
     </section>
   )

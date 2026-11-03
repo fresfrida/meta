@@ -42,17 +42,19 @@ export default function App() {
       {backend === 'unreachable' && <Banner {...s.backendUnreachable} />}
 
       <main className="main">
-        {cameraOn ? <PhraseBand answer={answer} budget={eyes.budget} /> : <CameraStateCard camera={camera} />}
-        <TimingPanel history={eyes.history} lastUsage={eyes.lastUsage} />
+        {cameraOn ? <PhraseBand answer={answer} budget={eyes.budget} slow={eyes.slow} loop={eyes.loop} /> : <CameraStateCard camera={camera} />}
+        <TimingPanel timings={eyes.timings} lastUsage={eyes.lastUsage} />
       </main>
 
       <nav className="controls" aria-label={strings.appName}>
-        {cameraOn ? (
+        {cameraOn && eyes.loop && <Button label={strings.button.stop} onClick={eyes.stop} />}
+        {cameraOn && !eyes.loop && (
           <>
             <Button label={strings.button.capture} onClick={eyes.capture} disabled={answer.kind === 'waiting'} />
             <Button label={strings.button.stop} onClick={eyes.stop} variant="secondary" />
           </>
-        ) : (
+        )}
+        {!cameraOn && (
           <Button
             label={failedCamera ? strings.button.tryAgain : strings.button.start}
             onClick={eyes.start}

@@ -20,20 +20,25 @@ function failureText(reason: Extract<Answer, { kind: 'failed' }>['reason'], budg
 }
 
 /** The huge spoken phrase. The live region stays mounted so screen readers announce changes. */
-export function PhraseBand({ answer, budget }: { answer: Answer; budget: Budget | null }) {
+interface PhraseBandProps {
+  answer: Answer
+  budget: Budget | null
+  slow: boolean
+  loop: boolean
+}
+
+export function PhraseBand({ answer, budget, slow, loop }: PhraseBandProps) {
   let tone = ''
   let phrase: React.ReactNode
   let note: React.ReactNode = null
 
   switch (answer.kind) {
     case 'none':
-      phrase = <span className="band__phrase band__phrase--quiet">{st.ready}</span>
+      phrase = <span className="band__phrase band__phrase--quiet">{loop ? st.watching : st.ready}</span>
       break
     case 'waiting':
-      phrase = (
-        <span className="band__phrase band__phrase--quiet">{answer.slow ? st.modelSlow.title : st.waiting}</span>
-      )
-      if (answer.slow) note = <p className="band__note">{st.modelSlow.body}</p>
+      phrase = <span className="band__phrase band__phrase--quiet">{slow ? st.modelSlow.title : st.waiting}</span>
+      if (slow) note = <p className="band__note">{st.modelSlow.body}</p>
       break
     case 'failed': {
       const text = failureText(answer.reason, budget)
@@ -46,11 +51,12 @@ export function PhraseBand({ answer, budget }: { answer: Answer; budget: Budget 
       tone = [answer.warning ? 'band--warning' : '', answer.speaking ? 'band--speaking' : ''].join(' ')
       // key forces a remount so the crossfade replays for every new answer
       phrase = (
-        <span key={answer.id} className="band__phrase">
+        <span key={answer.id} className={answer.quiet ? 'band__phrase band__phrase--quiet' : 'band__phrase'}>
           {answer.text}
         </span>
       )
       if (answer.speechFailed) note = <p className="band__note band__note--error">{st.speechFailed}</p>
+      else if (slow) note = <p className="band__note">{st.modelSlow.title}</p>
       break
   }
 

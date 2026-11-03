@@ -22,8 +22,8 @@ describe('phraseFor', () => {
 
 describe('isWarning', () => {
   it('is true for hazards only', () => {
-    expect(isWarning({ hazard: 'curb', side: null, distance: null })).toBe(true)
-    expect(isWarning({ hazard: 'clear', side: null, distance: null })).toBe(false)
-    expect(isWarning({ hazard: 'unsure', side: null, distance: null })).toBe(false)
+    expect(isWarning({ hazard: 'curb' })).toBe(true)
+    expect(isWarning({ hazard: 'clear' })).toBe(false)
+    expect(isWarning({ hazard: 'unsure' })).toBe(false)
   })
 })

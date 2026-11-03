@@ -13,10 +13,14 @@ export type ErrorCode =
   | 'model_billing'
   | 'model_error'
 
+/** [x_min, y_min, x_max, y_max] on a 0..1000 grid. */
+export type Box = [number, number, number, number]
+
 export interface VisionAnswer {
   hazard: Hazard
   side: Side | null
   distance: Distance | null
+  box: Box | null
 }
 
 export interface AnalyzeRequest {

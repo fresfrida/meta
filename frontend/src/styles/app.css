@@ -82,6 +82,7 @@ button {
 }
 
 .badge {
+  /* Neutral outline for MOCK and Live alike: amber is reserved for hazards. */
   font-size: var(--font-size-14);
   font-weight: var(--font-weight-semibold);
   padding: var(--space-4) var(--space-12);
@@ -89,12 +90,6 @@ button {
   border: var(--border-width) solid var(--color-border);
   background: var(--color-scrim);
   color: var(--color-text);
-}
-
-.badge--mock {
-  background: var(--color-warn);
-  border-color: var(--color-warn);
-  color: var(--color-on-warn);
 }
 
 .badge--checking {
