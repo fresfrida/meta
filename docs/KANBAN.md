@@ -4,7 +4,9 @@
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
 - README privacy paragraph (proposed in brief-07.md; Owner approves the wording first)
 - Face blur recall: 2x tiles for distant faces (~4x time) if the iPhone has headroom
-- Translations of the Ask "sorry" and the new Brief 6 copy (EN only for now)
+- Native-speaker check of the ZH / MS / TA Ask texts (Brief 8)
+- Translations of the Ask chip, "Listening stopped", "Microphone not available" (EN only for now)
+- Set `VISION_MODE=mock` and `BUDGET_USD` back after the Android test
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
 
@@ -12,6 +14,7 @@
 - (none)
 
 ## Done
+- Brief 8: ASR bias English + chosen language; wake spellings measured per language (Latin in all 4, 16/16 woke, 0/8 distractors); Ask texts and spoken sorry per language; Android permission copy; pytest x149, vitest x95; live for the Android test, $2 cap (4 Nov)
 - Brief 7b: face threshold 0.2 (Owner); offline range and false-hit re-run (4 Nov)
 - Brief 7: on-device face blur (YuNet + onnxruntime-web bundled, padded mosaic) on every sent frame, fail-open with visible chip, sent-frame thumbnail; Home/Settings light/dark, Larger Text (rem), Increase Contrast; vitest x86; live 6 calls on Steps3/CC0 (cap was 4 - see report) (3 Nov)
 - Brief 6: hands-free Ask ("Hey Eyes") - realtime ASR proxy `/api/listen` with wake rule, `/api/ask` with the approved prompt, AudioWorklet mic + 16 kHz PCM16 encoder, self-speech gate, earcon, touch-and-hold fallback, Settings toggle; prompt v4; side lines 400 / 600; pytest x135, vitest x71; live: 5 asks, ~2.5 min listening, 2 photo calls (3 Nov)
@@ -31,6 +34,7 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
+- Android (Chrome) live test: Owner runs it now (camera, speech, "Hey Eyes" in each language, `?mictest=1`); $2 cap
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
 - iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`
 - iPhone "Hey Eyes" test (real voice, real room)

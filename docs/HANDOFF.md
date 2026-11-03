@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 7 (face blur on the phone, light/dark, text size; $0.1165 spent in total). Branch `claude/second-eyes`.
+Last updated: 4 Nov 2026, Brief 8 (Ask in 4 languages; live for the Owner's Android test with a $2 cap; $0.1203 in spend.json, plus $0.0045 of direct ASR measurement not in it). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,6 +9,19 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **Live for the Owner's Android (Chrome) test (Brief 8, 4 Nov):** `backend/.env` has `VISION_MODE=live` (so
+  listening and Ask are live too) and `BUDGET_USD=2.12` = $0.1203 already in `spend.json` + the Owner's $2 cap; the
+  guard refuses live calls (402 / `budget_reached`) once spend reaches it. Phone URL `https://<mac-lan-ip>:5173`
+  (Chrome: Advanced -> Proceed on the certificate warning), mic test `?mictest=1`. Set `VISION_MODE=mock` again
+  after the test.
+- Ask in 4 languages (Brief 8): the realtime ASR gets `languageBias` ["English", <chosen language>] (["English"]
+  for English), because "Hey Eyes" is said in English inside a Chinese / Malay / Tamil question. Measured with
+  macOS `say` clips: the ASR wrote "Hey Eyes" / "Hey eyes" in Latin letters in all 4 languages, so `wake.py` needed
+  no new spellings (the measured transcripts are unit tests). 16 of 16 wake clips woke, 0 of 8 distractors did.
+  The card texts ("Listening for your question…", "Looking…", "You asked: …", "Sorry, I could not answer.") come
+  from `askText` in `strings.ts` per language (Owner approved 4 Nov; ZH / MS / TA pending a native check); "sorry"
+  is shown and spoken in the chosen language. Chip, "Listening stopped" and "mic failed" stay English.
+- Permission-denied body: "Allow camera access for this site in your browser settings, then tap Try again."
 - Face blur (Brief 7): every frame that leaves the phone (loop and Ask) is checked
   on the device by YuNet (onnxruntime-web, bundled) and each face box (+20%) is
   replaced by a 4 x 4 mosaic; bodies stay. Always on. Chip "Faces blurred" / "Face

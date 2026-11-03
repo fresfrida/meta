@@ -70,13 +70,13 @@ phone mic (getUserMedia, echo cancellation) -> AudioWorklet (public/mic-worklet.
 backend app/listen.py (key added here only)
   -> wss://api.meta.ai/v1/asr/realtime, first JSON frame: authorization.accessToken "Bearer <key>",
      model muse-voice-transcribe-1.0, audioEncoding PCM_16KHZ, mode ENDPOINTING,
-     languageBias [English|Mandarin Chinese|Malay|Tamil], keywords ["Hey Eyes"]
+     languageBias ["English"] or ["English", Mandarin Chinese|Malay|Tamil], keywords ["Hey Eyes"]
   -> audio paced at real time in 80 ms frames; silence fills gaps (the ASR closes idle sessions);
      at most 2 s queued (docs: never more than 5 s ahead); reconnect once, then {"type":"stopped"}
   -> each whole second streamed adds $0.18/3600 to the budget
   -> speechComplete turns -> app/wake.py: only questions go back to the phone
      ({"type":"wake"} and {"type":"question","text"}); every other turn is dropped, never logged or stored
-phone: earcon, hazard speech pauses, card shows "You asked: ..."
+phone: earcon, hazard speech pauses, card shows "You asked: ..." in the chosen language (strings.ts askText)
   -> POST /api/ask {question, image_b64 (current frame), last_warning, language}
 backend app/ask.py -> muse-spark-1.3 with the Owner-approved prompt (plain text), trimmed to 2 sentences,
   tokens billed -> {question, answer, model_ms, tokens, cost}
