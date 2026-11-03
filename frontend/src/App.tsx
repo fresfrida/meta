@@ -1,4 +1,5 @@
 import { Banner } from './components/Banner'
+import { BoxOverlay } from './components/BoxOverlay'
 import { Button } from './components/Button'
 import { ModeBadge } from './components/ModeBadge'
 import { PhraseBand } from './components/PhraseBand'
@@ -33,6 +34,7 @@ export default function App() {
   return (
     <div className="app">
       <video ref={videoRef} className="camera" playsInline muted autoPlay hidden={!cameraOn} />
+      {cameraOn && <BoxOverlay hazardBox={eyes.hazardBox} videoRef={videoRef} />}
 
       <header className="topbar">
         <span className="beta">{strings.betaLabel}</span>

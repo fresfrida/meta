@@ -4,6 +4,8 @@ export type Hazard = 'step_down' | 'step_up' | 'curb' | 'obstacle' | 'clear' | '
 export type Side = 'left' | 'ahead' | 'right'
 export type Distance = 'near' | 'far'
 export type Source = 'mock' | 'live'
+/** Where `side` came from: the box centre, or the model's own side when there is no box. */
+export type SideSource = 'box' | 'model'
 export type ErrorCode =
   | 'invalid_image'
   | 'key_missing'
@@ -28,6 +30,7 @@ export interface AnalyzeRequest {
 }
 
 export interface AnalyzeResponse extends VisionAnswer {
+  side_source: SideSource
   source: Source
   model_ms: number
   input_tokens: number | null

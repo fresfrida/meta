@@ -1,12 +1,13 @@
 // Orchestrates camera -> frame -> backend -> phrase -> speech, and the visible states.
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { analyze, getHealth } from '../api/client'
-import type { AnalyzeResponse, HealthResponse, Source } from '../api/types'
+import type { AnalyzeResponse, Box, HealthResponse, Source } from '../api/types'
 import { LOOP_ENABLED, LOOP_INTERVAL_MS, MIN_GAP_MS, MODEL_SLOW_MS, TIMING_HISTORY_SIZE } from '../config'
 import { type AnnounceState, type Decision, INITIAL_ANNOUNCE, decide, spoke } from '../lib/announce'
+import type { Size } from '../lib/boxMap'
 import { CameraError, type CameraFailure, captureFrame, openRearCamera, stopStream } from '../lib/camera'
 import { type FailureReason, failureReason } from '../lib/failure'
-import { isWarning, phraseFor } from '../lib/phrase'
+import { type WarningHazard, isWarning, phraseFor } from '../lib/phrase'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 
@@ -34,6 +35,15 @@ export interface Usage {
   costUsd: number
 }
 
+/** The latest warning's box, with the size of the frame it was found on. */
+export interface HazardBox {
+  /** New for every answer, so the overlay restarts its stale timer. */
+  seq: number
+  hazard: WarningHazard
+  box: Box
+  frame: Size
+}
+
 export type Budget = Pick<HealthResponse, 'spent_usd' | 'budget_usd'>
 
 export interface Timings {
@@ -53,6 +63,8 @@ export interface SecondEyes {
   mode: Source | null
   budget: Budget | null
   answer: Answer
+  /** Box of the latest answer when it is a warning with a box; null for clear, unsure, no box, or stopped. */
+  hazardBox: HazardBox | null
   /** The current request has taken longer than MODEL_SLOW_MS. */
   slow: boolean
   timings: Timings
@@ -75,6 +87,7 @@ export function useSecondEyes(): SecondEyes {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const answerIdRef = useRef(0)
+  const boxSeqRef = useRef(0)
   const speechIdRef = useRef(0)
   const announceRef = useRef<AnnounceState>(INITIAL_ANNOUNCE)
   const busyRef = useRef(false)
@@ -85,6 +98,7 @@ export function useSecondEyes(): SecondEyes {
   const [mode, setMode] = useState<Source | null>(null)
   const [budget, setBudget] = useState<Budget | null>(null)
   const [answer, setAnswer] = useState<Answer>({ kind: 'none' })
+  const [hazardBox, setHazardBox] = useState<HazardBox | null>(null)
   const [slow, setSlow] = useState(false)
   const [timings, setTimings] = useState<Timings>(EMPTY_TIMINGS)
   const [lastUsage, setLastUsage] = useState<Usage | null>(null)
@@ -158,6 +172,7 @@ export function useSecondEyes(): SecondEyes {
       if (!video || busyRef.current) return true
       busyRef.current = true
       const captureStart = performance.now()
+      const frame = { width: video.videoWidth, height: video.videoHeight }
       let image: string
       try {
         image = captureFrame(video)
@@ -186,6 +201,9 @@ export function useSecondEyes(): SecondEyes {
           setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
         }
 
+        setHazardBox(
+          isWarning(res) && res.box ? { seq: ++boxSeqRef.current, hazard: res.hazard, box: res.box, frame } : null,
+        )
         const text = phraseFor(res)
         const decision = decideFor(res, text, announceRef.current, performance.now())
         showAnswer(res, text)
@@ -245,6 +263,7 @@ export function useSecondEyes(): SecondEyes {
     announceRef.current = INITIAL_ANNOUNCE
     setCamera('starting')
     setAnswer({ kind: 'none' })
+    setHazardBox(null)
     void checkHealth()
     openRearCamera()
       .then(async (stream) => {
@@ -272,6 +291,7 @@ export function useSecondEyes(): SecondEyes {
     setCamera('off')
     setSlow(false)
     setAnswer({ kind: 'none' })
+    setHazardBox(null)
   }, [])
 
   const capture = useCallback(() => {
@@ -286,6 +306,7 @@ export function useSecondEyes(): SecondEyes {
     mode,
     budget,
     answer,
+    hazardBox,
     slow,
     timings,
     lastUsage,

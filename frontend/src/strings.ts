@@ -1,5 +1,6 @@
 // Every piece of user-facing text lives here.
 import type { Distance, Hazard, Side } from './api/types'
+import type { WarningHazard } from './lib/phrase'
 
 export const strings = {
   appName: 'Second Eyes',
@@ -31,6 +32,14 @@ export const strings = {
       far: '',
     } satisfies Record<Distance, string>,
   },
+
+  // TENTATIVE (Brief 4): tag on the hazard box
+  boxLabel: {
+    step_down: 'Step down',
+    step_up: 'Step up',
+    curb: 'Curb',
+    obstacle: 'Obstacle',
+  } satisfies Record<WarningHazard, string>,
 
   button: {
     start: 'Start',

@@ -1,5 +1,5 @@
 // The one rule that turns a structured vision answer into the spoken phrase.
-import type { VisionAnswer } from '../api/types'
+import type { Hazard, VisionAnswer } from '../api/types'
 import { strings } from '../strings'
 
 const p = strings.phrase
@@ -25,7 +25,9 @@ export function phraseFor(answer: Pick<VisionAnswer, 'hazard' | 'side' | 'distan
   return parts.join(', ')
 }
 
+export type WarningHazard = Exclude<Hazard, 'clear' | 'unsure'>
+
 /** Hazards that get the warning colour. */
-export function isWarning(answer: Pick<VisionAnswer, 'hazard'>): boolean {
+export function isWarning(answer: Pick<VisionAnswer, 'hazard'>): answer is { hazard: WarningHazard } {
   return answer.hazard !== 'clear' && answer.hazard !== 'unsure'
 }

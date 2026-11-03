@@ -50,9 +50,48 @@ button {
   display: none;
 }
 
-.app > :not(.camera) {
+.app > :not(.camera, .box-layer) {
   position: relative;
   z-index: 1;
+}
+
+/* ---------- Hazard box over the camera (decorative, under the UI) ---------- */
+.box-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.hazard-box {
+  position: absolute;
+  border: var(--box-stroke) solid var(--color-warn);
+  border-radius: var(--radius-12);
+  box-shadow: 0 0 0 var(--border-width) var(--color-scrim);
+  transition: opacity var(--motion-fade) var(--motion-ease);
+}
+
+.hazard-box--stale {
+  opacity: 0;
+}
+
+.hazard-box__label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 var(--space-8);
+  /* Inner top-left corner follows the box's rounded border. */
+  border-radius: calc(var(--radius-12) - var(--box-stroke)) 0 var(--radius-12) 0;
+  background: var(--color-warn);
+  color: var(--color-on-warn);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-body);
 }
 
 .topbar {

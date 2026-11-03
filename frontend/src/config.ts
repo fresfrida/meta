@@ -26,6 +26,9 @@ export const LOOP_INTERVAL_MS = 1_000
 /** No-repeat rule: never start speaking within this long of the last speech. */
 export const MIN_GAP_MS = 1_500
 
+/** The hazard box fades out when no new answer has arrived for this long. */
+export const BOX_STALE_MS = 2_000
+
 /** How many captures the on-screen timing list keeps. */
 export const TIMING_HISTORY_SIZE = 10
 
