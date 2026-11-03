@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { FACE_MIN_SCORE } from '../config'
 import type { Pixels } from './faceBlur'
 import { type FaceDetector, getFaceBlurStatus, guardPixels, setFaceDetectorLoader, subscribeFaceBlur } from './faceGuard'
 
@@ -29,6 +30,13 @@ describe('guardPixels', () => {
     const before = px.data.slice()
     expect((await guardPixels(px)).blurred).toEqual([])
     expect(px.data).toEqual(before)
+  })
+
+  it('the threshold is 0.2 (Owner, 4 Nov): 0.2 is blurred, 0.19 is not', async () => {
+    expect(FACE_MIN_SCORE).toBe(0.2)
+    setFaceDetectorLoader(async () => ok([{ ...face, score: 0.2 }, { ...face, x: 40, score: 0.19 }]))
+    const r = await guardPixels(frame())
+    expect(r.blurred).toHaveLength(1)
   })
 
   it('model fails to load: frame unchanged, status "off", listeners told, loud warning', async () => {

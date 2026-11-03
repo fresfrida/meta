@@ -3,7 +3,7 @@
 ## Backlog
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
 - README privacy paragraph (proposed in brief-07.md; Owner approves the wording first)
-- Face blur recall: decide threshold 0.3 vs 0.2, or 2x tiles for distant faces (costs ~4x time)
+- Face blur recall: 2x tiles for distant faces (~4x time) if the iPhone has headroom
 - Translations of the Ask "sorry" and the new Brief 6 copy (EN only for now)
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
@@ -12,6 +12,7 @@
 - (none)
 
 ## Done
+- Brief 7b: face threshold 0.2 (Owner); offline range and false-hit re-run (4 Nov)
 - Brief 7: on-device face blur (YuNet + onnxruntime-web bundled, padded mosaic) on every sent frame, fail-open with visible chip, sent-frame thumbnail; Home/Settings light/dark, Larger Text (rem), Increase Contrast; vitest x86; live 6 calls on Steps3/CC0 (cap was 4 - see report) (3 Nov)
 - Brief 6: hands-free Ask ("Hey Eyes") - realtime ASR proxy `/api/listen` with wake rule, `/api/ask` with the approved prompt, AudioWorklet mic + 16 kHz PCM16 encoder, self-speech gate, earcon, touch-and-hold fallback, Settings toggle; prompt v4; side lines 400 / 600; pytest x135, vitest x71; live: 5 asks, ~2.5 min listening, 2 photo calls (3 Nov)
 - Brief 5b: plain-language voice table per language (screen unchanged), side change never re-speaks (flap test speaks once), 13 real-photo live calls reported; vitest x60 (3 Nov)

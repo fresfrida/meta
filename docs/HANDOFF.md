@@ -170,9 +170,9 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   and Bluetooth is unmeasured.
 - The self-signed certificate must be accepted on the iPhone; camera access
   over it is unverified on the device.
-- Face blur misses faces it cannot see well (small, turned, backlit); on a crowd
-  photo it blurred 16 of the visible faces in one frame and left several. A lower
-  threshold (0.2) finds more with one false hit on a facade.
+- Face blur misses faces it cannot see well (small, turned, backlit). Threshold is
+  0.2 (Owner, 4 Nov): on the demo crowd frame it blurs 32 faces (16 at 0.3); false
+  hits seen only on building fronts, none on kerbs, steps or path edges.
 - The onnxruntime wasm is ~15 MB; the first Start on the phone downloads it over
   Wi-Fi (not precached).
 - Hands-free listening on iOS: listening and speaking at once is unverified on
