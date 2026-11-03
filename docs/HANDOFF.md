@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test; $0.0585 spent in total). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test; $0.0678 spent in total). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -27,7 +27,9 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   verbatim; `VISION_PROMPT_VERSION = "v3"`) in `backend/app/config.py`. Answers
   carry `distance_m` (whole metres 1..10, or null; invalid -> null, rest kept;
   near/far stays the fallback). Live check (Brief 5, 10 calls): distance_m came
-  back on every call.
+  back on every call. Real photos (6 calls, re-encoded without EXIF, never in the
+  repo): step down from a deck and night stairs down/up all correct with metres;
+  a street photo with distant stairs gave the near curb instead (8.0 s).
 - Answers carry `box` ([x_min, y_min, x_max, y_max] on 0..1000, or null).
 - Side from box (backend, `resolve_side` in `schemas.py`): when a box is present,
   `side` comes from its centre x (<= `LEFT_MAX` 333 left, >= `RIGHT_MIN` 667 right,

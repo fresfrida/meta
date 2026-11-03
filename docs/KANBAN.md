@@ -1,6 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Remaining 7 real-photo live calls (corridor/doorway/bench night photos, Curb1, Curb3, Steps1, Steps2): waiting for the Owner's go
+- Plain-language phrase templates: data change in `strings.ts` `phrases` once the Owner approves the wording
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் phrases
 - Side flapping near the 333 / 667 lines (repeats speech); needs a rule decision
 - Brief 6: hands-free Ask / wake word
