@@ -1,6 +1,6 @@
 # Architecture - Second Eyes
 
-Status: Brief 6 (hands-free Ask with "Hey Eyes": realtime ASR proxy + Ask endpoint; prompt v4; side lines 400 / 600).
+Status: Brief 7 (faces blurred on the phone before any frame leaves it; light/dark and text size on Home and Settings).
 First written before the app code, per the Owner's standing architecture rule.
 
 ## Where every piece runs
@@ -29,6 +29,30 @@ Later hosting target: **not decided**.
    and there are no CORS rules to maintain.
 4. Asking (Brief 6) adds a WebSocket on the same origin: `/api/listen`
    (`wss://` on the phone; the Vite proxy has `ws: true`) and `POST /api/ask`.
+
+## Faces are blurred on the phone (Brief 7)
+
+Every frame that leaves the phone - the hazard loop and Ask - goes through one function,
+`captureGuarded()` in `frontend/src/lib/camera.ts`:
+
+```
+video -> canvas (640 px long edge, only the captured frame; the live preview is never processed)
+  -> lib/faceGuard.ts -> lib/yunet.ts: OpenCV YuNet 2023mar (MIT, frontend/public/models/) on
+     onnxruntime-web 1.31.1 (wasm, bundled by Vite; nothing from a CDN at runtime); 640 x 640 input,
+     frame placed at full resolution, score >= FACE_MIN_SCORE (0.3)
+  -> lib/faceBlur.ts: each face box grown by FACE_PAD (20%) and replaced by a 4 x 4 mosaic; bodies untouched
+  -> JPEG -> POST /api/analyze or /api/ask
+```
+
+- Always on; there is no setting to turn it off. The camera screen shows a chip ("Faces blurred" /
+  "Face blur off") and the expanded timing panel shows a thumbnail of the last frame actually sent.
+- **Fail-open:** if the model cannot load (or is not ready within 8 s) or errors on a frame, the frame is
+  still sent unblurred (hazard warnings matter more) and the chip turns to "Face blur off" (white, alert
+  style); a console warning is logged. A later good frame turns it back on.
+- Range (CC0 crowd photo, desktop): faces down to ~7 px wide are found, roughly 10 m on an iPhone's main
+  camera in our 640 px frame; misses remain for small, turned or backlit faces.
+- **Frames are not stored** anywhere: not on the phone, not on the backend (the backend passes them to the
+  model and drops them; only spend and timings are kept). Audio is not stored either (Brief 6).
 
 ## Asking a question (Brief 6) - audio leaves the phone
 
@@ -148,6 +172,8 @@ Tunable values live in one module per side: `frontend/src/config.ts` and
   Meta API -> back; the LAN numbers measured here do not transfer.
 - **Model calls take time.** A serverless host's function time limit must fit
   one model call (expected a few seconds).
+- **Face model runtime size.** The onnxruntime wasm is ~15 MB (kept out of the PWA precache; loaded on
+  first Start). A host should serve it compressed (~3.9 MB gzip) and cacheable.
 - **Long-lived WebSocket.** `/api/listen` stays open for the whole session (ASR
   sessions run up to 60 min). Serverless functions cannot hold it; a host needs a
   long-running server (container/VM) and a proxy that passes WebSockets.

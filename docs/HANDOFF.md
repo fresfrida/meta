@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 6 (hands-free Ask with "Hey Eyes", prompt v4, side lines 400 / 600; $0.1009 spent in total). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 7 (face blur on the phone, light/dark, text size; $0.1165 spent in total). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,6 +9,17 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- Face blur (Brief 7): every frame that leaves the phone (loop and Ask) is checked
+  on the device by YuNet (onnxruntime-web, bundled) and each face box (+20%) is
+  replaced by a 4 x 4 mosaic; bodies stay. Always on. Chip "Faces blurred" / "Face
+  blur off" (fail-open: frames still go if the model fails); thumbnail of the last
+  sent frame in the expanded timing panel. Desktop: +34-43 ms per frame (median 39;
+  first frame ~0.3 s with model load). Faces found down to ~7 px (~10 m); some
+  turned / small / backlit faces are missed. **Not tested on the iPhone.**
+- Appearance (Brief 7): the camera screen is always dark; Home, Settings and the
+  mic test follow light/dark (`.app--auto`), scale with Larger Text (rem from
+  `-apple-system-body`), and strengthen hairlines and muted text with Increase
+  Contrast. The camera phrase keeps its fixed size.
 - Asking (Brief 6): while running, say "Hey Eyes, what is there?" (or "Hey Eyes",
   then the question within 6 s) and hear a short answer about the current view in
   the chosen language. Mic -> AudioWorklet -> 16 kHz PCM16 -> `/api/listen`
@@ -159,6 +170,11 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   and Bluetooth is unmeasured.
 - The self-signed certificate must be accepted on the iPhone; camera access
   over it is unverified on the device.
+- Face blur misses faces it cannot see well (small, turned, backlit); on a crowd
+  photo it blurred 16 of the visible faces in one frame and left several. A lower
+  threshold (0.2) finds more with one false hit on a facade.
+- The onnxruntime wasm is ~15 MB; the first Start on the phone downloads it over
+  Wi-Fi (not precached).
 - Hands-free listening on iOS: listening and speaking at once is unverified on
   the iPhone (speech may get quieter or move to the earpiece with the mic open).
   `HANDS_FREE_DEFAULT` can turn it off by default if so.
@@ -171,7 +187,8 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   is logged (never the frame or key).
 
 ## How to resume
-Brief 6 done (see `007-meta-artifacts/reports/brief-06.md`). Next: the Owner runs
-the iPhone mic test (`/?mictest=1`) and a real "Hey Eyes" on the phone; then
-Brief 7 (face blur). Read
+Brief 7 done (see `007-meta-artifacts/reports/brief-07.md`). Next: the Owner runs
+the iPhone tests (mic test `/?mictest=1`, a real "Hey Eyes", face blur on the
+phone, Larger Text). README privacy paragraph is proposed in the report, waiting
+for the Owner's wording approval. Read
 `docs/KANBAN.md` and `plan/hackathon.md` first.
