@@ -9,6 +9,7 @@
 - (none)
 
 ## Done
+- Brief 2 Part B live spike: connectivity OK, 10 image calls OK, $0.0169 total; schema + `minimal` accepted; boxes land on the hazards (3 Nov)
 - Hazard box overlay (amber outline + tag, cover-crop mapping `lib/boxMap.ts` + 7 tests, 2 s stale fade); side from box centre in the backend with `side_source` + 18 tests; pytest x60, vitest x26 (3 Nov)
 - 1 fps loop (one request in flight, 1 s after each answer), no-repeat rule in `announce.ts` + 9 tests, unsure never spoken, mock hold 4, neutral badges, spoken/silent timing; `?loop=0` single mode (3 Nov)
 - Prompt v2 with bounding box (Owner approved); `box` field, schema and malformed-box rule + tests; pytest x42 (3 Nov)
@@ -21,5 +22,5 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
-- Brief 2 Part B live spike (now with prompt v2): waiting for Owner go-ahead and `MODEL_API_KEY` in `backend/.env`
+- Live latency: median model_ms 3968 > 2500 target; Owner to pick an option (smaller frame, lower quality, shorter prompt, every 2 s, stills demo)
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers

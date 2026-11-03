@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 4 (hazard box on screen, side from box; mock only; no live call yet). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 2 Part B (first live calls: 1 text + 10 image, $0.017 spent). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -10,8 +10,12 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 
 ## Current state (true of the code today)
 - Mock vision by default. `VISION_MODE=live` calls muse-spark-1.3 (OpenAI SDK,
-  json_schema answer, reasoning `minimal`, 8 s timeout). **Never run against the
-  real API yet**: tested only with fake clients and an in-memory HTTP transport.
+  json_schema answer, reasoning `minimal`, 8 s timeout). First real calls 3 Nov
+  (Part B): schema with nullable anyOf and box, and `minimal`, accepted (no 400);
+  no billing error. Measured on 640px synthetic images: model_ms 1820 / 3968 / 6433
+  (min / median / max), $0.0013-0.0022 per frame, 563 input tokens, 156-484 output
+  tokens (reasoning included). **Median is above the 2500 ms target - Owner to choose
+  an option before live loop use.**
 - Live spend guard: tokens x prices added to `backend/.data/spend.json`; at
   >= $25 live calls get 402 `budget_reached`. Unreadable spend file also refuses.
 - Model prompt v2 with bounding box (Owner approved 3 Nov, verbatim;
@@ -114,7 +118,7 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   is logged (never the frame or key).
 
 ## How to resume
-Next is Brief 2 Part B (connectivity check, then 10 image calls) - only after the
-Owner's go-ahead relayed by the Advisor and the key in `backend/.env`. The box
-schema and side-from-box rule have not met a real model answer yet. Read
+Part B stopped at the latency check (median model_ms 3968 > 2500); waiting for the
+Owner's choice of option (see `007-meta-artifacts/reports/brief-02b.md`). Brief 5
+(layout, language picker, distance in metres) comes after. Read
 `docs/KANBAN.md` and `plan/hackathon.md` first.
