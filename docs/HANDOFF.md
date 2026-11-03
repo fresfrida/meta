@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 2 Part B (first live calls: 1 text + 10 image, $0.017 spent). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 4b (live speed test, 18 calls; $0.044 spent in total). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -14,8 +14,13 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   (Part B): schema with nullable anyOf and box, and `minimal`, accepted (no 400);
   no billing error. Measured on 640px synthetic images: model_ms 1820 / 3968 / 6433
   (min / median / max), $0.0013-0.0022 per frame, 563 input tokens, 156-484 output
-  tokens (reasoning included). **Median is above the 2500 ms target - Owner to choose
-  an option before live loop use.**
+  tokens (reasoning included). **Median is above the 2500 ms target.**
+- Speed test (Brief 4b, `backend/scripts/speed_test.py`, 18 streamed calls): the
+  time is the model thinking before its first token (TTFT = total - ~150 ms);
+  model_ms ~ 1.24 s + 8.9 ms x output tokens. Medians: baseline 3509 ms, output cap
+  150 broke every answer (empty / cut JSON -> unsure), prompt line 3252 ms, 320 px
+  frame 3775 ms (half the input tokens, no speed gain), line + 320 px 3362 ms. No
+  lever reaches 2500 ms. App defaults unchanged; Owner decides.
 - Live spend guard: tokens x prices added to `backend/.data/spend.json`; at
   >= $25 live calls get 402 `budget_reached`. Unreadable spend file also refuses.
 - Model prompt v2 with bounding box (Owner approved 3 Nov, verbatim;
@@ -118,7 +123,7 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   is logged (never the frame or key).
 
 ## How to resume
-Part B stopped at the latency check (median model_ms 3968 > 2500); waiting for the
-Owner's choice of option (see `007-meta-artifacts/reports/brief-02b.md`). Brief 5
-(layout, language picker, distance in metres) comes after. Read
+Brief 4b speed test done (see `007-meta-artifacts/reports/brief-04b.md`); waiting
+for the Owner's pick of levers. Brief 5 (layout, language picker, distance in
+metres) comes next and uses them. Read
 `docs/KANBAN.md` and `plan/hackathon.md` first.
