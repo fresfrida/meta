@@ -73,8 +73,9 @@ export const EARCON_GAIN = 0.2
 export const FACE_PAD = 0.2
 /** The blurred area becomes a mosaic this many cells across its longer side (4 = no face is recognisable). */
 export const FACE_MOSAIC_CELLS = 4
-/** Detections below this confidence are ignored. */
-export const FACE_MIN_SCORE = 0.6
+/** Detections below this confidence are ignored. Low on purpose: blurring a non-face costs little, a missed face
+ *  leaks one (CC0 crowd test: 0.3 found 59 heads vs 18 at 0.6, with no hits off people). TENTATIVE. */
+export const FACE_MIN_SCORE = 0.3
 /** Wait at most this long for the face model before the first frame; after that frames go unblurred (fail-open). */
 export const FACE_LOAD_TIMEOUT_MS = 8_000
 

@@ -16,10 +16,10 @@ export interface FaceDetector {
 
 export type FaceDetectorLoader = () => Promise<FaceDetector>
 
-/** No model bundled: always fails, so frames go unblurred with the status "off". Replaced by the real loader. */
-const noModel: FaceDetectorLoader = () => Promise.reject(new Error('no face model bundled'))
+/** YuNet on onnxruntime-web, loaded on demand (the model and runtime are served by this app, never a CDN). */
+const yunet: FaceDetectorLoader = () => import('./yunet').then((m) => m.loadYunet(FACE_MIN_SCORE))
 
-let loader: FaceDetectorLoader = noModel
+let loader: FaceDetectorLoader = yunet
 let detector: Promise<FaceDetector> | null = null
 let status: FaceBlurStatus = 'loading'
 const listeners = new Set<() => void>()

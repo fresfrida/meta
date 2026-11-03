@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => {
         workbox: {
           // Never serve /api from the service worker cache.
           navigateFallbackDenylist: [/^\/api\//],
+          // The face-detector runtime (onnxruntime wasm, ~15 MB) is too big to precache; it loads on first Start.
+          globIgnores: ['**/ort-wasm-*.wasm'],
         },
       }),
     ],

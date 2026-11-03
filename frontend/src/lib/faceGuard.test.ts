@@ -24,7 +24,7 @@ describe('guardPixels', () => {
   })
 
   it('ignores low-confidence detections', async () => {
-    setFaceDetectorLoader(async () => ok([{ ...face, score: 0.3 }]))
+    setFaceDetectorLoader(async () => ok([{ ...face, score: 0.1 }]))
     const px = frame()
     const before = px.data.slice()
     expect((await guardPixels(px)).blurred).toEqual([])
