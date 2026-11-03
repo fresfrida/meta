@@ -9,6 +9,8 @@ export const JPEG_QUALITY = 0.7
 
 /** Abort a backend request after this long. */
 export const REQUEST_TIMEOUT_MS = 10_000
+/** Show "model is slow" when an answer takes longer than this. */
+export const MODEL_SLOW_MS = 3_000
 /** If speech has not started this long after speak(), count it as failed. */
 export const SPEECH_START_TIMEOUT_MS = 3_000
 export const SPEECH_RATE = 1.0

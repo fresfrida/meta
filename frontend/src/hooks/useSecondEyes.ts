@@ -1,9 +1,10 @@
 // Orchestrates camera -> frame -> backend -> phrase -> speech, and the visible states.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError, analyze, getHealth } from '../api/client'
-import type { Source } from '../api/types'
-import { TIMING_HISTORY_SIZE } from '../config'
+import { analyze, getHealth } from '../api/client'
+import type { HealthResponse, Source } from '../api/types'
+import { MODEL_SLOW_MS, TIMING_HISTORY_SIZE } from '../config'
 import { CameraError, type CameraFailure, captureFrame, openRearCamera, stopStream } from '../lib/camera'
+import { type FailureReason, failureReason } from '../lib/failure'
 import { isWarning, phraseFor } from '../lib/phrase'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
@@ -13,17 +14,27 @@ export type BackendState = 'checking' | 'ok' | 'unreachable'
 
 export type Answer =
   | { kind: 'none' }
-  | { kind: 'waiting' }
+  | { kind: 'waiting'; slow: boolean }
   | { kind: 'phrase'; id: number; text: string; warning: boolean; speaking: boolean; speechFailed: boolean }
-  | { kind: 'failed' }
+  | { kind: 'failed'; reason: Exclude<FailureReason, 'unreachable'> }
+
+export interface Usage {
+  inputTokens: number
+  outputTokens: number
+  costUsd: number
+}
+
+export type Budget = Pick<HealthResponse, 'spent_usd' | 'budget_usd'>
 
 export interface SecondEyes {
   videoRef: React.RefObject<HTMLVideoElement | null>
   camera: CameraState
   backend: BackendState
   mode: Source | null
+  budget: Budget | null
   answer: Answer
   history: TimingRecord[]
+  lastUsage: Usage | null
   start: () => void
   stop: () => void
   capture: () => void
@@ -38,14 +49,17 @@ export function useSecondEyes(): SecondEyes {
   const [camera, setCamera] = useState<CameraState>('off')
   const [backend, setBackend] = useState<BackendState>('checking')
   const [mode, setMode] = useState<Source | null>(null)
+  const [budget, setBudget] = useState<Budget | null>(null)
   const [answer, setAnswer] = useState<Answer>({ kind: 'none' })
   const [history, setHistory] = useState<TimingRecord[]>([])
+  const [lastUsage, setLastUsage] = useState<Usage | null>(null)
 
   const checkHealth = useCallback(
     () =>
       getHealth().then(
         (h) => {
           setMode(h.vision_mode)
+          setBudget({ spent_usd: h.spent_usd, budget_usd: h.budget_usd })
           setBackend('ok')
         },
         () => setBackend('unreachable'),
@@ -96,19 +110,28 @@ export function useSecondEyes(): SecondEyes {
     try {
       image = captureFrame(video)
     } catch {
-      setAnswer({ kind: 'failed' })
+      setAnswer({ kind: 'failed', reason: 'answer' })
       return
     }
     const requestSent = performance.now()
     const session = sessionRef.current
-    setAnswer({ kind: 'waiting' })
+    setAnswer({ kind: 'waiting', slow: false })
+    const slowTimer = setTimeout(() => {
+      if (session !== sessionRef.current) return
+      setAnswer((a) => (a.kind === 'waiting' ? { kind: 'waiting', slow: true } : a))
+    }, MODEL_SLOW_MS)
 
     analyze({ image_b64: image })
       .then(async (res) => {
         const responseReceived = performance.now()
+        clearTimeout(slowTimer)
         if (session !== sessionRef.current) return
         setBackend('ok')
         setMode(res.source)
+        if (res.input_tokens !== null && res.output_tokens !== null && res.cost_usd !== null) {
+          setLastUsage({ inputTokens: res.input_tokens, outputTokens: res.output_tokens, costUsd: res.cost_usd })
+          setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
+        }
         const id = ++answerIdRef.current
         const base = { kind: 'phrase' as const, id, text: phraseFor(res), warning: isWarning(res) }
         setAnswer({ ...base, speaking: false, speechFailed: false })
@@ -126,16 +149,19 @@ export function useSecondEyes(): SecondEyes {
         }
       })
       .catch((err) => {
+        clearTimeout(slowTimer)
         if (session !== sessionRef.current) return
-        if (err instanceof ApiError && err.kind === 'unreachable') {
+        const reason = failureReason(err)
+        if (reason === 'unreachable') {
           setBackend('unreachable')
           setAnswer({ kind: 'none' })
         } else {
           setBackend('ok')
-          setAnswer({ kind: 'failed' })
+          setAnswer({ kind: 'failed', reason })
+          void checkHealth() // refresh spend / budget for the message
         }
       })
-  }, [camera])
+  }, [camera, checkHealth])
 
-  return { videoRef, camera, backend, mode, answer, history, start, stop, capture }
+  return { videoRef, camera, backend, mode, budget, answer, history, lastUsage, start, stop, capture }
 }

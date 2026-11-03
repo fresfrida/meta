@@ -1,15 +1,22 @@
 // The only module that talks to the backend.
 import { API_BASE, REQUEST_TIMEOUT_MS } from '../config'
-import type { AnalyzeRequest, AnalyzeResponse, HealthResponse } from './types'
+import type { AnalyzeRequest, AnalyzeResponse, ErrorCode, ErrorDetail, HealthResponse } from './types'
 
 export type ApiErrorKind = 'unreachable' | 'failed'
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind
-  constructor(kind: ApiErrorKind, message: string) {
+  /** Backend error code, when the backend sent one. */
+  readonly code: ErrorCode | null
+  constructor(kind: ApiErrorKind, message: string, code: ErrorCode | null = null) {
     super(message)
     this.kind = kind
+    this.code = code
   }
+}
+
+function isErrorDetail(value: unknown): value is ErrorDetail {
+  return typeof value === 'object' && value !== null && 'code' in value && 'message' in value
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
@@ -25,14 +32,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     clearTimeout(timer)
   }
   if (!res.ok) {
-    let detail = `HTTP ${res.status}`
+    let message = `HTTP ${res.status}`
+    let code: ErrorCode | null = null
     try {
       const body = (await res.json()) as { detail?: unknown }
-      if (typeof body.detail === 'string') detail = body.detail
+      if (isErrorDetail(body.detail)) {
+        message = body.detail.message
+        code = body.detail.code
+      } else if (typeof body.detail === 'string') {
+        message = body.detail
+      }
     } catch {
       // Non-JSON error body (e.g. the dev proxy's own 500 when the backend is down).
     }
-    throw new ApiError('failed', detail)
+    throw new ApiError('failed', message, code)
   }
   return (await res.json()) as T
 }

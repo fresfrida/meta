@@ -62,6 +62,25 @@ export const strings = {
     },
     ready: 'Tap Capture',
     waiting: 'Waiting for answer…',
+    // TENTATIVE (Brief 2): live-mode copy below until the Owner approves it.
+    modelSlow: {
+      title: 'Model is slow…',
+      body: 'Still waiting for the answer.',
+    },
+    modelFailed: {
+      title: 'Model failed',
+      body: 'No answer from the model. Tap Capture to try again.',
+    },
+    budgetReached: {
+      title: 'Budget reached',
+      body: (spentUsd: number, budgetUsd: number) =>
+        `Live calls stopped: $${spentUsd.toFixed(2)} of $${budgetUsd.toFixed(2)} spent.`,
+      bodyUnknown: 'Live calls stopped at the spending cap.',
+    },
+    keyMissing: {
+      title: 'No API key',
+      body: 'Live mode needs MODEL_API_KEY in backend/.env.',
+    },
     backendUnreachable: {
       title: 'Backend unreachable',
       body: 'Is the FastAPI server running on the Mac? Your next tap retries.',
@@ -83,5 +102,8 @@ export const strings = {
     none: 'No captures yet',
     breakdown: (frameMs: number, roundTripMs: number, modelMs: number, speechMs: number) =>
       `frame ${frameMs} · round trip ${roundTripMs} (model ${modelMs}) · speech ${speechMs}`,
+    // TENTATIVE (Brief 2)
+    usage: (inputTokens: number, outputTokens: number, costUsd: number) =>
+      `tokens in ${inputTokens} · out ${outputTokens} · $${costUsd.toFixed(4)}`,
   },
 } as const

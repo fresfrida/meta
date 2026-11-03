@@ -42,8 +42,8 @@ export default function App() {
       {backend === 'unreachable' && <Banner {...s.backendUnreachable} />}
 
       <main className="main">
-        {cameraOn ? <PhraseBand answer={answer} /> : <CameraStateCard camera={camera} />}
-        <TimingPanel history={eyes.history} />
+        {cameraOn ? <PhraseBand answer={answer} budget={eyes.budget} /> : <CameraStateCard camera={camera} />}
+        <TimingPanel history={eyes.history} lastUsage={eyes.lastUsage} />
       </main>
 
       <nav className="controls" aria-label={strings.appName}>

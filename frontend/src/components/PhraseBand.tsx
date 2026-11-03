@@ -1,24 +1,47 @@
-import type { Answer } from '../hooks/useSecondEyes'
+import type { Answer, Budget } from '../hooks/useSecondEyes'
 import { strings } from '../strings'
 
+const st = strings.state
+
+function failureText(reason: Extract<Answer, { kind: 'failed' }>['reason'], budget: Budget | null) {
+  switch (reason) {
+    case 'budget':
+      return {
+        title: st.budgetReached.title,
+        body: budget ? st.budgetReached.body(budget.spent_usd, budget.budget_usd) : st.budgetReached.bodyUnknown,
+      }
+    case 'key':
+      return st.keyMissing
+    case 'model':
+      return st.modelFailed
+    case 'answer':
+      return st.answerFailed
+  }
+}
+
 /** The huge spoken phrase. The live region stays mounted so screen readers announce changes. */
-export function PhraseBand({ answer }: { answer: Answer }) {
+export function PhraseBand({ answer, budget }: { answer: Answer; budget: Budget | null }) {
   let tone = ''
   let phrase: React.ReactNode
   let note: React.ReactNode = null
 
   switch (answer.kind) {
     case 'none':
-      phrase = <span className="band__phrase band__phrase--quiet">{strings.state.ready}</span>
+      phrase = <span className="band__phrase band__phrase--quiet">{st.ready}</span>
       break
     case 'waiting':
-      phrase = <span className="band__phrase band__phrase--quiet">{strings.state.waiting}</span>
+      phrase = (
+        <span className="band__phrase band__phrase--quiet">{answer.slow ? st.modelSlow.title : st.waiting}</span>
+      )
+      if (answer.slow) note = <p className="band__note">{st.modelSlow.body}</p>
       break
-    case 'failed':
+    case 'failed': {
+      const text = failureText(answer.reason, budget)
       tone = 'band--error'
-      phrase = <span className="band__phrase">{strings.state.answerFailed.title}</span>
-      note = <p className="band__note">{strings.state.answerFailed.body}</p>
+      phrase = <span className="band__phrase">{text.title}</span>
+      note = <p className="band__note">{text.body}</p>
       break
+    }
     case 'phrase':
       tone = [answer.warning ? 'band--warning' : '', answer.speaking ? 'band--speaking' : ''].join(' ')
       // key forces a remount so the crossfade replays for every new answer
@@ -27,7 +50,7 @@ export function PhraseBand({ answer }: { answer: Answer }) {
           {answer.text}
         </span>
       )
-      if (answer.speechFailed) note = <p className="band__note band__note--error">{strings.state.speechFailed}</p>
+      if (answer.speechFailed) note = <p className="band__note band__note--error">{st.speechFailed}</p>
       break
   }
 
