@@ -1,10 +1,22 @@
+import type { AskTiming } from '../hooks/useAsk'
 import type { Timings, Usage } from '../hooks/useSecondEyes'
 import { stats } from '../lib/timing'
 import { strings } from '../strings'
 
 const t = strings.timing
 
-export function TimingPanel({ timings, lastUsage }: { timings: Timings; lastUsage: Usage | null }) {
+const seconds = (ms: number | null) => (ms === null ? '?' : (ms / 1000).toFixed(1))
+
+export function TimingPanel({
+  timings,
+  lastUsage,
+  askTimings = [],
+}: {
+  timings: Timings
+  lastUsage: Usage | null
+  askTimings?: AskTiming[]
+}) {
+  const lastAsk = askTimings[0]
   const history = timings.spoken
   const last = history[0]
   const s = stats(history.map((r) => r.totalMs))
@@ -51,6 +63,11 @@ export function TimingPanel({ timings, lastUsage }: { timings: Timings; lastUsag
             {timings.droppedCount > 0 && ` · ${t.dropped(timings.droppedCount)}`}
           </span>
           {silent && <span>{t.silentRoundTrip(silent.min, silent.median, silent.max)}</span>}
+        </div>
+      )}
+      {lastAsk && (
+        <div className="timing__breakdown">
+          {strings.ask.timing(seconds(lastAsk.totalMs), seconds(lastAsk.asrMs), seconds(lastAsk.modelMs))}
         </div>
       )}
     </section>

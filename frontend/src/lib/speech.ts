@@ -1,8 +1,11 @@
 // Browser speech synthesis. iOS only speaks after a user gesture has unlocked it.
 import { SPEECH_RATE, SPEECH_START_TIMEOUT_MS } from '../config'
+import { selfSound } from './micGate'
 
 // Keep a reference so the utterance is not garbage-collected before its events fire.
 let current: SpeechSynthesisUtterance | null = null
+// Releases the mic gate for the utterance in progress (cancel does not always fire onend).
+let quietCurrent: (() => void) | null = null
 
 export function speechSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -18,6 +21,8 @@ export function unlockSpeech(): void {
 
 export function cancelSpeech(): void {
   if (speechSupported()) window.speechSynthesis.cancel()
+  quietCurrent = null
+  selfSound.reset(performance.now())
 }
 
 export interface SpeakHandle {
@@ -44,11 +49,22 @@ export function speak(text: string, { lang, voice }: SpeakOptions): SpeakHandle 
       return
     }
     window.speechSynthesis.cancel()
+    quietCurrent?.()
     const u = new SpeechSynthesisUtterance(text)
+    // The microphone stays closed from now until speech ends (+ tail), so the phone does not hear itself.
+    let sounding = true
+    selfSound.start()
+    const quiet = () => {
+      if (sounding) selfSound.end(performance.now())
+      sounding = false
+      if (quietCurrent === quiet) quietCurrent = null
+    }
+    quietCurrent = quiet
     u.lang = lang
     if (voice) u.voice = voice
     u.rate = SPEECH_RATE
     const timer = setTimeout(() => {
+      quiet()
       resolveEnded()
       reject(new Error('speech did not start'))
     }, SPEECH_START_TIMEOUT_MS)
@@ -58,6 +74,7 @@ export function speak(text: string, { lang, voice }: SpeakOptions): SpeakHandle 
     }
     const finish = () => {
       if (current === u) current = null
+      quiet()
       resolveEnded()
     }
     u.onend = finish

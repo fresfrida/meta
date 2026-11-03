@@ -1,5 +1,6 @@
 import { useLayoutEffect, useRef } from 'react'
 import type { Lang } from '../config'
+import type { AskView } from '../hooks/useAsk'
 import type { Answer, Budget } from '../hooks/useSecondEyes'
 import { languages, strings } from '../strings'
 import { AlertIcon } from './Icons'
@@ -51,10 +52,11 @@ interface PhraseCardProps {
   slow: boolean
   loop: boolean
   lang: Lang
+  ask?: AskView | null
 }
 
 /** Traffic light + the phrase. The phrase region stays mounted so screen readers announce changes. */
-export function PhraseCard({ answer, budget, slow, loop, lang }: PhraseCardProps) {
+export function PhraseCard({ answer, budget, slow, loop, lang, ask = null }: PhraseCardProps) {
   let text = ''
   let quiet = true
   let error = false
@@ -104,6 +106,20 @@ export function PhraseCard({ answer, budget, slow, loop, lang }: PhraseCardProps
           </span>
         </p>
         {hint && <p className="card__hint">{hint}</p>}
+        {ask && (
+          <div className="card__ask" aria-live="polite">
+            <p className="card__ask-question">
+              {ask.question ? strings.ask.youAsked(ask.question) : strings.ask.listening}
+            </p>
+            {ask.status === 'thinking' && <p className="card__ask-answer card__ask-answer--quiet">{strings.ask.thinking}</p>}
+            {ask.answer && (
+              <p className="card__ask-answer" lang={lang}>
+                {ask.answer}
+              </p>
+            )}
+            {ask.status === 'failed' && <p className="card__ask-answer">{strings.ask.sorry}</p>}
+          </div>
+        )}
         {note && (
           <p className="card__note">
             {!error && <AlertIcon />}

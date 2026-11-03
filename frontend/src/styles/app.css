@@ -73,6 +73,13 @@ p {
   flex: 1;
 }
 
+/* Touch and hold on the camera view asks a question: no text selection or iOS callout. */
+.app--camera {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .topbar {
   display: flex;
   align-items: center;
@@ -196,6 +203,28 @@ p {
 
 .card__hint {
   font-size: var(--font-size-13);
+  color: var(--color-text-muted);
+}
+
+.card__ask {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding-top: var(--space-6);
+  border-top: var(--hairline) solid var(--color-hairline);
+}
+
+.card__ask-question {
+  font-size: var(--font-size-13);
+  color: var(--color-text-muted);
+}
+
+.card__ask-answer {
+  font-size: var(--font-size-18);
+  line-height: var(--line-height-body);
+}
+
+.card__ask-answer--quiet {
   color: var(--color-text-muted);
 }
 
@@ -575,6 +604,37 @@ p {
 
 .radio--on {
   border: var(--radio-on-stroke) solid var(--color-text);
+}
+
+.switch {
+  flex: none;
+  position: relative;
+  width: var(--size-switch-w);
+  height: var(--size-switch-h);
+  border-radius: var(--radius-pill);
+  background: var(--color-control-off);
+  transition: background var(--motion-fade) var(--motion-ease);
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  width: calc(var(--size-switch-h) - 2 * var(--space-2));
+  height: calc(var(--size-switch-h) - 2 * var(--space-2));
+  border-radius: var(--radius-pill);
+  background: var(--color-text);
+  transition: transform var(--motion-fade) var(--motion-ease);
+}
+
+.switch--on {
+  background: var(--color-text);
+}
+
+.switch--on::after {
+  background: var(--color-bg);
+  transform: translateX(calc(var(--size-switch-w) - var(--size-switch-h)));
 }
 
 .settings__about {

@@ -39,7 +39,8 @@ def create_app(
     settings = settings or load_settings()
     live = settings.vision_mode == "live"
     vision = vision or (LiveVision(settings) if live else MockVision(settings.mock_hold_calls))
-    asker = asker or (LiveAsk(settings) if live else MockAsk())
+    ask_live = settings.ask_mode == "live"
+    asker = asker or (LiveAsk(settings) if ask_live else MockAsk())
     asr_connect = asr_connect or default_asr_connect
     budget = budget or Budget(settings.spend_file, settings.budget_usd)
     app = FastAPI(title="Second Eyes")
@@ -88,11 +89,11 @@ def create_app(
     @app.post("/api/ask", response_model=AskResponse)
     def ask(req: AskRequest) -> AskResponse:
         _valid_b64(req.image_b64)
-        if live and budget.reached():
+        if ask_live and budget.reached():
             raise _error(402, "budget_reached", f"live budget of ${settings.budget_usd:g} reached")
 
         def billed(input_tokens: int | None, cached: int | None, output_tokens: int | None) -> float | None:
-            if not live or input_tokens is None or output_tokens is None:
+            if not ask_live or input_tokens is None or output_tokens is None:
                 return None
             cost = cost_usd(settings.prices, input_tokens, cached or 0, output_tokens)
             budget.add(cost)
@@ -110,7 +111,7 @@ def create_app(
         return AskResponse(
             question=req.question,
             answer=result.answer,
-            source=settings.vision_mode,
+            source=settings.ask_mode,
             model_ms=result.model_ms,
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,

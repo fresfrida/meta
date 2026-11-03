@@ -1,6 +1,6 @@
 // The chosen speech language (remembered in localStorage) and the browser's installed voices.
 import { useCallback, useEffect, useState } from 'react'
-import { LANGS, LANG_STORAGE_KEY, type Lang } from '../config'
+import { HANDS_FREE_DEFAULT, HANDS_FREE_STORAGE_KEY, LANGS, LANG_STORAGE_KEY, type Lang } from '../config'
 import { speechSupported } from '../lib/speech'
 
 function readLang(): Lang {
@@ -23,6 +23,29 @@ export function useLanguage(): [Lang, (lang: Lang) => void] {
     }
   }, [])
   return [lang, setLang]
+}
+
+function readHandsFree(): boolean {
+  try {
+    const saved = window.localStorage.getItem(HANDS_FREE_STORAGE_KEY)
+    return saved === null ? HANDS_FREE_DEFAULT : saved === '1'
+  } catch {
+    return HANDS_FREE_DEFAULT
+  }
+}
+
+/** Hands-free "Hey Eyes" listening on/off (Settings), remembered in localStorage. */
+export function useHandsFree(): [boolean, (on: boolean) => void] {
+  const [on, setOnState] = useState<boolean>(readHandsFree)
+  const setOn = useCallback((next: boolean) => {
+    setOnState(next)
+    try {
+      window.localStorage.setItem(HANDS_FREE_STORAGE_KEY, next ? '1' : '0')
+    } catch {
+      // not remembered; applies for this visit
+    }
+  }, [])
+  return [on, setOn]
 }
 
 /** Installed voices. Browsers load them lazily, so the list can start empty and fill in on `voiceschanged`. */

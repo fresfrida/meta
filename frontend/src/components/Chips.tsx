@@ -7,12 +7,14 @@ export function Chip({ label }: { label: string }) {
 }
 
 /** Camera screen chips: Beta, then the last mode the backend reported (nothing when unknown and unreachable). */
-export function Chips({ mode, backend }: { mode: Source | null; backend: BackendState }) {
+export function Chips({ mode, backend, listening }: { mode: Source | null; backend: BackendState; listening: boolean }) {
   const modeLabel = mode !== null ? strings.mode[mode] : backend === 'checking' ? strings.mode.checking : null
   return (
     <div className="chips">
       <Chip label={strings.chip.beta} />
       {modeLabel && <Chip label={modeLabel} />}
+      {/* Says the microphone is streaming to Meta. */}
+      {listening && <Chip label={strings.ask.micChip} />}
     </div>
   )
 }

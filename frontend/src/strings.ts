@@ -174,6 +174,23 @@ export const strings = {
       return english ? `${english} · ${voice}` : voice.charAt(0).toUpperCase() + voice.slice(1)
     },
     noVoice: 'No voice for this language on this device.',
+    // TENTATIVE (Brief 6)
+    handsFree: 'Hands-free listening',
+    handsFreeLine: 'While running, microphone audio is sent to Meta to hear your questions.',
+  },
+
+  // TENTATIVE (Brief 6): asking a question ("Hey Eyes, what is there?", or touch and hold)
+  ask: {
+    listening: 'Listening for your question…',
+    thinking: 'Looking…',
+    youAsked: (question: string) => `You asked: ${question}`,
+    // Spoken in English for every language: no approved translation yet.
+    sorry: 'Sorry, I could not answer.',
+    micChip: 'Listening',
+    stopped: { title: 'Listening stopped', body: 'Touch and hold the screen to ask instead.' },
+    micFailed: { title: 'Microphone not available', body: 'Touch and hold will not work either.' },
+    timing: (totalS: string, asrS: string, modelS: string) =>
+      `ask: question to answer ${totalS} s (speech recognition ${asrS} s, model ${modelS} s)`,
   },
 
   button: {

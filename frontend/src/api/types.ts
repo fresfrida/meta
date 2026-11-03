@@ -14,6 +14,7 @@ export type ErrorCode =
   | 'model_auth'
   | 'model_billing'
   | 'model_error'
+  | 'empty_answer'
 
 /** [x_min, y_min, x_max, y_max] on a 0..1000 grid. */
 export type Box = [number, number, number, number]
@@ -53,3 +54,31 @@ export interface ErrorDetail {
   code: ErrorCode
   message: string
 }
+
+/** Spoken languages (codes); the backend maps them to names for the model and the ASR. */
+export type Language = 'en' | 'zh' | 'ms' | 'ta'
+
+export interface AskRequest {
+  question: string
+  image_b64: string
+  last_warning: string | null
+  language: Language
+}
+
+export interface AskResponse {
+  question: string
+  answer: string
+  source: Source
+  model_ms: number
+  input_tokens: number | null
+  output_tokens: number | null
+  cost_usd: number | null
+}
+
+/** Messages from the /api/listen WebSocket. Only questions are ever sent: other speech stays on the backend. */
+export type ListenEvent =
+  | { type: 'ready'; source: Source }
+  | { type: 'wake' }
+  | { type: 'question'; text: string; asr_ms?: number }
+  | { type: 'stopped' }
+  | { type: 'error'; code: 'bad_language' | 'key_missing' | 'budget_reached' }

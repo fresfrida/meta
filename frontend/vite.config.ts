@@ -12,7 +12,8 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), '')
   const backendUrl = env.BACKEND_URL || DEFAULT_BACKEND_URL
   const https = env.DEV_HTTPS !== '0'
-  const proxy = { '/api': { target: backendUrl, changeOrigin: true } }
+  // ws: true also proxies the /api/listen WebSocket (microphone audio for "Hey Eyes").
+  const proxy = { '/api': { target: backendUrl, changeOrigin: true, ws: true } }
 
   return {
     plugins: [

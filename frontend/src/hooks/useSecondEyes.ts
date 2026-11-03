@@ -19,9 +19,11 @@ import { CameraError, type CameraFailure, captureFrame, openRearCamera, stopStre
 import { type FailureReason, failureReason } from '../lib/failure'
 import { type Lamp, lampFor } from '../lib/light'
 import { type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
+import { unlockAudio } from '../lib/audio'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus } from '../lib/voices'
+import { type AskTiming, type AskView, type ListenState, useAsk } from './useAsk'
 
 export type CameraState = 'off' | 'starting' | 'on' | CameraFailure
 export type BackendState = 'checking' | 'ok' | 'unreachable'
@@ -90,6 +92,12 @@ export interface SecondEyes {
   start: () => void
   stop: () => void
   capture: () => void
+  /** Asking: listening state, the current question / answer, and the touch-and-hold fallback. */
+  listen: ListenState
+  ask: AskView | null
+  askTimings: AskTiming[]
+  holdStart: () => void
+  holdEnd: () => void
 }
 
 const EMPTY_TIMINGS: Timings = {
@@ -108,7 +116,7 @@ function decideFor(res: AnalyzeResponse, state: AnnounceState, now: number): Dec
   return decide(res, state, now, MIN_GAP_MS, REPEAT_CLOSER_M)
 }
 
-export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): SecondEyes {
+export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsFree: boolean): SecondEyes {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const answerIdRef = useRef(0)
@@ -128,6 +136,8 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
   // The loop reads the current language and voices without restarting.
   const langRef = useRef(lang)
   const voicesRef = useRef(voices)
+  // English plain sentence of the last warning, for the Ask prompt ("Their last warning was: ...").
+  const lastWarningRef = useRef<string | null>(null)
   const [camera, setCamera] = useState<CameraState>('off')
   const [backend, setBackend] = useState<BackendState>('checking')
   const [mode, setMode] = useState<Source | null>(null)
@@ -172,6 +182,26 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
     },
     [],
   )
+
+  /** The user is about to ask: stop hazard speech now (it is not replayed; the repeat rule continues). */
+  const pauseHazardSpeech = useCallback(() => {
+    speechIdRef.current += 1
+    cancelSpeech()
+    announceRef.current = { ...announceRef.current, speaking: false }
+    setAnswer((a) => (a.kind === 'phrase' ? { ...a, speaking: false } : a))
+  }, [])
+  const isHazardSpeaking = useCallback(() => announceRef.current.speaking, [])
+
+  const { suppressRef, listen, ask: askView, askTimings, holdStart, holdEnd } = useAsk({
+    videoRef,
+    langRef,
+    voicesRef,
+    lastWarningRef,
+    running: camera === 'on',
+    handsFree,
+    pauseHazardSpeech,
+    isHazardSpeaking,
+  })
 
   /** Shows the answer; keeps the same id (no crossfade) while the phrase is unchanged. */
   const showAnswer = useCallback((res: AnalyzeResponse, text: string, noVoice: boolean) => {
@@ -262,13 +292,15 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
         setHazardBox(
           isWarning(res) && res.box ? { seq: ++boxSeqRef.current, hazard: res.hazard, box: res.box, frame } : null,
         )
+        if (isWarning(res)) lastWarningRef.current = speechFor(res, 'en')
         const text = phraseFor(res, langRef.current)
         const speech = speechFor(res, langRef.current)
         const noVoice = voiceStatus(voicesRef.current, SPEECH_LANGS[langRef.current]) === 'missing'
         const decision = decideFor(res, announceRef.current, performance.now())
         showAnswer(res, text, noVoice)
         const answerMs = Math.round(responseReceived - captureStart)
-        if (decision.speak && speech !== null && !noVoice) {
+        // While waiting for the user's question, hazard speech stays quiet (and is not marked as spoken).
+        if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
           say(res, text, speech, (speechStart) => {
             const record = toRecord({ captureStart, requestSent, responseReceived, speechStart, modelMs: res.model_ms })
             setTimings((t) => ({
@@ -305,7 +337,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
         if (inFlightRef.current === 0 && session === sessionRef.current) setSlow(false)
       }
     },
-    [checkHealth, say, showAnswer],
+    [checkHealth, say, showAnswer, suppressRef],
   )
 
   /** Starts a capture every LOOP_STAGGER_MS (after the previous one started), at most MAX_IN_FLIGHT at once. */
@@ -323,6 +355,8 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
 
   const start = useCallback(() => {
     unlockSpeech() // must run synchronously inside the tap
+    unlockAudio() // earcons and the microphone (iOS)
+    lastWarningRef.current = null
     const session = ++sessionRef.current
     announceRef.current = INITIAL_ANNOUNCE
     handledSeqRef.current = captureSeqRef.current
@@ -378,5 +412,10 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
     start,
     stop,
     capture,
+    listen,
+    ask: askView,
+    askTimings,
+    holdStart,
+    holdEnd,
   }
 }

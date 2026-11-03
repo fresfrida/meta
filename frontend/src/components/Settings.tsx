@@ -14,10 +14,12 @@ interface SettingsProps {
   lang: Lang
   voices: SpeechSynthesisVoice[]
   onLang: (lang: Lang) => void
+  handsFree: boolean
+  onHandsFree: (on: boolean) => void
   onDone: () => void
 }
 
-export function Settings({ lang, voices, onLang, onDone }: SettingsProps) {
+export function Settings({ lang, voices, onLang, handsFree, onHandsFree, onDone }: SettingsProps) {
   const [testFailed, setTestFailed] = useState(false)
   const status = (l: Lang) => voiceStatus(voices, SPEECH_LANGS[l])
 
@@ -70,6 +72,22 @@ export function Settings({ lang, voices, onLang, onDone }: SettingsProps) {
         {t.testVoice}
       </button>
       {testFailed && <Notice title={t.noVoice} />}
+
+      <div className="list">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={handsFree}
+          className="list__item"
+          onClick={() => onHandsFree(!handsFree)}
+        >
+          <span className="list__text">
+            <span className="list__title">{t.handsFree}</span>
+            <span className="list__subtitle">{t.handsFreeLine}</span>
+          </span>
+          <i className={handsFree ? 'switch switch--on' : 'switch'} aria-hidden="true" />
+        </button>
+      </div>
 
       <h2 className="label">{t.about}</h2>
       <p className="settings__about">{t.aboutText}</p>

@@ -18,6 +18,11 @@ ENV_VARS = (
     "PRICE_OUTPUT_PER_M",
     "SPEND_FILE",
     "MOCK_HOLD_CALLS",
+    "LISTEN_MODE",
+    "ASK_MODE",
+    "META_ASR_URL",
+    "ASR_MODEL",
+    "ASR_PRICE_PER_HOUR",
 )
 
 IMG = base64.b64encode(b"\xff\xd8\xff\xe0fake-jpeg").decode()

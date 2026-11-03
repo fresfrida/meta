@@ -114,5 +114,15 @@ def test_ask_refused_at_budget(make_settings, tmp_path):
     assert r.status_code == 402 and fake.calls == []
 
 
+def test_ask_mode_can_be_live_while_vision_is_mock(make_settings):
+    settings = make_settings(VISION_MODE="mock", ASK_MODE="live", MODEL_API_KEY=FAKE_KEY)
+    assert (settings.vision_mode, settings.ask_mode, settings.listen_mode) == ("mock", "live", "mock")
+    fake = FakeClient(completion("A door. It is closed.", 900, 100))
+    client = TestClient(create_app(settings, asker=LiveAsk(settings, client_factory=lambda s: fake)))
+    body = client.post("/api/ask", json=BODY).json()
+    assert body["source"] == "live" and body["cost_usd"] > 0
+    assert client.post("/api/analyze", json={"image_b64": IMG}).json()["source"] == "mock"
+
+
 def test_mock_ask_class():
     assert MockAsk().ask("q", IMG, None, "en").answer == MOCK_ANSWER

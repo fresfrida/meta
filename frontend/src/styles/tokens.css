@@ -41,6 +41,7 @@
   --tracking-numbers: 0.02em;
 
   /* Space */
+  --space-2: 2px;
   --space-4: 4px;
   --space-6: 6px;
   --space-8: 8px;
@@ -65,6 +66,8 @@
   --size-lamp: 16px;
   --size-light: 26px;
   --size-radio: 22px;
+  --size-switch-w: 51px;
+  --size-switch-h: 31px;
   --size-icon: 20px;
   --size-meter: 12px;
   --hairline: 1px;

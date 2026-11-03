@@ -92,6 +92,7 @@ class Settings:
     spend_file: Path
     mock_hold_calls: int
     listen_mode: VisionMode
+    ask_mode: VisionMode
     asr_url: str
     asr_model: str
     asr_price_per_hour: float
@@ -117,9 +118,12 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
     mode = os.environ.get("VISION_MODE", "mock").strip().lower()
     if mode not in VISION_MODES:
         raise ValueError(f"VISION_MODE must be one of {VISION_MODES}, got {mode!r}")
+    # Listen and Ask follow VISION_MODE unless set (e.g. a live Ask test while the camera loop stays on mock).
     listen_mode = os.environ.get("LISTEN_MODE", "").strip().lower() or mode
-    if listen_mode not in VISION_MODES:
-        raise ValueError(f"LISTEN_MODE must be one of {VISION_MODES}, got {listen_mode!r}")
+    ask_mode = os.environ.get("ASK_MODE", "").strip().lower() or mode
+    for name, value in (("LISTEN_MODE", listen_mode), ("ASK_MODE", ask_mode)):
+        if value not in VISION_MODES:
+            raise ValueError(f"{name} must be one of {VISION_MODES}, got {value!r}")
 
     return Settings(
         vision_mode=mode,  # type: ignore[arg-type]
@@ -139,6 +143,7 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         # Mock repeats each answer this many calls, so the frontend no-repeat rule can be seen.
         mock_hold_calls=max(1, int(_float("MOCK_HOLD_CALLS", 4))),
         listen_mode=listen_mode,  # type: ignore[arg-type]
+        ask_mode=ask_mode,  # type: ignore[arg-type]
         asr_url=os.environ.get("META_ASR_URL", "").strip() or "wss://api.meta.ai/v1/asr/realtime",
         asr_model=os.environ.get("ASR_MODEL", "").strip() or "muse-voice-transcribe-1.0",
         # USD per hour of audio streamed (docs: $0.18/hour, billed per whole second).
