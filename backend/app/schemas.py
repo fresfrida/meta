@@ -4,12 +4,13 @@ from typing import Any, Literal, Optional, get_args
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .config import BOX_GRID_MAX, MAX_IMAGE_B64_CHARS
+from .config import BOX_GRID_MAX, LEFT_MAX, MAX_IMAGE_B64_CHARS, RIGHT_MIN
 
 Hazard = Literal["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
 Side = Literal["left", "ahead", "right"]
 Distance = Literal["near", "far"]
 Source = Literal["mock", "live"]
+SideSource = Literal["box", "model"]
 ErrorCode = Literal[
     "invalid_image",
     "key_missing",
@@ -55,6 +56,19 @@ class VisionAnswer(BaseModel):
         return self
 
 
+def resolve_side(answer: VisionAnswer) -> tuple[Optional[Side], SideSource]:
+    """The one side rule: with a box, side comes from the box centre x; without one, the model's side stands."""
+    if answer.box is None:
+        return answer.side, "model"
+    x_min, _, x_max, _ = answer.box
+    centre_x = (x_min + x_max) / 2
+    if centre_x <= LEFT_MAX:
+        return "left", "box"
+    if centre_x >= RIGHT_MIN:
+        return "right", "box"
+    return "ahead", "box"
+
+
 def vision_answer_json_schema() -> dict:
     """JSON schema for the model's answer, built from the same Literal types as VisionAnswer."""
 
@@ -89,6 +103,7 @@ class AnalyzeRequest(BaseModel):
 
 
 class AnalyzeResponse(VisionAnswer):
+    side_source: SideSource
     source: Source
     model_ms: float
     input_tokens: Optional[int] = None

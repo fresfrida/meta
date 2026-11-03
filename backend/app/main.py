@@ -8,7 +8,7 @@ from fastapi import FastAPI, HTTPException
 
 from .budget import Budget, cost_usd
 from .config import Settings, load_settings
-from .schemas import AnalyzeRequest, AnalyzeResponse, ErrorDetail, HealthResponse
+from .schemas import AnalyzeRequest, AnalyzeResponse, ErrorDetail, HealthResponse, resolve_side
 from .vision import LiveVision, MockVision, Vision, VisionError
 
 log = logging.getLogger(__name__)
@@ -58,8 +58,10 @@ def create_app(settings: Settings | None = None, vision: Vision | None = None, b
             cost = cost_usd(settings.prices, result.input_tokens, result.cached_tokens or 0, result.output_tokens)
             budget.add(cost)
 
+        side, side_source = resolve_side(result.answer)
         return AnalyzeResponse(
-            **result.answer.model_dump(),
+            **{**result.answer.model_dump(), "side": side},
+            side_source=side_source,
             source=settings.vision_mode,
             model_ms=result.model_ms,
             input_tokens=result.input_tokens,

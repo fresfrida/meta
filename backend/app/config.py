@@ -20,6 +20,10 @@ MAX_IMAGE_B64_CHARS = 2_000_000
 # Bounding boxes are [x_min, y_min, x_max, y_max] on a 0..BOX_GRID_MAX grid.
 BOX_GRID_MAX = 1000
 
+# Side from box: a box whose centre x is <= LEFT_MAX is "left", >= RIGHT_MIN is "right", else "ahead".
+LEFT_MAX = 333
+RIGHT_MIN = 667
+
 # Prompt sent with every live frame. Owner approved v2 (with box) on 3 Nov 2026, verbatim.
 VISION_PROMPT_VERSION = "v2"
 VISION_PROMPT = (
