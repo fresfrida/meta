@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useSyncExternalStore } from 'react'
 import { BoxOverlay } from './components/BoxOverlay'
 import { Button } from './components/Button'
 import { Chips } from './components/Chips'
@@ -11,6 +11,7 @@ import { TimingPill } from './components/TimingPill'
 import { HOLD_TO_ASK_MS } from './config'
 import { useHandsFree, useLanguage, useVoices } from './hooks/useLanguage'
 import { unlockAudio } from './lib/audio'
+import { getFaceBlurStatus, subscribeFaceBlur } from './lib/faceGuard'
 import { useSecondEyes } from './hooks/useSecondEyes'
 import { strings } from './strings'
 
@@ -19,6 +20,7 @@ export default function App() {
   const voices = useVoices()
   const [handsFree, setHandsFree] = useHandsFree()
   const eyes = useSecondEyes(lang, voices, handsFree)
+  const faceBlur = useSyncExternalStore(subscribeFaceBlur, getFaceBlurStatus)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { videoRef, camera, backend, answer, holdStart, holdEnd } = eyes
   const cameraOn = camera === 'on'
@@ -78,7 +80,7 @@ export default function App() {
       {cameraOn && (
         <>
           <header className="topbar">
-            <Chips mode={eyes.mode} backend={backend} listening={eyes.listen === 'on'} />
+            <Chips mode={eyes.mode} backend={backend} listening={eyes.listen === 'on'} faceBlur={faceBlur} />
           </header>
           {backend === 'unreachable' && <Notice {...strings.state.backendUnreachable} />}
           {eyes.listen === 'stopped' && <Notice {...strings.ask.stopped} />}
@@ -94,9 +96,19 @@ export default function App() {
           <div className="app__clear" />
           <footer className="bottom">
             {eyes.loop ? (
-              <TimingPill timings={eyes.timings} lastUsage={eyes.lastUsage} askTimings={eyes.askTimings} />
+              <TimingPill
+                timings={eyes.timings}
+                lastUsage={eyes.lastUsage}
+                askTimings={eyes.askTimings}
+                lastSent={eyes.lastSent}
+              />
             ) : (
-              <TimingPanel timings={eyes.timings} lastUsage={eyes.lastUsage} askTimings={eyes.askTimings} />
+              <TimingPanel
+                timings={eyes.timings}
+                lastUsage={eyes.lastUsage}
+                askTimings={eyes.askTimings}
+                lastSent={eyes.lastSent}
+              />
             )}
             <nav className="controls" aria-label={strings.appName}>
               {!eyes.loop && (

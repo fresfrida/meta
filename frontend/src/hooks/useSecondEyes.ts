@@ -15,7 +15,8 @@ import {
 } from '../config'
 import { type AnnounceState, type Decision, INITIAL_ANNOUNCE, decide, spoke } from '../lib/announce'
 import type { Size } from '../lib/boxMap'
-import { CameraError, type CameraFailure, captureFrame, openRearCamera, stopStream } from '../lib/camera'
+import { CameraError, type CameraFailure, type SentFrame, captureGuarded, openRearCamera, stopStream } from '../lib/camera'
+import { warmUpFaceDetector } from '../lib/faceGuard'
 import { type FailureReason, failureReason } from '../lib/failure'
 import { type Lamp, lampFor } from '../lib/light'
 import { type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
@@ -85,6 +86,8 @@ export interface SecondEyes {
   answer: Answer
   /** Box of the latest answer when it is a warning with a box; null for clear, unsure, no box, or stopped. */
   hazardBox: HazardBox | null
+  /** The last frame actually sent (after face blur), for the thumbnail. */
+  lastSent: SentFrame | null
   /** A request has taken longer than MODEL_SLOW_MS. */
   slow: boolean
   timings: Timings
@@ -144,6 +147,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   const [budget, setBudget] = useState<Budget | null>(null)
   const [answer, setAnswer] = useState<Answer>({ kind: 'none' })
   const [hazardBox, setHazardBox] = useState<HazardBox | null>(null)
+  const [lastSent, setLastSent] = useState<SentFrame | null>(null)
   const [slow, setSlow] = useState(false)
   const [timings, setTimings] = useState<Timings>(EMPTY_TIMINGS)
   const [lastUsage, setLastUsage] = useState<Usage | null>(null)
@@ -251,14 +255,21 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       const seq = ++captureSeqRef.current
       const captureStart = performance.now()
       const frame = { width: video.videoWidth, height: video.videoHeight }
+      inFlightRef.current += 1 // counted from capture, so face blur time is inside the in-flight limit
       let image: string
       try {
-        image = captureFrame(video)
+        const sent = await captureGuarded(video)
+        image = sent.imageB64
+        setLastSent(sent)
       } catch {
+        inFlightRef.current -= 1
         setAnswer({ kind: 'failed', reason: 'answer' })
         return
       }
-      inFlightRef.current += 1
+      if (session !== sessionRef.current) {
+        inFlightRef.current -= 1
+        return
+      }
       const requestSent = performance.now()
       if (!LOOP_ENABLED) {
         cancelSpeech()
@@ -356,6 +367,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   const start = useCallback(() => {
     unlockSpeech() // must run synchronously inside the tap
     unlockAudio() // earcons and the microphone (iOS)
+    warmUpFaceDetector() // load the face model now, before the first frame
     lastWarningRef.current = null
     const session = ++sessionRef.current
     announceRef.current = INITIAL_ANNOUNCE
@@ -406,6 +418,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     budget,
     answer,
     hazardBox,
+    lastSent,
     slow,
     timings,
     lastUsage,

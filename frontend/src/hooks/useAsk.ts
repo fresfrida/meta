@@ -12,7 +12,7 @@ import {
   TIMING_HISTORY_SIZE,
 } from '../config'
 import { unlockAudio } from '../lib/audio'
-import { captureFrame } from '../lib/camera'
+import { captureGuarded } from '../lib/camera'
 import { playEarcon } from '../lib/earcon'
 import { ListenClient } from '../lib/listen'
 import { type MicHandle, startMic } from '../lib/mic'
@@ -149,8 +149,9 @@ export function useAsk(o: AskOptions) {
       try {
         const video = o.videoRef.current
         if (!video) throw new Error('no camera')
+        const frame = await captureGuarded(video) // faces blurred, like every frame that leaves the phone
         const res = await ask(
-          { question, image_b64: captureFrame(video), last_warning: o.lastWarningRef.current, language: lang },
+          { question, image_b64: frame.imageB64, last_warning: o.lastWarningRef.current, language: lang },
           ASK_TIMEOUT_MS,
         )
         text = res.answer

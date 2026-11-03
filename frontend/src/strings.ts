@@ -147,6 +147,8 @@ export const strings = {
   chip: {
     beta: 'Beta', // camera screen
     betaLong: 'Beta · research prototype', // Home
+    // TENTATIVE (Brief 7): face blur status, shown next to the mode chip
+    faceBlur: { on: 'Faces blurred', off: 'Face blur off', loading: 'Face blur starting…' },
   },
 
   mode: {
@@ -270,6 +272,10 @@ export const strings = {
     pill: (lastS: string, medianS: string) => `Last ${lastS} s · median ${medianS} s`,
     pillNone: 'No answers yet',
     dropped: (n: number) => `dropped late ${n}`,
+    // TENTATIVE (Brief 7): the last frame actually sent
+    sentFrame: 'Last frame sent',
+    sentFrameLine: (blur: 'on' | 'off', faces: number, ms: number) =>
+      blur === 'on' ? `faces blurred ${faces} · ${ms} ms` : `face blur off · sent unblurred`,
     // TENTATIVE (Brief 2)
     usage: (inputTokens: number, outputTokens: number, costUsd: number) =>
       `tokens in ${inputTokens} · out ${outputTokens} · $${costUsd.toFixed(4)}`,

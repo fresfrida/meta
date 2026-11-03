@@ -69,6 +69,15 @@ export const EARCON_TONES_HZ = [660, 990] as const
 export const EARCON_TONE_MS = 110
 export const EARCON_GAIN = 0.2
 
+/** Face blur (always on): each detected face box is grown by this fraction on every side before blurring. */
+export const FACE_PAD = 0.2
+/** The blurred area becomes a mosaic this many cells across its longer side (4 = no face is recognisable). */
+export const FACE_MOSAIC_CELLS = 4
+/** Detections below this confidence are ignored. */
+export const FACE_MIN_SCORE = 0.6
+/** Wait at most this long for the face model before the first frame; after that frames go unblurred (fail-open). */
+export const FACE_LOAD_TIMEOUT_MS = 8_000
+
 /** How many captures the on-screen timing list keeps. */
 export const TIMING_HISTORY_SIZE = 10
 

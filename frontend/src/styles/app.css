@@ -106,6 +106,13 @@ p {
   border-radius: var(--radius-pill);
 }
 
+/* Face blur off: the one chip that must stand out (white fill), without adding colour. */
+.chip--alert {
+  background: var(--color-text);
+  color: var(--color-on-light);
+  border-color: var(--color-text);
+}
+
 .icon-button {
   flex: none;
   display: grid;
@@ -448,6 +455,21 @@ p {
 
 .timing__stats {
   font-size: var(--font-size-15);
+}
+
+.timing__sent {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+  margin: var(--space-4) 0 0;
+}
+
+.timing__thumb {
+  flex: none;
+  width: var(--size-thumb);
+  height: auto;
+  border-radius: var(--radius-8);
+  border: var(--hairline) solid var(--color-hairline);
 }
 
 .timing__list {

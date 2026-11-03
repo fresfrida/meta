@@ -1,5 +1,6 @@
 import type { AskTiming } from '../hooks/useAsk'
 import type { Timings, Usage } from '../hooks/useSecondEyes'
+import type { SentFrame } from '../lib/camera'
 import { stats } from '../lib/timing'
 import { strings } from '../strings'
 
@@ -11,10 +12,12 @@ export function TimingPanel({
   timings,
   lastUsage,
   askTimings = [],
+  lastSent = null,
 }: {
   timings: Timings
   lastUsage: Usage | null
   askTimings?: AskTiming[]
+  lastSent?: SentFrame | null
 }) {
   const lastAsk = askTimings[0]
   const history = timings.spoken
@@ -64,6 +67,16 @@ export function TimingPanel({
           </span>
           {silent && <span>{t.silentRoundTrip(silent.min, silent.median, silent.max)}</span>}
         </div>
+      )}
+      {lastSent && (
+        <figure className="timing__sent">
+          <img className="timing__thumb" src={lastSent.dataUrl} alt={t.sentFrame} />
+          <figcaption className="timing__breakdown">
+            {t.sentFrame}
+            <br />
+            {t.sentFrameLine(lastSent.blur, lastSent.faces, lastSent.blurMs)}
+          </figcaption>
+        </figure>
       )}
       {lastAsk && (
         <div className="timing__breakdown">

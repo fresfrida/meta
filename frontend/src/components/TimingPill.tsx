@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { AskTiming } from '../hooks/useAsk'
 import type { Timings, Usage } from '../hooks/useSecondEyes'
+import type { SentFrame } from '../lib/camera'
 import { stats } from '../lib/timing'
 import { strings } from '../strings'
 import { TimingPanel } from './TimingPanel'
@@ -12,10 +13,12 @@ export function TimingPill({
   timings,
   lastUsage,
   askTimings,
+  lastSent,
 }: {
   timings: Timings
   lastUsage: Usage | null
   askTimings: AskTiming[]
+  lastSent: SentFrame | null
 }) {
   const [open, setOpen] = useState(false)
   const s = stats(timings.answerMs)
@@ -23,7 +26,7 @@ export function TimingPill({
   const label = s && last !== undefined ? strings.timing.pill(seconds(last), seconds(s.median)) : strings.timing.pillNone
   return (
     <>
-      {open && <TimingPanel timings={timings} lastUsage={lastUsage} askTimings={askTimings} />}
+      {open && <TimingPanel timings={timings} lastUsage={lastUsage} askTimings={askTimings} lastSent={lastSent} />}
       <button type="button" className="pill" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
         {label}
       </button>
