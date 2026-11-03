@@ -13,11 +13,16 @@ PROMPT_V2 = (
     "give the hazard's bounding box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is "
     "clear or you are unsure."
 )
+# Owner approved this sentence verbatim (Brief 5); v3 = v2 + one space + this sentence.
+METRES_SENTENCE = (
+    "Also estimate how far the hazard is from the camera in metres, as a whole number from 1 to 10, or no "
+    "distance if the path is clear or you are unsure."
+)
 
 
-def test_prompt_v2_verbatim():
-    assert VISION_PROMPT == PROMPT_V2
-    assert VISION_PROMPT_VERSION == "v2"
+def test_prompt_v3_verbatim():
+    assert VISION_PROMPT == PROMPT_V2 + " " + METRES_SENTENCE
+    assert VISION_PROMPT_VERSION == "v3"
 
 
 def test_schema_box_is_nullable_array_of_4_ints_0_1000():

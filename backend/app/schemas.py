@@ -4,7 +4,7 @@ from typing import Any, Literal, Optional, get_args
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .config import BOX_GRID_MAX, LEFT_MAX, MAX_IMAGE_B64_CHARS, RIGHT_MIN
+from .config import BOX_GRID_MAX, DISTANCE_M_MAX, DISTANCE_M_MIN, LEFT_MAX, MAX_IMAGE_B64_CHARS, RIGHT_MIN
 
 Hazard = Literal["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
 Side = Literal["left", "ahead", "right"]
@@ -37,11 +37,25 @@ def valid_box(value: Any) -> Box | None:
     return list(value)
 
 
+def valid_distance_m(value: Any) -> int | None:
+    """Whole metres DISTANCE_M_MIN..DISTANCE_M_MAX, else None."""
+    if isinstance(value, int) and not isinstance(value, bool) and DISTANCE_M_MIN <= value <= DISTANCE_M_MAX:
+        return value
+    return None
+
+
 class VisionAnswer(BaseModel):
     hazard: Hazard
     side: Optional[Side] = None
     distance: Optional[Distance] = None
     box: Optional[Box] = None
+    distance_m: Optional[int] = None
+
+    @field_validator("distance_m", mode="before")
+    @classmethod
+    def _distance_m_or_none(cls, value: Any) -> int | None:
+        # An invalid distance becomes null; the rest of the answer is kept (distance near/far stays the fallback).
+        return valid_distance_m(value)
 
     @field_validator("box", mode="before")
     @classmethod
@@ -53,6 +67,7 @@ class VisionAnswer(BaseModel):
     def _no_box_without_hazard(self) -> "VisionAnswer":
         if self.hazard in ("clear", "unsure"):
             self.box = None
+            self.distance_m = None
         return self
 
 
@@ -92,8 +107,14 @@ def vision_answer_json_schema() -> dict:
                     {"type": "null"},
                 ]
             },
+            "distance_m": {
+                "anyOf": [
+                    {"type": "integer", "minimum": DISTANCE_M_MIN, "maximum": DISTANCE_M_MAX},
+                    {"type": "null"},
+                ]
+            },
         },
-        "required": ["hazard", "side", "distance", "box"],
+        "required": ["hazard", "side", "distance", "box", "distance_m"],
         "additionalProperties": False,
     }
 

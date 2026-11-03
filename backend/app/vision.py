@@ -16,11 +16,12 @@ from .schemas import VisionAnswer, vision_answer_json_schema
 log = logging.getLogger(__name__)
 
 MOCK_ANSWERS: tuple[VisionAnswer, ...] = (
-    VisionAnswer(hazard="step_down", side="ahead", distance="near", box=[250, 620, 750, 900]),
+    # Boxes sit between the phrase card and the bottom controls, as a real hazard on the path would.
+    VisionAnswer(hazard="step_down", side="ahead", distance="near", box=[80, 600, 920, 720], distance_m=2),
     VisionAnswer(hazard="clear"),
-    VisionAnswer(hazard="obstacle", side="left", distance="far", box=[60, 380, 300, 640]),
-    VisionAnswer(hazard="curb", side="right", distance="near", box=[620, 700, 980, 860]),
-    VisionAnswer(hazard="step_up", side="ahead", distance="far", box=[300, 440, 700, 560]),
+    VisionAnswer(hazard="obstacle", side="left", distance="far", box=[60, 380, 300, 640], distance_m=5),
+    VisionAnswer(hazard="curb", side="right", distance="near", box=[620, 600, 980, 770], distance_m=1),
+    VisionAnswer(hazard="step_up", side="ahead", distance="far", box=[300, 440, 700, 560], distance_m=6),
     VisionAnswer(hazard="unsure"),
 )
 

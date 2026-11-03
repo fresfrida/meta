@@ -24,8 +24,12 @@ BOX_GRID_MAX = 1000
 LEFT_MAX = 333
 RIGHT_MIN = 667
 
-# Prompt sent with every live frame. Owner approved v2 (with box) on 3 Nov 2026, verbatim.
-VISION_PROMPT_VERSION = "v2"
+# distance_m: whole metres from the camera to the hazard, DISTANCE_M_MIN..DISTANCE_M_MAX, or null.
+DISTANCE_M_MIN = 1
+DISTANCE_M_MAX = 10
+
+# Prompt sent with every live frame. Owner approved v2 (with box) and the v3 metres sentence on 3 Nov 2026, verbatim.
+VISION_PROMPT_VERSION = "v3"
 VISION_PROMPT = (
     "You are checking a photo for a research prototype that warns about hazards on a walking path. "
     "The photo is taken from chest height, facing forward. Find the single most important hazard on "
@@ -34,7 +38,8 @@ VISION_PROMPT = (
     "the path is clear, answer clear. If the photo is too dark, blurred or unclear to judge, answer "
     "unsure. Do not describe people beyond calling them an obstacle. Also give the hazard's bounding "
     "box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is clear or you "
-    "are unsure."
+    "are unsure. Also estimate how far the hazard is from the camera in metres, as a whole number from 1 "
+    "to 10, or no distance if the path is clear or you are unsure."
 )
 
 
@@ -89,7 +94,7 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         vision_model=os.environ.get("VISION_MODEL", "").strip() or "muse-spark-1.3",
         # Lowest level Muse Spark accepts ("none" returns HTTP 400 per dev.meta.ai/docs/reasoning).
         reasoning_effort=os.environ.get("VISION_REASONING_EFFORT", "").strip() or "minimal",
-        timeout_s=_float("VISION_TIMEOUT_S", 8.0),
+        timeout_s=_float("VISION_TIMEOUT_S", 10.0),
         budget_usd=_float("BUDGET_USD", 25.0),
         prices=Prices(
             input_per_m=_float("PRICE_INPUT_PER_M", 1.25),
