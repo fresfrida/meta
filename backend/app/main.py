@@ -2,46 +2,70 @@
 
 import base64
 import binascii
-import time
+import logging
 
 from fastapi import FastAPI, HTTPException
 
-from .config import load_settings
-from .schemas import AnalyzeRequest, AnalyzeResponse, HealthResponse
-from .vision import LiveModeUnavailable, MockVision
+from .budget import Budget, cost_usd
+from .config import Settings, load_settings
+from .schemas import AnalyzeRequest, AnalyzeResponse, ErrorDetail, HealthResponse
+from .vision import LiveVision, MockVision, Vision, VisionError
 
-LIVE_UNAVAILABLE_DETAIL = (
-    "VISION_MODE=live is not available yet (Phase B not built). "
-    "Unset VISION_MODE or set it to mock."
-)
+log = logging.getLogger(__name__)
 
 
-def create_app() -> FastAPI:
-    settings = load_settings()
-    mock = MockVision()
+def _error(status: int, code: str, message: str) -> HTTPException:
+    return HTTPException(status_code=status, detail=ErrorDetail(code=code, message=message).model_dump())
+
+
+def create_app(settings: Settings | None = None, vision: Vision | None = None, budget: Budget | None = None) -> FastAPI:
+    settings = settings or load_settings()
+    live = settings.vision_mode == "live"
+    vision = vision or (LiveVision(settings) if live else MockVision())
+    budget = budget or Budget(settings.spend_file, settings.budget_usd)
     app = FastAPI(title="Second Eyes")
+    log.info("starting with %r", settings)
 
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:
-        return HealthResponse(status="ok", vision_mode=settings.vision_mode)
+        return HealthResponse(
+            status="ok",
+            vision_mode=settings.vision_mode,
+            model=settings.vision_model if live else None,
+            key_present=settings.key_present,
+            spent_usd=round(budget.spent_usd, 6),
+            budget_usd=settings.budget_usd,
+        )
 
     @app.post("/api/analyze", response_model=AnalyzeResponse)
     def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
         try:
             base64.b64decode(req.image_b64, validate=True)
         except (binascii.Error, ValueError):
-            raise HTTPException(status_code=422, detail="image_b64 is not valid base64")
+            raise _error(422, "invalid_image", "image_b64 is not valid base64")
+
+        if live and budget.reached():
+            raise _error(402, "budget_reached", f"live budget of ${settings.budget_usd:g} reached")
 
         try:
-            if settings.vision_mode != "mock":
-                raise LiveModeUnavailable(LIVE_UNAVAILABLE_DETAIL)
-            started = time.perf_counter()
-            answer = mock.analyze(req.image_b64)
-            model_ms = (time.perf_counter() - started) * 1000
-        except LiveModeUnavailable as exc:
-            raise HTTPException(status_code=501, detail=str(exc))
+            result = vision.analyze(req.image_b64)
+        except VisionError as exc:
+            log.warning("live call failed: %s (%s)", exc.code, exc.message)
+            raise _error(exc.status, exc.code, exc.message)
 
-        return AnalyzeResponse(**answer.model_dump(), source=settings.vision_mode, model_ms=model_ms)
+        cost = None
+        if live and result.input_tokens is not None and result.output_tokens is not None:
+            cost = cost_usd(settings.prices, result.input_tokens, result.cached_tokens or 0, result.output_tokens)
+            budget.add(cost)
+
+        return AnalyzeResponse(
+            **result.answer.model_dump(),
+            source=settings.vision_mode,
+            model_ms=result.model_ms,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            cost_usd=cost,
+        )
 
     return app
 
