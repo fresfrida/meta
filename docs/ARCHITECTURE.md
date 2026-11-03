@@ -34,19 +34,29 @@ Later hosting target: **not decided**.
 tap Capture
   -> grab one video frame, downscale to 640px long edge, JPEG (quality from config)
   -> POST /api/analyze { image_b64 }                  (phone -> Vite proxy -> FastAPI)
-  -> backend: VISION_MODE=mock -> next answer from a fixed list
+  -> backend: checks image_b64 is valid base64; VISION_MODE=mock -> next answer
+     from a fixed list of 6 (the image itself is not looked at)
      response { hazard, side, distance, source, model_ms }
   -> phone: shared helper maps { hazard, side, distance } -> fixed phrase (strings.ts)
   -> speechSynthesis.speak(phrase)
   -> timing marks: capture start, request sent, response received, speech start
 ```
 
+`GET /api/health` returns `{ status, vision_mode }`; the page calls it on load,
+on Start, and after a failed capture, to show the mode badge and to tell
+"backend unreachable" apart from "answer failed".
+
+PWA: `vite-plugin-pwa` builds a manifest and a service worker for production
+builds only (`npm run build`). The dev server the phone uses has no service
+worker. The service worker never answers `/api/*`.
+
 ## Configuration (all from env vars, nothing hardcoded)
 
 | Var | Side | Default | Purpose |
 |---|---|---|---|
 | `BACKEND_URL` | frontend dev server (`vite.config.ts`, not exposed to the browser) | `http://127.0.0.1:8000` | Proxy target for `/api`. |
-| `VISION_MODE` | backend | `mock` | `mock` or `live` (live rejected in Phase A). |
+| `DEV_HTTPS` | frontend dev server | on | `0` serves plain HTTP. Only for desktop testing on `localhost`; the phone always needs HTTPS. |
+| `VISION_MODE` | backend | `mock` | `mock` or `live` (live returns HTTP 501 in Phase A; any other value fails at startup). |
 | `MODEL_API_KEY` | backend only | none | Not used in Phase A. Never `VITE_`, never logged, never committed. |
 
 Tunable values live in one module per side: `frontend/src/config.ts` and
