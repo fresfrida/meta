@@ -52,12 +52,13 @@ def live_app(make_settings, result, **env):
 
 def test_good_json_answer_and_request_shape(make_settings):
     client, fake, settings = live_app(
-        make_settings, completion(json.dumps({"hazard": "step_down", "side": "left", "distance": "near"}))
+        make_settings, completion(json.dumps({"hazard": "step_down", "side": "left", "distance": "near", "box": [10, 500, 400, 900]}))
     )
     r = client.post("/api/analyze", json={"image_b64": IMG})
     assert r.status_code == 200
     body = r.json()
     assert (body["hazard"], body["side"], body["distance"], body["source"]) == ("step_down", "left", "near", "live")
+    assert body["box"] == [10, 500, 400, 900]
     assert body["input_tokens"] == 1400 and body["output_tokens"] == 30
     assert body["cost_usd"] == pytest.approx((1400 * 1.25 + 30 * 4.25) / 1e6)
 

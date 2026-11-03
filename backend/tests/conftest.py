@@ -17,6 +17,7 @@ ENV_VARS = (
     "PRICE_CACHED_INPUT_PER_M",
     "PRICE_OUTPUT_PER_M",
     "SPEND_FILE",
+    "MOCK_HOLD_CALLS",
 )
 
 IMG = base64.b64encode(b"\xff\xd8\xff\xe0fake-jpeg").decode()

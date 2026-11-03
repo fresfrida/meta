@@ -21,7 +21,7 @@ def _error(status: int, code: str, message: str) -> HTTPException:
 def create_app(settings: Settings | None = None, vision: Vision | None = None, budget: Budget | None = None) -> FastAPI:
     settings = settings or load_settings()
     live = settings.vision_mode == "live"
-    vision = vision or (LiveVision(settings) if live else MockVision())
+    vision = vision or (LiveVision(settings) if live else MockVision(settings.mock_hold_calls))
     budget = budget or Budget(settings.spend_file, settings.budget_usd)
     app = FastAPI(title="Second Eyes")
     log.info("starting with %r", settings)

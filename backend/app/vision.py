@@ -16,11 +16,11 @@ from .schemas import VisionAnswer, vision_answer_json_schema
 log = logging.getLogger(__name__)
 
 MOCK_ANSWERS: tuple[VisionAnswer, ...] = (
-    VisionAnswer(hazard="step_down", side="ahead", distance="near"),
+    VisionAnswer(hazard="step_down", side="ahead", distance="near", box=[250, 620, 750, 900]),
     VisionAnswer(hazard="clear"),
-    VisionAnswer(hazard="obstacle", side="left", distance="far"),
-    VisionAnswer(hazard="curb", side="right", distance="near"),
-    VisionAnswer(hazard="step_up", side="ahead", distance="far"),
+    VisionAnswer(hazard="obstacle", side="left", distance="far", box=[60, 380, 300, 640]),
+    VisionAnswer(hazard="curb", side="right", distance="near", box=[620, 700, 980, 860]),
+    VisionAnswer(hazard="step_up", side="ahead", distance="far", box=[300, 440, 700, 560]),
     VisionAnswer(hazard="unsure"),
 )
 
@@ -51,10 +51,10 @@ class Vision(Protocol):
 
 
 class MockVision:
-    """Cycles through MOCK_ANSWERS in order, one per call."""
+    """Cycles through MOCK_ANSWERS in order, repeating each one `hold_calls` times."""
 
-    def __init__(self) -> None:
-        self._answers = cycle(MOCK_ANSWERS)
+    def __init__(self, hold_calls: int = 1) -> None:
+        self._answers = cycle([a for a in MOCK_ANSWERS for _ in range(hold_calls)])
         self._lock = Lock()
 
     def analyze(self, image_b64: str) -> VisionResult:

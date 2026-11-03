@@ -17,15 +17,20 @@ DEFAULT_SPEND_FILE = BACKEND_DIR / ".data" / "spend.json"
 # Largest accepted base64 image payload (characters). A 640px JPEG is ~50-150 KB.
 MAX_IMAGE_B64_CHARS = 2_000_000
 
-# Prompt sent with every live frame. TENTATIVE: Owner approves the wording before Part B.
-VISION_PROMPT_VERSION = "v1-tentative"
+# Bounding boxes are [x_min, y_min, x_max, y_max] on a 0..BOX_GRID_MAX grid.
+BOX_GRID_MAX = 1000
+
+# Prompt sent with every live frame. Owner approved v2 (with box) on 3 Nov 2026, verbatim.
+VISION_PROMPT_VERSION = "v2"
 VISION_PROMPT = (
     "You are checking a photo for a research prototype that warns about hazards on a walking path. "
     "The photo is taken from chest height, facing forward. Find the single most important hazard on "
     "the path within about 5 metres: a step down, a step up, a curb, or another obstacle. Give its "
     "side (left, ahead or right) and distance (near means within about 2 metres, otherwise far). If "
     "the path is clear, answer clear. If the photo is too dark, blurred or unclear to judge, answer "
-    "unsure. Do not describe people beyond calling them an obstacle."
+    "unsure. Do not describe people beyond calling them an obstacle. Also give the hazard's bounding "
+    "box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is clear or you "
+    "are unsure."
 )
 
 
@@ -49,6 +54,7 @@ class Settings:
     budget_usd: float
     prices: Prices
     spend_file: Path
+    mock_hold_calls: int
 
     @property
     def key_present(self) -> bool:
@@ -87,4 +93,6 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
             output_per_m=_float("PRICE_OUTPUT_PER_M", 4.25),
         ),
         spend_file=Path(os.environ.get("SPEND_FILE", "").strip() or DEFAULT_SPEND_FILE),
+        # Mock repeats each answer this many calls, so the frontend no-repeat rule can be seen.
+        mock_hold_calls=max(1, int(_float("MOCK_HOLD_CALLS", 4))),
     )

@@ -25,19 +25,41 @@ def test_health_reports_mock_by_default(client):
     }
 
 
-def test_analyze_mock_cycles_fixed_answers(client):
-    seen = []
-    for _ in range(len(MOCK_ANSWERS) + 1):
+def mock_sequence(client, n):
+    out = []
+    for _ in range(n):
         r = client.post("/api/analyze", json={"image_b64": IMG})
         assert r.status_code == 200
         body = r.json()
         assert body["source"] == "mock"
         assert body["model_ms"] >= 0
         assert body["input_tokens"] is None and body["cost_usd"] is None
-        seen.append((body["hazard"], body["side"], body["distance"]))
-    expected = [(a.hazard, a.side, a.distance) for a in MOCK_ANSWERS]
-    assert seen == expected + expected[:1]
-    assert {"clear", "unsure"} <= {h for h, _, _ in seen}
+        out.append(body)
+    return out
+
+
+def test_mock_holds_each_answer_four_calls_by_default(client):
+    n = len(MOCK_ANSWERS)
+    bodies = mock_sequence(client, 4 * n + 1)
+    expected = [a.model_dump() for a in MOCK_ANSWERS for _ in range(4)]
+    got = [{k: b[k] for k in ("hazard", "side", "distance", "box")} for b in bodies]
+    assert got == expected + expected[:1]
+    assert {"clear", "unsure"} <= {b["hazard"] for b in bodies}
+
+
+def test_mock_hold_is_configurable(make_settings):
+    client = TestClient(create_app(make_settings(MOCK_HOLD_CALLS="1")))
+    hazards = [b["hazard"] for b in mock_sequence(client, len(MOCK_ANSWERS) + 1)]
+    assert hazards == [a.hazard for a in MOCK_ANSWERS] + [MOCK_ANSWERS[0].hazard]
+
+
+def test_mock_boxes_plausible():
+    for a in MOCK_ANSWERS:
+        if a.hazard in ("clear", "unsure"):
+            assert a.box is None
+        else:
+            x0, y0, x1, y1 = a.box
+            assert 0 <= x0 < x1 <= 1000 and 0 <= y0 < y1 <= 1000
 
 
 def test_analyze_rejects_bad_base64(client):

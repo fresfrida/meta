@@ -1,10 +1,10 @@
 """API shapes. Keep in sync with frontend/src/api/types.ts."""
 
-from typing import Literal, Optional, get_args
+from typing import Any, Literal, Optional, get_args
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .config import MAX_IMAGE_B64_CHARS
+from .config import BOX_GRID_MAX, MAX_IMAGE_B64_CHARS
 
 Hazard = Literal["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
 Side = Literal["left", "ahead", "right"]
@@ -21,10 +21,38 @@ ErrorCode = Literal[
 ]
 
 
+Box = list[int]  # [x_min, y_min, x_max, y_max] on a 0..BOX_GRID_MAX grid
+
+
+def valid_box(value: Any) -> Box | None:
+    """The one box rule: exactly 4 integers in 0..BOX_GRID_MAX with min <= max, else None."""
+    if not isinstance(value, (list, tuple)) or len(value) != 4:
+        return None
+    if not all(isinstance(v, int) and not isinstance(v, bool) and 0 <= v <= BOX_GRID_MAX for v in value):
+        return None
+    x_min, y_min, x_max, y_max = value
+    if x_min > x_max or y_min > y_max:
+        return None
+    return list(value)
+
+
 class VisionAnswer(BaseModel):
     hazard: Hazard
     side: Optional[Side] = None
     distance: Optional[Distance] = None
+    box: Optional[Box] = None
+
+    @field_validator("box", mode="before")
+    @classmethod
+    def _box_or_none(cls, value: Any) -> Box | None:
+        # A malformed or out-of-range box becomes null; the rest of the answer is kept.
+        return valid_box(value)
+
+    @model_validator(mode="after")
+    def _no_box_without_hazard(self) -> "VisionAnswer":
+        if self.hazard in ("clear", "unsure"):
+            self.box = None
+        return self
 
 
 def vision_answer_json_schema() -> dict:
@@ -39,8 +67,19 @@ def vision_answer_json_schema() -> dict:
             "hazard": {"type": "string", "enum": list(get_args(Hazard))},
             "side": nullable_enum(get_args(Side)),
             "distance": nullable_enum(get_args(Distance)),
+            "box": {
+                "anyOf": [
+                    {
+                        "type": "array",
+                        "items": {"type": "integer", "minimum": 0, "maximum": BOX_GRID_MAX},
+                        "minItems": 4,
+                        "maxItems": 4,
+                    },
+                    {"type": "null"},
+                ]
+            },
         },
-        "required": ["hazard", "side", "distance"],
+        "required": ["hazard", "side", "distance", "box"],
         "additionalProperties": False,
     }
 
