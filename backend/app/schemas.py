@@ -4,12 +4,22 @@ from typing import Any, Literal, Optional, get_args
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
-from .config import BOX_GRID_MAX, DISTANCE_M_MAX, DISTANCE_M_MIN, LEFT_MAX, MAX_IMAGE_B64_CHARS, RIGHT_MIN
+from .config import (
+    BOX_GRID_MAX,
+    DISTANCE_M_MAX,
+    DISTANCE_M_MIN,
+    LEFT_MAX,
+    MAX_IMAGE_B64_CHARS,
+    MAX_LAST_WARNING_CHARS,
+    MAX_QUESTION_CHARS,
+    RIGHT_MIN,
+)
 
 Hazard = Literal["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
 Side = Literal["left", "ahead", "right"]
 Distance = Literal["near", "far"]
 Source = Literal["mock", "live"]
+Language = Literal["en", "zh", "ms", "ta"]
 SideSource = Literal["box", "model"]
 ErrorCode = Literal[
     "invalid_image",
@@ -19,6 +29,7 @@ ErrorCode = Literal[
     "model_auth",
     "model_billing",
     "model_error",
+    "empty_answer",
 ]
 
 
@@ -144,3 +155,20 @@ class HealthResponse(BaseModel):
 class ErrorDetail(BaseModel):
     code: ErrorCode
     message: str
+
+
+class AskRequest(BaseModel):
+    question: str = Field(min_length=1, max_length=MAX_QUESTION_CHARS)
+    image_b64: str = Field(min_length=1, max_length=MAX_IMAGE_B64_CHARS)
+    last_warning: Optional[str] = Field(default=None, max_length=MAX_LAST_WARNING_CHARS)
+    language: Language
+
+
+class AskResponse(BaseModel):
+    question: str
+    answer: str
+    source: Source
+    model_ms: float
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None

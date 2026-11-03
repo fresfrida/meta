@@ -21,15 +21,17 @@ MAX_IMAGE_B64_CHARS = 2_000_000
 BOX_GRID_MAX = 1000
 
 # Side from box: a box whose centre x is <= LEFT_MAX is "left", >= RIGHT_MIN is "right", else "ahead".
-LEFT_MAX = 333
-RIGHT_MIN = 667
+# Owner approved 400 / 600 on 3 Nov (Brief 6; was 333 / 667, which read a bench at the walkway edge as "ahead").
+LEFT_MAX = 400
+RIGHT_MIN = 600
 
 # distance_m: whole metres from the camera to the hazard, DISTANCE_M_MIN..DISTANCE_M_MAX, or null.
 DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
-# Prompt sent with every live frame. Owner approved v2 (with box) and the v3 metres sentence on 3 Nov 2026, verbatim.
-VISION_PROMPT_VERSION = "v3"
+# Prompt sent with every live frame. Owner approved v2 (box), the v3 metres sentence and the v4 flat-things
+# sentence on 3 Nov 2026, verbatim.
+VISION_PROMPT_VERSION = "v4"
 VISION_PROMPT = (
     "You are checking a photo for a research prototype that warns about hazards on a walking path. "
     "The photo is taken from chest height, facing forward. Find the single most important hazard on "
@@ -39,8 +41,33 @@ VISION_PROMPT = (
     "unsure. Do not describe people beyond calling them an obstacle. Also give the hazard's bounding "
     "box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is clear or you "
     "are unsure. Also estimate how far the hazard is from the camera in metres, as a whole number from 1 "
-    "to 10, or no distance if the path is clear or you are unsure."
+    "to 10, or no distance if the path is clear or you are unsure. Flat things lying on the ground, such as "
+    "mats, rugs or painted lines, are not hazards."
 )
+
+# Ask (Brief 6): the Owner-approved prompt, verbatim. The three {...} placeholders are filled by replace().
+ASK_PROMPT = (
+    "You are helping a person who is blind or has low vision understand the photo from their phone camera, "
+    "taken from chest height facing forward. Their last warning was: {last warning}. They asked: {question}. "
+    "Answer in {language}, in at most two short sentences, describing only what you can see. Never say it is "
+    "safe to walk, cross or move; if you cannot tell, say so. Do not identify or describe people beyond saying "
+    "there is a person."
+)
+ASK_MAX_SENTENCES = 2
+MAX_QUESTION_CHARS = 500
+MAX_LAST_WARNING_CHARS = 200
+# Language codes the phone sends -> names used in the Ask prompt and in the ASR languageBias (docs: names, not codes).
+LANGUAGE_NAMES = {"en": "English", "zh": "Mandarin Chinese", "ms": "Malay", "ta": "Tamil"}
+
+# Listen (Brief 6): realtime ASR proxy. Wake phrase TENTATIVE.
+WAKE_PHRASE = "Hey Eyes"
+ASK_WINDOW_MS = 6000  # after the wake phrase alone, the next turn within this long is the question
+ASK_HOLD_TAIL_MS = 3000  # after a touch-and-hold ends, a turn completing within this long is still the question
+ASR_SAMPLE_RATE = 16_000
+ASR_FRAME_MS = 80  # docs examples use 80 ms frames
+ASR_MAX_QUEUE_S = 2.0  # phone audio buffered beyond this is dropped (docs: never more than 5 s ahead)
+ASR_HANDSHAKE_TIMEOUT_S = 10.0
+ASR_END_DRAIN_S = 3.0  # after endStream, wait this long for the last events
 
 
 @dataclass(frozen=True)
@@ -64,6 +91,10 @@ class Settings:
     prices: Prices
     spend_file: Path
     mock_hold_calls: int
+    listen_mode: VisionMode
+    asr_url: str
+    asr_model: str
+    asr_price_per_hour: float
 
     @property
     def key_present(self) -> bool:
@@ -86,6 +117,9 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
     mode = os.environ.get("VISION_MODE", "mock").strip().lower()
     if mode not in VISION_MODES:
         raise ValueError(f"VISION_MODE must be one of {VISION_MODES}, got {mode!r}")
+    listen_mode = os.environ.get("LISTEN_MODE", "").strip().lower() or mode
+    if listen_mode not in VISION_MODES:
+        raise ValueError(f"LISTEN_MODE must be one of {VISION_MODES}, got {listen_mode!r}")
 
     return Settings(
         vision_mode=mode,  # type: ignore[arg-type]
@@ -104,4 +138,9 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         spend_file=Path(os.environ.get("SPEND_FILE", "").strip() or DEFAULT_SPEND_FILE),
         # Mock repeats each answer this many calls, so the frontend no-repeat rule can be seen.
         mock_hold_calls=max(1, int(_float("MOCK_HOLD_CALLS", 4))),
+        listen_mode=listen_mode,  # type: ignore[arg-type]
+        asr_url=os.environ.get("META_ASR_URL", "").strip() or "wss://api.meta.ai/v1/asr/realtime",
+        asr_model=os.environ.get("ASR_MODEL", "").strip() or "muse-voice-transcribe-1.0",
+        # USD per hour of audio streamed (docs: $0.18/hour, billed per whole second).
+        asr_price_per_hour=_float("ASR_PRICE_PER_HOUR", 0.18),
     )

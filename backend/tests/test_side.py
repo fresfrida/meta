@@ -33,6 +33,16 @@ def test_side_from_box_centre_at_thresholds(x_min, x_max, side):
     assert resolve_side(answer) == (side, "box")
 
 
+def test_side_lines_are_400_and_600():
+    # Owner approved 3 Nov (Brief 6). Note: the Brief 5b bench box (x 515-680, centre 597.5) is still just
+    # under 600, so it still reads "ahead"; a box centred at 600 or more reads "right".
+    assert (LEFT_MAX, RIGHT_MIN) == (400, 600)
+    bench = VisionAnswer(hazard="obstacle", side=None, distance="near", box=[515, 555, 680, 730])
+    assert resolve_side(bench) == ("ahead", "box")
+    assert resolve_side(bench.model_copy(update={"box": [520, 555, 680, 730]})) == ("right", "box")
+    assert resolve_side(bench.model_copy(update={"box": [300, 555, 500, 730]})) == ("left", "box")
+
+
 def test_box_overrides_the_models_side():
     answer = VisionAnswer(hazard="curb", side="left", distance="far", box=[700, 500, 900, 700])
     assert resolve_side(answer) == ("right", "box")

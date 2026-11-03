@@ -20,9 +20,13 @@ METRES_SENTENCE = (
 )
 
 
-def test_prompt_v3_verbatim():
-    assert VISION_PROMPT == PROMPT_V2 + " " + METRES_SENTENCE
-    assert VISION_PROMPT_VERSION == "v3"
+# Owner approved verbatim (Brief 6); v4 = v3 + one space + this sentence.
+FLAT_SENTENCE = "Flat things lying on the ground, such as mats, rugs or painted lines, are not hazards."
+
+
+def test_prompt_v4_verbatim():
+    assert VISION_PROMPT == PROMPT_V2 + " " + METRES_SENTENCE + " " + FLAT_SENTENCE
+    assert VISION_PROMPT_VERSION == "v4"
 
 
 def test_schema_box_is_nullable_array_of_4_ints_0_1000():
