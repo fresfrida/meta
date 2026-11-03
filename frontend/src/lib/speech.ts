@@ -1,5 +1,5 @@
 // Browser speech synthesis. iOS only speaks after a user gesture has unlocked it.
-import { SPEECH_LANG, SPEECH_RATE, SPEECH_START_TIMEOUT_MS } from '../config'
+import { SPEECH_RATE, SPEECH_START_TIMEOUT_MS } from '../config'
 
 // Keep a reference so the utterance is not garbage-collected before its events fire.
 let current: SpeechSynthesisUtterance | null = null
@@ -27,7 +27,14 @@ export interface SpeakHandle {
   ended: Promise<void>
 }
 
-export function speak(text: string): SpeakHandle {
+export interface SpeakOptions {
+  /** BCP-47 speech lang, e.g. en-GB. */
+  lang: string
+  /** An installed voice for that lang; null lets the browser choose. */
+  voice: SpeechSynthesisVoice | null
+}
+
+export function speak(text: string, { lang, voice }: SpeakOptions): SpeakHandle {
   let resolveEnded: () => void = () => {}
   const ended = new Promise<void>((r) => (resolveEnded = r))
   const started = new Promise<number>((resolve, reject) => {
@@ -38,7 +45,8 @@ export function speak(text: string): SpeakHandle {
     }
     window.speechSynthesis.cancel()
     const u = new SpeechSynthesisUtterance(text)
-    u.lang = SPEECH_LANG
+    u.lang = lang
+    if (voice) u.voice = voice
     u.rate = SPEECH_RATE
     const timer = setTimeout(() => {
       resolveEnded()

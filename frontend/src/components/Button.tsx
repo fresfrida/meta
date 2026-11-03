@@ -1,7 +1,7 @@
 interface ButtonProps {
   label: string
   onClick: () => void
-  variant?: 'primary' | 'secondary'
+  variant?: 'primary' | 'secondary' | 'outline'
   disabled?: boolean
 }
 

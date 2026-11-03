@@ -23,6 +23,8 @@ export interface VisionAnswer {
   side: Side | null
   distance: Distance | null
   box: Box | null
+  /** Whole metres from the camera, 1..10, or null (clear, unsure, or the model gave none). */
+  distance_m: number | null
 }
 
 export interface AnalyzeRequest {

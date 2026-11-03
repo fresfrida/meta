@@ -46,7 +46,10 @@ export function TimingPanel({ timings, lastUsage }: { timings: Timings; lastUsag
       )}
       {timings.spokenCount + timings.silentCount > 0 && (
         <div className="timing__row timing__breakdown">
-          <span>{t.counts(timings.spokenCount, timings.silentCount)}</span>
+          <span>
+            {t.counts(timings.spokenCount, timings.silentCount)}
+            {timings.droppedCount > 0 && ` · ${t.dropped(timings.droppedCount)}`}
+          </span>
           {silent && <span>{t.silentRoundTrip(silent.min, silent.median, silent.max)}</span>}
         </div>
       )}

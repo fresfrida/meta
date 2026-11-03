@@ -1,18 +1,25 @@
 // Every piece of user-facing text lives here.
-import type { Distance, Hazard, Side } from './api/types'
-import type { WarningHazard } from './lib/phrase'
+import type { Hazard, Side } from './api/types'
+import type { Lang } from './config'
 
-export const strings = {
-  appName: 'Second Eyes',
-  betaLabel: 'beta - research prototype',
+/**
+ * Spoken / shown hazard phrases, one table and one template per language (no cross-language concatenation).
+ * Words and templates approved by the Owner on 3 Nov 2026 ("translation ok"), pending a native-speaker check.
+ */
+export interface PhraseLanguage {
+  /** Hazard words. `unsure` is shown on screen only, never spoken. */
+  hazard: Record<Hazard, string>
+  /** With metres: N = distance_m. */
+  metres: (hazard: string, metres: number, side: Side | null) => string
+  /** Without metres: near/far fallback. */
+  plain: (hazard: string, side: Side | null, near: boolean) => string
+}
 
-  mode: {
-    mock: 'MOCK - not a real model answer',
-    live: 'Live - Meta Model API',
-    checking: 'Checking backend…',
-  },
+const pick = (side: Side | null, left: string, right: string, ahead = '') =>
+  side === 'left' ? left : side === 'right' ? right : ahead
 
-  phrase: {
+export const phrases: Record<Lang, PhraseLanguage> = {
+  en: {
     hazard: {
       step_down: 'Step down',
       step_up: 'Step up',
@@ -20,26 +27,92 @@ export const strings = {
       obstacle: 'Obstacle',
       clear: 'Clear',
       unsure: 'Not sure',
-    } satisfies Record<Hazard, string>,
-    ahead: 'ahead',
-    side: {
-      left: 'left',
-      ahead: '',
-      right: 'right',
-    } satisfies Record<Side, string>,
-    distance: {
-      near: 'close',
-      far: '',
-    } satisfies Record<Distance, string>,
+    },
+    metres: (h, n, side) => `${h}, ${n} ${n === 1 ? 'metre' : 'metres'}${pick(side, ', left', ', right')}`,
+    plain: (h, side, near) => `${h} ahead${pick(side, ', left', ', right')}${near ? ', close' : ''}`,
+  },
+  zh: {
+    hazard: {
+      step_down: '下台阶',
+      step_up: '上台阶',
+      curb: '路缘',
+      obstacle: '障碍物',
+      clear: '畅通',
+      unsure: '不确定',
+    },
+    metres: (h, n, side) => `${pick(side, '左前方', '右前方', '前方')}${n}米，${h}`,
+    plain: (h, side, near) => `${pick(side, '左前方', '右前方', '前方')}${h}${near ? '，很近' : ''}`,
+  },
+  ms: {
+    hazard: {
+      step_down: 'Tangga turun',
+      step_up: 'Tangga naik',
+      curb: 'Bebendul jalan',
+      obstacle: 'Halangan',
+      clear: 'Tiada halangan',
+      unsure: 'Tidak pasti',
+    },
+    metres: (h, n, side) => `${h}, ${n} meter${pick(side, ', sebelah kiri', ', sebelah kanan')}`,
+    plain: (h, side, near) => `${h} di hadapan${pick(side, ', sebelah kiri', ', sebelah kanan')}${near ? ', dekat' : ''}`,
+  },
+  ta: {
+    hazard: {
+      step_down: 'இறங்கு படி',
+      step_up: 'ஏறு படி',
+      curb: 'நடைபாதை விளிம்பு',
+      obstacle: 'தடை',
+      clear: 'தடை இல்லை',
+      unsure: 'உறுதியில்லை',
+    },
+    metres: (h, n, side) => `${h}, ${n} மீட்டர்${pick(side, ', இடது பக்கம்', ', வலது பக்கம்')}`,
+    plain: (h, side, near) => `முன்னால் ${h}${pick(side, ', இடது பக்கம்', ', வலது பக்கம்')}${near ? ', அருகில்' : ''}`,
+  },
+}
+
+/** How each language is listed: its own name, and an English subtitle (null for English itself). */
+export const languages: Record<Lang, { name: string; english: string | null }> = {
+  en: { name: 'English', english: null },
+  zh: { name: '中文', english: 'Chinese (Mandarin)' },
+  ms: { name: 'Bahasa Melayu', english: 'Malay' },
+  ta: { name: 'தமிழ்', english: 'Tamil' },
+}
+
+export type VoiceStatus = 'installed' | 'missing' | 'unknown'
+
+export const strings = {
+  appName: 'Second Eyes',
+
+  chip: {
+    beta: 'Beta', // camera screen
+    betaLong: 'Beta · research prototype', // Home
   },
 
-  // TENTATIVE (Brief 4): tag on the hazard box
-  boxLabel: {
-    step_down: 'Step down',
-    step_up: 'Step up',
-    curb: 'Curb',
-    obstacle: 'Obstacle',
-  } satisfies Record<WarningHazard, string>,
+  mode: {
+    mock: 'Mock · not a real model answer', // TENTATIVE (Brief 5 separator)
+    live: 'Live · Meta Model API',
+    checking: 'Checking backend…',
+  },
+
+  // TENTATIVE (Brief 5): Home and Settings copy, from the approved mock v2
+  home: {
+    title: 'Second Eyes',
+    help: 'Point the camera at the path ahead. It speaks only when something changes.',
+    voice: 'Voice',
+    settings: 'Settings',
+  },
+  settings: {
+    title: 'Settings',
+    done: 'Done',
+    language: 'Language',
+    testVoice: 'Test voice',
+    about: 'About',
+    aboutText: 'Beta · research prototype. Not a mobility aid.',
+    voiceLine: (english: string | null, status: VoiceStatus) => {
+      const voice = { installed: 'voice installed', missing: 'voice missing', unknown: 'voice not checked yet' }[status]
+      return english ? `${english} · ${voice}` : voice.charAt(0).toUpperCase() + voice.slice(1)
+    },
+    noVoice: 'No voice for this language on this device.',
+  },
 
   button: {
     start: 'Start',
@@ -49,10 +122,6 @@ export const strings = {
   },
 
   state: {
-    cameraOff: {
-      title: 'Camera is off',
-      body: 'Tap Start to open the rear camera.',
-    },
     cameraStarting: {
       title: 'Opening camera…',
       body: 'Allow camera access if asked.',
@@ -72,6 +141,9 @@ export const strings = {
     ready: 'Tap Capture',
     watching: 'Watching…', // TENTATIVE (Brief 3): loop mode before the first answer
     waiting: 'Waiting for answer…',
+    notSureHint: 'Hold the phone steady', // TENTATIVE (Brief 5, mock v2); English only
+    // TENTATIVE (Brief 5): shown when the chosen language has no installed voice
+    noVoice: (language: string) => `No ${language} voice on this device. Shown only, not spoken.`,
     // TENTATIVE (Brief 2): live-mode copy below until the Owner approves it.
     modelSlow: {
       title: 'Model is slow…',
@@ -115,8 +187,29 @@ export const strings = {
     // TENTATIVE (Brief 3)
     counts: (spoken: number, silent: number) => `spoken ${spoken} · silent ${silent}`,
     silentRoundTrip: (min: number, median: number, max: number) => `silent round trip ${min} / ${median} / ${max}`,
+    // TENTATIVE (Brief 5): loop-mode pill (capture to answer, seconds) and dropped late answers
+    pill: (lastS: string, medianS: string) => `Last ${lastS} s · median ${medianS} s`,
+    pillNone: 'No answers yet',
+    dropped: (n: number) => `dropped late ${n}`,
     // TENTATIVE (Brief 2)
     usage: (inputTokens: number, outputTokens: number, costUsd: number) =>
       `tokens in ${inputTokens} · out ${outputTokens} · $${costUsd.toFixed(4)}`,
+  },
+
+  // TENTATIVE (Brief 5): mic test page (?mictest=1), English only
+  micTest: {
+    title: 'Mic test',
+    help: 'Speech plays every 3 s. Turn the mic off and on and listen: does speech get quieter, or move to the earpiece? Try the speaker and Bluetooth.',
+    start: 'Start',
+    stop: 'Stop',
+    micOn: 'Mic is on · tap to turn off',
+    micOff: 'Mic is off · tap to turn on',
+    level: 'Input level',
+    sampleRate: (context: number | null, track: number | null) =>
+      `Sample rate: audio ${context ?? '?'} Hz · mic track ${track ?? 'not reported'}${track ? ' Hz' : ''}`,
+    echo: (on: boolean | null) => `Echo cancellation: ${on === null ? 'not reported' : on ? 'on' : 'off'}`,
+    spoken: (n: number) => `Test sentences spoken: ${n}`,
+    sentence: 'This is a speech test. Is it as loud as before?',
+    micFailed: 'Microphone not available or permission denied.',
   },
 } as const

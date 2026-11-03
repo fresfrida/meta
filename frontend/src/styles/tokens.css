@@ -1,51 +1,79 @@
-/* Design tokens from plan/hackathon.md "Design direction". Components use only these. */
+/* Design tokens: monochrome design v2 (Owner approved 3 Nov). Components use only these.
+   Colour exists only in the traffic light. Errors are white text with an icon. */
 :root {
-  /* Colour: near-black, off-white, one amber for warnings, red only for errors */
-  --color-bg: #0a0a0b;
-  --color-surface: #1c1c1f;
-  --color-scrim: rgba(10, 10, 11, 0.72);
-  --color-text: #f4f2ec;
-  --color-text-muted: #a8a6a0;
-  --color-border: rgba(244, 242, 236, 0.28);
-  --color-warn: #ffb000;
-  --color-on-warn: #0a0a0b;
-  --color-error: #ff4d42;
-  --color-on-light: #0a0a0b;
+  /* Colour */
+  --color-bg: #000;
+  --color-surface: #121212;
+  --color-scrim: rgba(0, 0, 0, 0.72);
+  --color-hairline: rgba(255, 255, 255, 0.14);
+  --color-text: #fff;
+  --color-text-muted: #9a9a9a;
+  --color-text-chip: rgba(255, 255, 255, 0.8);
+  --color-on-light: #000;
+  --color-halo: rgba(0, 0, 0, 0.7);
+  --color-control-off: #555;
 
-  /* Type: system font, six sizes */
+  /* Traffic light: the only colour in the UI */
+  --color-lamp-red: #ff453a;
+  --color-lamp-amber: #ffb340;
+  --color-lamp-green: #32d74b;
+  --color-lamp-off: #1e1e1e;
+  --color-light-housing: #050505;
+
+  /* Type: system font */
   --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-size-14: 14px;
-  --font-size-16: 16px;
+  --font-size-11: 11px;
+  --font-size-13: 13px;
+  --font-size-15: 15px;
+  --font-size-18: 18px;
   --font-size-20: 20px;
+  --font-size-22: 22px;
   --font-size-28: 28px;
-  --font-size-40: 40px;
-  --font-size-64: 64px;
+  --font-size-34: 34px;
   --font-weight-regular: 400;
+  --font-weight-medium: 500;
   --font-weight-semibold: 600;
-  --font-weight-bold: 700;
   --line-height-tight: 1.1;
   --line-height-body: 1.4;
+  --tracking-tight: -0.01em;
+  --tracking-caps: 0.08em;
+  --tracking-label: 0.1em;
+  --tracking-numbers: 0.02em;
 
   /* Space */
   --space-4: 4px;
+  --space-6: 6px;
   --space-8: 8px;
   --space-12: 12px;
+  --space-14: 14px;
   --space-16: 16px;
+  --space-20: 20px;
   --space-24: 24px;
   --space-32: 32px;
-  --space-48: 48px;
 
   /* Radius */
+  --radius-8: 8px;
   --radius-12: 12px;
+  --radius-16: 16px;
   --radius-24: 24px;
   --radius-pill: 999px;
 
   /* Size */
   --size-touch: 64px;
-  --border-width: 2px;
-  --ring-width: 6px;
-  --box-stroke: 4px;
+  --size-icon-button: 44px;
+  --size-row: 64px;
+  --size-lamp: 16px;
+  --size-light: 26px;
+  --size-radio: 22px;
+  --size-icon: 20px;
+  --size-meter: 12px;
+  --hairline: 1px;
+  --box-stroke: 2px;
+  --radio-on-stroke: 7px;
+  --lamp-glow: 10px;
+  --blur-card: 14px;
   --opacity-disabled: 0.5;
+  --opacity-glow-dim: 0.75;
 
   /* Motion */
   --motion-fade: 200ms;
