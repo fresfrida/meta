@@ -1,0 +1,43 @@
+import basicSsl from '@vitejs/plugin-basic-ssl'
+import react from '@vitejs/plugin-react'
+import { defineConfig, loadEnv } from 'vite'
+import { VitePWA } from 'vite-plugin-pwa'
+
+// BACKEND_URL is read by the dev server only (no VITE_ prefix, never sent to the browser).
+const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8000'
+
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const backendUrl = env.BACKEND_URL || DEFAULT_BACKEND_URL
+  const proxy = { '/api': { target: backendUrl, changeOrigin: true } }
+
+  return {
+    plugins: [
+      react(),
+      basicSsl(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['apple-touch-icon.png'],
+        manifest: {
+          name: 'Second Eyes',
+          short_name: 'Second Eyes',
+          description: 'Research prototype: spoken obstacle warnings from the phone camera.',
+          theme_color: '#0a0a0b',
+          background_color: '#0a0a0b',
+          display: 'standalone',
+          orientation: 'portrait',
+          icons: [
+            { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+            { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          ],
+        },
+        workbox: {
+          // Never serve /api from the service worker cache.
+          navigateFallbackDenylist: [/^\/api\//],
+        },
+      }),
+    ],
+    server: { host: '0.0.0.0', port: 5173, strictPort: true, proxy },
+    preview: { host: '0.0.0.0', port: 4173, strictPort: true, proxy },
+  }
+})

@@ -1,0 +1,352 @@
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-16);
+  line-height: var(--line-height-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+}
+
+button {
+  font: inherit;
+}
+
+/* ---------- Shell ---------- */
+.app {
+  position: relative;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  padding: max(var(--space-12), env(safe-area-inset-top)) max(var(--space-16), env(safe-area-inset-right))
+    max(var(--space-16), env(safe-area-inset-bottom)) max(var(--space-16), env(safe-area-inset-left));
+  overflow: hidden;
+}
+
+.camera {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  background: var(--color-bg);
+  z-index: 0;
+}
+
+.camera[hidden] {
+  display: none;
+}
+
+.app > :not(.camera) {
+  position: relative;
+  z-index: 1;
+}
+
+.topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--space-12);
+  min-height: 0;
+}
+
+/* ---------- Labels and badges ---------- */
+.beta {
+  font-size: var(--font-size-14);
+  color: var(--color-text-muted);
+  background: var(--color-scrim);
+  padding: var(--space-4) var(--space-8);
+  border-radius: var(--radius-pill);
+}
+
+.badge {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  padding: var(--space-4) var(--space-12);
+  border-radius: var(--radius-pill);
+  border: var(--border-width) solid var(--color-border);
+  background: var(--color-scrim);
+  color: var(--color-text);
+}
+
+.badge--mock {
+  background: var(--color-warn);
+  border-color: var(--color-warn);
+  color: var(--color-on-warn);
+}
+
+.badge--checking {
+  color: var(--color-text-muted);
+}
+
+.banner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-12);
+  background: var(--color-surface);
+  border: var(--border-width) solid var(--color-error);
+}
+
+.banner__title {
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-error);
+}
+
+.banner__body {
+  font-size: var(--font-size-16);
+}
+
+/* ---------- State card (camera off, denied, ...) ---------- */
+.state {
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  padding: var(--space-24);
+  border-radius: var(--radius-24);
+  background: var(--color-surface);
+}
+
+.state__title {
+  margin: 0;
+  font-size: var(--font-size-28);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+}
+
+.state--error .state__title {
+  color: var(--color-error);
+}
+
+.state__body {
+  margin: 0;
+  font-size: var(--font-size-20);
+  color: var(--color-text-muted);
+}
+
+/* ---------- Phrase band ---------- */
+.band {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-8);
+  min-height: calc(var(--size-touch) * 2);
+  padding: var(--space-16) var(--space-24);
+  border-radius: var(--radius-24);
+  background: var(--color-scrim);
+  border: var(--border-width) solid transparent;
+}
+
+.band--warning {
+  border-color: var(--color-warn);
+}
+
+.band--error {
+  border-color: var(--color-error);
+}
+
+.band--speaking {
+  animation: ring-pulse var(--motion-pulse) var(--motion-ease) infinite;
+}
+
+.band__phrase-wrap {
+  margin: 0;
+}
+
+.band__phrase {
+  display: block;
+  margin: 0;
+  font-size: var(--font-size-64);
+  line-height: var(--line-height-tight);
+  font-weight: var(--font-weight-bold);
+  overflow-wrap: anywhere;
+  animation: phrase-in var(--motion-fade) var(--motion-ease);
+}
+
+.band--warning .band__phrase {
+  color: var(--color-warn);
+}
+
+.band--error .band__phrase {
+  color: var(--color-error);
+}
+
+.band__phrase--quiet {
+  font-size: var(--font-size-28);
+  color: var(--color-text-muted);
+}
+
+.band__note {
+  margin: 0;
+  font-size: var(--font-size-16);
+  color: var(--color-text);
+}
+
+.band__note--error {
+  color: var(--color-error);
+}
+
+@keyframes phrase-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ring-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--color-warn);
+  }
+  50% {
+    box-shadow: 0 0 0 var(--ring-width) var(--color-warn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .band--speaking {
+    animation: none;
+    box-shadow: 0 0 0 var(--ring-width) var(--color-warn);
+  }
+  .band__phrase {
+    animation: none;
+  }
+}
+
+/* Narrow phones: 64px words like "Obstacle" would not fit 288px of content. */
+@media (max-width: 359px) {
+  .band__phrase {
+    font-size: var(--font-size-40);
+  }
+  .band {
+    padding: var(--space-16);
+  }
+}
+
+/* ---------- Timing ---------- */
+.timing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-12) var(--space-16);
+  border-radius: var(--radius-12);
+  background: var(--color-scrim);
+  font-size: var(--font-size-14);
+  font-variant-numeric: tabular-nums;
+}
+
+.timing__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4) var(--space-12);
+}
+
+.timing__heading {
+  color: var(--color-text-muted);
+}
+
+.timing__last {
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+}
+
+.timing__stats {
+  font-size: var(--font-size-16);
+}
+
+.timing__breakdown,
+.timing__none {
+  color: var(--color-text-muted);
+}
+
+.timing__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4) var(--space-8);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-muted);
+}
+
+.timing__list li:first-child {
+  color: var(--color-text);
+}
+
+/* ---------- Controls ---------- */
+.controls {
+  display: flex;
+  gap: var(--space-12);
+}
+
+.button {
+  flex: 1;
+  min-height: var(--size-touch);
+  min-width: var(--size-touch);
+  padding: 0 var(--space-24);
+  border-radius: var(--radius-24);
+  border: var(--border-width) solid var(--color-text);
+  font-size: var(--font-size-20);
+  font-weight: var(--font-weight-bold);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.button--primary {
+  background: var(--color-text);
+  color: var(--color-on-light);
+}
+
+.button--secondary {
+  flex: 0 1 auto;
+  background: var(--color-scrim);
+  color: var(--color-text);
+}
+
+.button:disabled {
+  opacity: var(--opacity-disabled);
+  cursor: default;
+}
+
+.button:focus-visible {
+  outline: var(--border-width) solid var(--color-warn);
+  outline-offset: var(--space-4);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

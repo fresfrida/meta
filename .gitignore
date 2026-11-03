@@ -27,3 +27,6 @@ __pycache__/
 # OS / editor
 .DS_Store
 *.log
+
+# Local Claude tooling
+.claude/

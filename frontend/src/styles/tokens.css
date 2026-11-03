@@ -1,0 +1,62 @@
+/* Design tokens from plan/hackathon.md "Design direction". Components use only these. */
+:root {
+  /* Colour: near-black, off-white, one amber for warnings, red only for errors */
+  --color-bg: #0a0a0b;
+  --color-surface: #1c1c1f;
+  --color-scrim: rgba(10, 10, 11, 0.72);
+  --color-text: #f4f2ec;
+  --color-text-muted: #a8a6a0;
+  --color-border: rgba(244, 242, 236, 0.28);
+  --color-warn: #ffb000;
+  --color-on-warn: #0a0a0b;
+  --color-error: #ff4d42;
+  --color-on-light: #0a0a0b;
+
+  /* Type: system font, six sizes */
+  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-size-14: 14px;
+  --font-size-16: 16px;
+  --font-size-20: 20px;
+  --font-size-28: 28px;
+  --font-size-40: 40px;
+  --font-size-64: 64px;
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --line-height-tight: 1.1;
+  --line-height-body: 1.4;
+
+  /* Space */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-48: 48px;
+
+  /* Radius */
+  --radius-12: 12px;
+  --radius-24: 24px;
+  --radius-pill: 999px;
+
+  /* Size */
+  --size-touch: 64px;
+  --border-width: 2px;
+  --ring-width: 6px;
+  --opacity-disabled: 0.5;
+
+  /* Motion */
+  --motion-fade: 200ms;
+  --motion-pulse: 1200ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Breakpoint used in media queries (kept here for reference): narrow < 360px */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fade: 0ms;
+    --motion-pulse: 0ms;
+  }
+}
