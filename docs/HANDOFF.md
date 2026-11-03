@@ -163,7 +163,7 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   the iPhone (speech may get quieter or move to the earpiece with the mic open).
   `HANDS_FREE_DEFAULT` can turn it off by default if so.
 - Audio leaves the phone while hands-free is on (to the backend, then Meta). The
-  ASR probe and logs never contain transcripts; only questions reach the phone.
+  app's logs never contain transcripts; only questions reach the phone.
 - The no-voice note makes the phrase card taller (~215 px at 320x568), close to
   the top of high boxes.
 
