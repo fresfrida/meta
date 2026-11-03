@@ -1,6 +1,6 @@
 # Architecture - Second Eyes
 
-Status: Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test page; live calls measured).
+Status: Brief 6 (hands-free Ask with "Hey Eyes": realtime ASR proxy + Ask endpoint; prompt v4; side lines 400 / 600).
 First written before the app code, per the Owner's standing architecture rule.
 
 ## Where every piece runs
@@ -27,6 +27,37 @@ Later hosting target: **not decided**.
 3. The page calls `/api/analyze` on the same origin. Vite proxies it to
    FastAPI on `127.0.0.1:8000`. So the phone talks to one secure address only,
    and there are no CORS rules to maintain.
+4. Asking (Brief 6) adds a WebSocket on the same origin: `/api/listen`
+   (`wss://` on the phone; the Vite proxy has `ws: true`) and `POST /api/ask`.
+
+## Asking a question (Brief 6) - audio leaves the phone
+
+**Microphone audio leaves the phone.** While the camera runs with hands-free
+listening on (Settings, default on), the phone streams microphone audio to the
+backend, which streams it to Meta's realtime speech recogniser. With hands-free
+off, audio is sent only during a touch-and-hold. Settings says so ("While
+running, microphone audio is sent to Meta to hear your questions.", TENTATIVE).
+
+```
+phone mic (getUserMedia, echo cancellation) -> AudioWorklet (public/mic-worklet.js)
+  -> lib/pcm.ts: resample to 16 kHz, PCM16 mono, 80 ms frames
+  -> lib/micGate.ts: frames dropped while the phone speaks or plays the earcon, +300 ms
+  -> WebSocket /api/listen?lang=en|zh|ms|ta  (binary frames; {"type":"hold"|"end"} text controls)
+backend app/listen.py (key added here only)
+  -> wss://api.meta.ai/v1/asr/realtime, first JSON frame: authorization.accessToken "Bearer <key>",
+     model muse-voice-transcribe-1.0, audioEncoding PCM_16KHZ, mode ENDPOINTING,
+     languageBias [English|Mandarin Chinese|Malay|Tamil], keywords ["Hey Eyes"]
+  -> audio paced at real time in 80 ms frames; silence fills gaps (the ASR closes idle sessions);
+     at most 2 s queued (docs: never more than 5 s ahead); reconnect once, then {"type":"stopped"}
+  -> each whole second streamed adds $0.18/3600 to the budget
+  -> speechComplete turns -> app/wake.py: only questions go back to the phone
+     ({"type":"wake"} and {"type":"question","text"}); every other turn is dropped, never logged or stored
+phone: earcon, hazard speech pauses, card shows "You asked: ..."
+  -> POST /api/ask {question, image_b64 (current frame), last_warning, language}
+backend app/ask.py -> muse-spark-1.3 with the Owner-approved prompt (plain text), trimmed to 2 sentences,
+  tokens billed -> {question, answer, model_ms, tokens, cost}
+phone: speaks the answer in the chosen language; failure -> fixed "Sorry, I could not answer." (English)
+```
 
 ## Request flow (one capture)
 
@@ -78,6 +109,8 @@ worker. The service worker never answers `/api/*`.
 | `BACKEND_URL` | frontend dev server (`vite.config.ts`, not exposed to the browser) | `http://127.0.0.1:8000` | Proxy target for `/api`. |
 | `DEV_HTTPS` | frontend dev server | on | `0` serves plain HTTP. Only for desktop testing on `localhost`; the phone always needs HTTPS. |
 | `VISION_MODE` | backend | `mock` | `mock` or `live`; any other value fails at startup. |
+| `LISTEN_MODE` / `ASK_MODE` | backend | = `VISION_MODE` | Live ASR proxy / live Ask, set separately (e.g. live Ask while the camera loop stays on mock). |
+| `META_ASR_URL` / `ASR_MODEL` / `ASR_PRICE_PER_HOUR` | backend | `wss://api.meta.ai/v1/asr/realtime` / `muse-voice-transcribe-1.0` / `0.18` | Realtime speech recognition. |
 | `MODEL_API_KEY` | backend only | none | Live only. Never `VITE_`, never logged, never committed. Missing in live -> 503 `key_missing`. |
 | `META_BASE_URL` | backend | `https://api.meta.ai/v1` | Model API base URL. |
 | `VISION_MODEL` | backend | `muse-spark-1.3` | Standard mode model ID (`-contributor` would be Contributor mode). |
@@ -114,4 +147,7 @@ Tunable values live in one module per side: `frontend/src/config.ts` and
 - **Latency of a hosted backend.** Each frame would travel phone -> host ->
   Meta API -> back; the LAN numbers measured here do not transfer.
 - **Model calls take time.** A serverless host's function time limit must fit
-  one model call (expected a few seconds); no long-running work exists.
+  one model call (expected a few seconds).
+- **Long-lived WebSocket.** `/api/listen` stays open for the whole session (ASR
+  sessions run up to 60 min). Serverless functions cannot hold it; a host needs a
+  long-running server (container/VM) and a proxy that passes WebSockets.

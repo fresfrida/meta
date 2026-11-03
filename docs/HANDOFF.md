@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test; $0.0821 spent in total; Brief 5b plain voice + side rule). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 6 (hands-free Ask with "Hey Eyes", prompt v4, side lines 400 / 600; $0.1009 spent in total). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,6 +9,20 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- Asking (Brief 6): while running, say "Hey Eyes, what is there?" (or "Hey Eyes",
+  then the question within 6 s) and hear a short answer about the current view in
+  the chosen language. Mic -> AudioWorklet -> 16 kHz PCM16 -> `/api/listen`
+  WebSocket -> backend -> Meta realtime ASR (muse-voice-transcribe-1.0); the wake
+  rule (`backend/app/wake.py`) passes only questions back; `POST /api/ask` sends
+  the question + current frame + last warning to muse-spark-1.3 with the
+  Owner-approved prompt. Mic frames are not sent while the phone speaks (+300 ms).
+  Fallback: touch and hold the camera view >= 600 ms. Settings "Hands-free
+  listening" (default on, `HANDS_FREE_DEFAULT`); off = hold only. Desktop live run:
+  5 of 5 real wake attempts woke it; question end -> answer speech 2.9-4.8 s.
+  **Not tested on the iPhone; the iPhone mic test (`?mictest=1`) has not been run.**
+- Prompt v4 = v3 + "Flat things lying on the ground, such as mats, rugs or painted
+  lines, are not hazards." Side lines 400 / 600. Live: the corridor doormat is now
+  "clear"; the doorway bench is "obstacle, right, 1 m".
 - Mock vision by default. `VISION_MODE=live` calls muse-spark-1.3 (OpenAI SDK,
   json_schema answer, reasoning `minimal`, 10 s timeout). First real calls 3 Nov
   (Part B): schema with nullable anyOf and box, and `minimal`, accepted (no 400);
@@ -145,9 +159,11 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   and Bluetooth is unmeasured.
 - The self-signed certificate must be accepted on the iPhone; camera access
   over it is unverified on the device.
-- Side flapping: an obstacle whose box centre sits near 333 / 667 flips between
-  left and ahead from frame to frame; each flip is a new key, so it is spoken
-  again (3 times in 16 s in the live check).
+- Hands-free listening on iOS: listening and speaking at once is unverified on
+  the iPhone (speech may get quieter or move to the earpiece with the mic open).
+  `HANDS_FREE_DEFAULT` can turn it off by default if so.
+- Audio leaves the phone while hands-free is on (to the backend, then Meta). The
+  ASR probe and logs never contain transcripts; only questions reach the phone.
 - The no-voice note makes the phrase card taller (~215 px at 320x568), close to
   the top of high boxes.
 
@@ -155,6 +171,7 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   is logged (never the frame or key).
 
 ## How to resume
-Brief 5 done (see `007-meta-artifacts/reports/brief-05.md`). Next: Brief 6
-(hands-free Ask / wake word), using the iPhone mic test results. Read
+Brief 6 done (see `007-meta-artifacts/reports/brief-06.md`). Next: the Owner runs
+the iPhone mic test (`/?mictest=1`) and a real "Hey Eyes" on the phone; then
+Brief 7 (face blur). Read
 `docs/KANBAN.md` and `plan/hackathon.md` first.

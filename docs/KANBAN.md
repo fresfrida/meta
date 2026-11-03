@@ -2,8 +2,8 @@
 
 ## Backlog
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
-- Side thirds (333 / 667) read objects at the edge of the walkway (e.g. a bench at x 515-680) as "ahead"; Owner to decide if the lines should move
-- Brief 6: hands-free Ask / wake word
+- Brief 7: face blur
+- Translations of the Ask "sorry" and the new Brief 6 copy (EN only for now)
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
 
@@ -11,6 +11,7 @@
 - (none)
 
 ## Done
+- Brief 6: hands-free Ask ("Hey Eyes") - realtime ASR proxy `/api/listen` with wake rule, `/api/ask` with the approved prompt, AudioWorklet mic + 16 kHz PCM16 encoder, self-speech gate, earcon, touch-and-hold fallback, Settings toggle; prompt v4; side lines 400 / 600; pytest x135, vitest x71; live: 5 asks, ~2.5 min listening, 2 photo calls (3 Nov)
 - Brief 5b: plain-language voice table per language (screen unchanged), side change never re-speaks (flap test speaks once), 13 real-photo live calls reported; vitest x60 (3 Nov)
 - Brief 5: monochrome design v2 + traffic light, Home + Settings, 4 languages with approved templates, prompt v3 + `distance_m`, repeat rule with metres, 2-in-flight loop (1.75 s stagger, in-order, late answers dropped), mic test page `?mictest=1`; vitest x48, pytest x78; live check 10 calls (3 Nov)
 - Brief 4b live speed test: `backend/scripts/speed_test.py`, 18 streamed calls, $0.027; time = reasoning before first token; cap breaks answers; 320 px halves input tokens, no speed gain (3 Nov)
@@ -28,4 +29,5 @@
 
 ## Blocked
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
-- iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it
+- iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`
+- iPhone "Hey Eyes" test (real voice, real room)
