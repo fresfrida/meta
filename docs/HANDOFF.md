@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 2 Part A (live path built, no live call yet). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 3 (1 fps loop + no-repeat, mock only; no live call yet). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -14,11 +14,20 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   real API yet**: tested only with fake clients and an in-memory HTTP transport.
 - Live spend guard: tokens x prices added to `backend/.data/spend.json`; at
   >= $25 live calls get 402 `budget_reached`. Unreadable spend file also refuses.
-- Model prompt (TENTATIVE, `VISION_PROMPT_VERSION = "v1-tentative"`) lives in
-  `backend/app/config.py`; Owner approves before the first live call.
-- One frame per tap of Capture (no 1 fps loop, no no-repeat rule yet).
+- Model prompt v2 with bounding box (Owner approved 3 Nov, verbatim;
+  `VISION_PROMPT_VERSION = "v2"`) lives in `backend/app/config.py`.
+- Answers carry `box` ([x_min, y_min, x_max, y_max] on 0..1000, or null). The
+  box is passed to the frontend but not drawn yet (Brief 4).
+- Loop mode (default): Start captures a frame, waits 1 s after each answer,
+  repeats; Stop ends it. No-repeat rule (`frontend/src/lib/announce.ts`): speak
+  only when the phrase changed and >= 1.5 s since the last speech; "Not sure"
+  is shown, never spoken; a new warning cuts off speech, "Clear" waits for it.
+  `?loop=0` in the URL restores the single Capture button (every answer spoken).
+- Mock holds each answer 4 calls, so in loop mode the phone speaks about every 4 s.
+- Badges (MOCK / Live) are neutral outlines; amber is only for hazards.
 - Timing on screen: last capture-to-speech ms, min / median / max of the last
-  10, and a breakdown (frame, round trip, model, speech).
+  10 spoken frames, a breakdown (frame, round trip, model, speech), counts of
+  spoken and silent frames, and silent frames' round trip min / median / max.
 - States shown: camera off, opening camera, permission denied, camera not
   available, needs HTTPS, backend unreachable, waiting for answer, answer
   failed, speech did not start; live: model is slow (> 3 s), model failed,
@@ -32,9 +41,10 @@ See `docs/ARCHITECTURE.md`. Short version: Vite dev server on the Mac
 `127.0.0.1:8000`. iPhone on the same Wi-Fi opens `https://<mac-lan-ip>:5173`.
 
 ## Data flow
-tap Capture -> `captureFrame` (640px long edge, JPEG quality 0.7) ->
-`POST /api/analyze { image_b64 }` -> `{ hazard, side, distance, source, model_ms }`
--> `phraseFor()` (`frontend/src/lib/phrase.ts`) -> `speak()` -> timing record.
+loop tick (or tap Capture with `?loop=0`) -> `captureFrame` (640px, JPEG 0.7) ->
+`POST /api/analyze { image_b64 }` -> `{ hazard, side, distance, box, source, model_ms, ... }`
+-> `phraseFor()` (`lib/phrase.ts`) -> `decide()` (`lib/announce.ts`) -> `speak()` or silent
+-> timing record (spoken: capture-to-speech; silent: round trip).
 
 ## Commands
 First time only:
@@ -56,6 +66,7 @@ Run frontend (from repo root):
 npm --prefix frontend run dev
 ```
 Then on the iPhone: `https://<mac-lan-ip>:5173` (Mac LAN IP: `ipconfig getifaddr en0`).
+For the Brief 1 per-tap timing test use `https://<mac-lan-ip>:5173/?loop=0`.
 
 Checks:
 ```bash

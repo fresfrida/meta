@@ -1,6 +1,6 @@
 # Architecture - Second Eyes
 
-Status: Phase B Part A (live path built and unit-tested; no live call made yet).
+Status: Brief 3 (1 fps loop + no-repeat on mock; live path built and unit-tested; no live call made yet).
 First written before the app code, per the Owner's standing architecture rule.
 
 ## Where every piece runs
@@ -30,18 +30,25 @@ Later hosting target: **not decided**.
 
 ## Request flow (one capture)
 
+Loop mode (default): after Start, the phone runs the flow below, waits
+`LOOP_INTERVAL_MS` (1000) after each answer or failure, then captures again.
+One request in flight at most. `?loop=0` in the URL gives the single Capture
+button instead (Brief 1 behaviour, every answer spoken).
+
 ```
-tap Capture
+capture (loop tick, or tap Capture with ?loop=0)
   -> grab one video frame, downscale to 640px long edge, JPEG (quality from config)
   -> POST /api/analyze { image_b64 }                  (phone -> Vite proxy -> FastAPI)
   -> backend: checks image_b64 is valid base64
-     mock: next answer from a fixed list of 6 (the image is not looked at)
+     mock: fixed list of 6, each held for MOCK_HOLD_CALLS (4) calls (the image is not looked at)
      live: refuse with 402 budget_reached if spent >= BUDGET_USD; else one call
            to muse-spark; unparseable output -> hazard "unsure"; add token cost
            to backend/.data/spend.json
-     response { hazard, side, distance, source, model_ms, input_tokens, output_tokens, cost_usd }
+     response { hazard, side, distance, box, source, model_ms, input_tokens, output_tokens, cost_usd }
+     (box = [x_min, y_min, x_max, y_max] on 0..1000, or null; malformed -> null)
   -> phone: shared helper maps { hazard, side, distance } -> fixed phrase (strings.ts)
-  -> speechSynthesis.speak(phrase)
+  -> no-repeat rule (frontend/src/lib/announce.ts) decides speak or stay silent
+  -> speechSynthesis.speak(phrase) when it says speak
   -> timing marks: capture start, request sent, response received, speech start
 ```
 
@@ -69,6 +76,8 @@ worker. The service worker never answers `/api/*`.
 | `BUDGET_USD` | backend | `25` | Live calls refused (402 `budget_reached`) once spent >= this. |
 | `PRICE_INPUT_PER_M` / `PRICE_CACHED_INPUT_PER_M` / `PRICE_OUTPUT_PER_M` | backend | `1.25` / `0.15` / `4.25` | USD per 1M tokens (muse-spark-1.3 Standard). Output includes reasoning tokens. |
 | `SPEND_FILE` | backend | `backend/.data/spend.json` | Where the spend counter lives. |
+| `MOCK_HOLD_CALLS` | backend | `4` | Mock repeats each answer this many calls. |
+| `?loop=0` | page URL | loop on | Single-capture mode for timing tests. |
 
 The backend reads `backend/.env` at startup (python-dotenv); real environment
 variables win over the file. `backend/.env` and `backend/.data/` are gitignored.

@@ -16,4 +16,13 @@
 | 3 Nov 2026 | 8 s timeout, `max_retries=0` | A late or retried answer about an old frame is worse than "unsure" | No automatic recovery from transient 429/503 | Tentative |
 | 3 Nov 2026 | Spend counter in `backend/.data/spend.json`; unreadable file refuses live calls | Survives restarts with no hosted data; fails closed | Not portable to a stateless host (flagged in ARCHITECTURE) | Final for the event |
 | 3 Nov 2026 | Unparseable model output -> `unsure`, still billed | Never speak a guess; cost is real either way | An `unsure` can hide a schema problem; reason is logged | Final |
-| 3 Nov 2026 | Model prompt `v1-tentative` (text in `backend/app/config.py`) | Advisor's draft, character for character | Owner approval pending | Tentative |
+| 3 Nov 2026 | Model prompt `v1-tentative` | Advisor's draft | Replaced by v2 the same day | Superseded |
+| 3 Nov 2026 | Model prompt **v2** with bounding box (`VISION_PROMPT_VERSION = "v2"`, text in `backend/app/config.py`) | Owner approved verbatim ("Yes to both") for Part B | Longer prompt and a box field add a few tokens per frame | Final |
+| 3 Nov 2026 | `box`: nullable [x_min, y_min, x_max, y_max], 4 integers 0..1000; malformed, out of range or min > max -> null, rest kept; always null for clear/unsure | One rule (`valid_box` in schemas.py) for model and mock; never trust a bad box | A slightly wrong box is dropped, not repaired | Tentative |
+| 3 Nov 2026 | No-repeat rule (`frontend/src/lib/announce.ts`): speak when the phrase differs from the last spoken and >= MIN_GAP_MS (1500) since the last speech; same phrase silent; unsure shown, never spoken, last spoken unchanged; a new warning cuts off speech in progress, a non-warning ("Clear") waits until it ends | Brief 3 rule; the plan's "silent until the answer changes, plus a cooldown" | A changed answer can be up to ~1.5 s + one loop late; flapping between two hazards still speaks every 1.5 s | Tentative |
+| 3 Nov 2026 | 1 fps loop: next capture `LOOP_INTERVAL_MS` (1000) after the previous answer or failure; one request in flight; stops itself on budget reached or no key, keeps retrying when the backend is unreachable | Never stack requests; real rate = 1 / (interval + round trip) | Slower than 1 fps when the model is slow | Tentative |
+| 3 Nov 2026 | `?loop=0` URL flag for single-capture mode (every answer spoken) | The Owner's iPhone timing test needs per-tap timing; a URL flag needs no restart on the phone | One more switch | Final |
+| 3 Nov 2026 | Mock holds each answer `MOCK_HOLD_CALLS` (4) calls | Lets the no-repeat rule be seen and tested | Mock no longer changes every call | Final |
+| 3 Nov 2026 | MOCK / Live badges are neutral outlines | Amber is reserved for hazards | Mock is less loud on screen | Final |
+| 3 Nov 2026 | Owner entering the Indie developer track | Owner's choice (relayed by the Advisor) | - | Tentative |
+| 3 Nov 2026 | Hackathon theme "Build for Your World" | Relayed by the Advisor | - | Tentative |
