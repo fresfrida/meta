@@ -44,9 +44,13 @@ capture (loop tick, or tap Capture with ?loop=0)
      live: refuse with 402 budget_reached if spent >= BUDGET_USD; else one call
            to muse-spark; unparseable output -> hazard "unsure"; add token cost
            to backend/.data/spend.json
-     response { hazard, side, distance, box, source, model_ms, input_tokens, output_tokens, cost_usd }
+     side from box: if box present, side = box centre x (<= LEFT_MAX 333 left, >= RIGHT_MIN 667 right,
+     else ahead), side_source "box"; otherwise the model's side, side_source "model"
+     response { hazard, side, side_source, distance, box, source, model_ms, input_tokens, output_tokens, cost_usd }
      (box = [x_min, y_min, x_max, y_max] on 0..1000, or null; malformed -> null)
   -> phone: shared helper maps { hazard, side, distance } -> fixed phrase (strings.ts)
+  -> warnings with a box: BoxOverlay draws it over the video (lib/boxMap.ts maps the frame grid
+     through the video's object-fit: cover crop); fades after BOX_STALE_MS (2000) without a new answer
   -> no-repeat rule (frontend/src/lib/announce.ts) decides speak or stay silent
   -> speechSynthesis.speak(phrase) when it says speak
   -> timing marks: capture start, request sent, response received, speech start

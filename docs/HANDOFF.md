@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 3 Nov 2026, Brief 3 (1 fps loop + no-repeat, mock only; no live call yet). Branch `claude/second-eyes`.
+Last updated: 3 Nov 2026, Brief 4 (hazard box on screen, side from box; mock only; no live call yet). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -16,8 +16,18 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   >= $25 live calls get 402 `budget_reached`. Unreadable spend file also refuses.
 - Model prompt v2 with bounding box (Owner approved 3 Nov, verbatim;
   `VISION_PROMPT_VERSION = "v2"`) lives in `backend/app/config.py`.
-- Answers carry `box` ([x_min, y_min, x_max, y_max] on 0..1000, or null). The
-  box is passed to the frontend but not drawn yet (Brief 4).
+- Answers carry `box` ([x_min, y_min, x_max, y_max] on 0..1000, or null).
+- Side from box (backend, `resolve_side` in `schemas.py`): when a box is present,
+  `side` comes from its centre x (<= `LEFT_MAX` 333 left, >= `RIGHT_MIN` 667 right,
+  else ahead; `config.py`) and `side_source` is "box"; otherwise the model's side
+  stands and `side_source` is "model". So the spoken side always matches the drawn box.
+- Hazard box on screen (`components/BoxOverlay.tsx`): amber rounded outline with a
+  small hazard tag, over the video, warnings only (hidden for clear / unsure / no box).
+  `lib/boxMap.ts` maps the 0..1000 frame grid to the screen through the same
+  `object-fit: cover` crop as the video (centred), clipped to the screen; a box
+  wholly in the cropped-off part is not drawn (the phrase is still spoken).
+  Fades after `BOX_STALE_MS` (2000) without a new answer; no fade with reduced
+  motion; `aria-hidden`.
 - Loop mode (default): Start captures a frame, waits 1 s after each answer,
   repeats; Stop ends it. No-repeat rule (`frontend/src/lib/announce.ts`): speak
   only when the phrase changed and >= 1.5 s since the last speech; "Not sure"
@@ -32,7 +42,9 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   available, needs HTTPS, backend unreachable, waiting for answer, answer
   failed, speech did not start; live: model is slow (> 3 s), model failed,
   budget reached, no API key. Timing panel adds tokens and cost for live answers.
-- Tested in a desktop browser with a fake camera stream at 320 and 390 px.
+- Tested in a desktop browser with a fake camera stream at 320 and 390 px (Brief 4:
+  a portrait 720x1280 fake camera that paints each mock box, so the overlay can be
+  checked against it).
   **Not yet tested on the iPhone.**
 
 ## Architecture
@@ -95,11 +107,14 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
 - The self-signed certificate must be accepted on the iPhone; camera access
   over it is unverified on the device.
 - Long phrases ("Step down ahead, close") wrap to 3-4 lines at 64px.
+- The phrase band and timing panel cover the lower half of the screen, where
+  floor hazards (steps, curbs) are, so most of the box sits under them.
 
 - Live answers that fail to parse are billed and shown as "Not sure"; the reason
   is logged (never the frame or key).
 
 ## How to resume
 Next is Brief 2 Part B (connectivity check, then 10 image calls) - only after the
-Owner's go-ahead relayed by the Advisor and the key in `backend/.env`. Read
+Owner's go-ahead relayed by the Advisor and the key in `backend/.env`. The box
+schema and side-from-box rule have not met a real model answer yet. Read
 `docs/KANBAN.md` and `plan/hackathon.md` first.
