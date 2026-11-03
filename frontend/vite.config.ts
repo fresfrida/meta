@@ -1,20 +1,23 @@
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import react from '@vitejs/plugin-react'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, loadEnv } from 'vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // BACKEND_URL is read by the dev server only (no VITE_ prefix, never sent to the browser).
 const DEFAULT_BACKEND_URL = 'http://127.0.0.1:8000'
+// DEV_HTTPS=0 serves plain HTTP: only for desktop testing on localhost (the phone needs HTTPS).
 
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const env = loadEnv(mode, fileURLToPath(new URL('.', import.meta.url)), '')
   const backendUrl = env.BACKEND_URL || DEFAULT_BACKEND_URL
+  const https = env.DEV_HTTPS !== '0'
   const proxy = { '/api': { target: backendUrl, changeOrigin: true } }
 
   return {
     plugins: [
       react(),
-      basicSsl(),
+      ...(https ? [basicSsl()] : []),
       VitePWA({
         registerType: 'autoUpdate',
         includeAssets: ['apple-touch-icon.png'],

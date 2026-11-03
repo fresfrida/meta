@@ -196,7 +196,7 @@ button {
   color: var(--color-error);
 }
 
-.band__phrase--quiet {
+.band__phrase.band__phrase--quiet {
   font-size: var(--font-size-28);
   color: var(--color-text-muted);
 }

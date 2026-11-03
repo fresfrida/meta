@@ -64,7 +64,7 @@ export const strings = {
     waiting: 'Waiting for answer…',
     backendUnreachable: {
       title: 'Backend unreachable',
-      body: 'Is the FastAPI server running on the Mac? Tap Capture to retry.',
+      body: 'Is the FastAPI server running on the Mac? Your next tap retries.',
     },
     answerFailed: {
       title: 'Answer failed',

@@ -36,7 +36,7 @@ export default function App() {
 
       <header className="topbar">
         <span className="beta">{strings.betaLabel}</span>
-        <ModeBadge mode={eyes.mode} />
+        <ModeBadge mode={eyes.mode} backend={backend} />
       </header>
 
       {backend === 'unreachable' && <Banner {...s.backendUnreachable} />}
