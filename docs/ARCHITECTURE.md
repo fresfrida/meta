@@ -1,6 +1,6 @@
 # Architecture - Second Eyes
 
-Status: Brief 3 (1 fps loop + no-repeat on mock; live path built and unit-tested; no live call made yet).
+Status: Brief 5 (design v2, 4 languages, metres, 2-in-flight loop, mic test page; live calls measured).
 First written before the app code, per the Owner's standing architecture rule.
 
 ## Where every piece runs
@@ -30,10 +30,13 @@ Later hosting target: **not decided**.
 
 ## Request flow (one capture)
 
-Loop mode (default): after Start, the phone runs the flow below, waits
-`LOOP_INTERVAL_MS` (1000) after each answer or failure, then captures again.
-One request in flight at most. `?loop=0` in the URL gives the single Capture
-button instead (Brief 1 behaviour, every answer spoken).
+Loop mode (default): after Start, the phone starts a capture every
+`LOOP_STAGGER_MS` (1750) after the previous one started, with at most
+`MAX_IN_FLIGHT` (2) requests open. Answers are handled in capture order; an
+answer older than one already handled is dropped (counted, not shown, not
+spoken). `?loop=0` in the URL gives the single Capture button instead (Brief 1
+behaviour, every answer spoken). `?mictest=1` renders only the mic test page
+(no backend calls).
 
 ```
 capture (loop tick, or tap Capture with ?loop=0)
@@ -46,13 +49,16 @@ capture (loop tick, or tap Capture with ?loop=0)
            to backend/.data/spend.json
      side from box: if box present, side = box centre x (<= LEFT_MAX 333 left, >= RIGHT_MIN 667 right,
      else ahead), side_source "box"; otherwise the model's side, side_source "model"
-     response { hazard, side, side_source, distance, box, source, model_ms, input_tokens, output_tokens, cost_usd }
-     (box = [x_min, y_min, x_max, y_max] on 0..1000, or null; malformed -> null)
-  -> phone: shared helper maps { hazard, side, distance } -> fixed phrase (strings.ts)
+     response { hazard, side, side_source, distance, distance_m, box, source, model_ms, input_tokens, output_tokens, cost_usd }
+     (box = [x_min, y_min, x_max, y_max] on 0..1000, or null; malformed -> null;
+      distance_m = whole metres 1..10 or null, invalid -> null; prompt v3)
+  -> phone: phraseFor(answer, lang) picks the language's template (strings.ts): metres when
+     distance_m is set, else near/far; lampFor(answer) lights the traffic light (lib/light.ts)
   -> warnings with a box: BoxOverlay draws it over the video (lib/boxMap.ts maps the frame grid
      through the video's object-fit: cover crop); fades after BOX_STALE_MS (2000) without a new answer
   -> no-repeat rule (frontend/src/lib/announce.ts) decides speak or stay silent
-  -> speechSynthesis.speak(phrase) when it says speak
+  -> speechSynthesis.speak(phrase) in the chosen language (en-GB / zh-CN / ms-MY / ta-IN) with a
+     matching installed voice; no voice -> shown only, with a notice
   -> timing marks: capture start, request sent, response received, speech start
 ```
 
@@ -76,12 +82,14 @@ worker. The service worker never answers `/api/*`.
 | `META_BASE_URL` | backend | `https://api.meta.ai/v1` | Model API base URL. |
 | `VISION_MODEL` | backend | `muse-spark-1.3` | Standard mode model ID (`-contributor` would be Contributor mode). |
 | `VISION_REASONING_EFFORT` | backend | `minimal` | Lowest level Muse Spark accepts (`none` returns 400 per the docs). |
-| `VISION_TIMEOUT_S` | backend | `8` | Per-call timeout; timeout -> 504 `model_timeout`. |
+| `VISION_TIMEOUT_S` | backend | `10` | Per-call timeout; timeout -> 504 `model_timeout`. |
 | `BUDGET_USD` | backend | `25` | Live calls refused (402 `budget_reached`) once spent >= this. |
 | `PRICE_INPUT_PER_M` / `PRICE_CACHED_INPUT_PER_M` / `PRICE_OUTPUT_PER_M` | backend | `1.25` / `0.15` / `4.25` | USD per 1M tokens (muse-spark-1.3 Standard). Output includes reasoning tokens. |
 | `SPEND_FILE` | backend | `backend/.data/spend.json` | Where the spend counter lives. |
 | `MOCK_HOLD_CALLS` | backend | `4` | Mock repeats each answer this many calls. |
 | `?loop=0` | page URL | loop on | Single-capture mode for timing tests. |
+| `?mictest=1` | page URL | off | Mic test page (iPhone speech with the mic open); no backend calls. |
+| `second-eyes.lang` | localStorage | `en` | Chosen speech language (Settings). |
 
 The backend reads `backend/.env` at startup (python-dotenv); real environment
 variables win over the file. `backend/.env` and `backend/.data/` are gitignored.
