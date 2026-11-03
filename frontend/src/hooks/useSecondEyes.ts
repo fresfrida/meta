@@ -18,7 +18,7 @@ import type { Size } from '../lib/boxMap'
 import { CameraError, type CameraFailure, captureFrame, openRearCamera, stopStream } from '../lib/camera'
 import { type FailureReason, failureReason } from '../lib/failure'
 import { type Lamp, lampFor } from '../lib/light'
-import { type WarningHazard, isWarning, phraseFor } from '../lib/phrase'
+import { type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus } from '../lib/voices'
@@ -103,9 +103,9 @@ const EMPTY_TIMINGS: Timings = {
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /** Loop mode uses the no-repeat rule; single-capture mode speaks every answer (Brief 1 timing test). */
-function decideFor(res: AnalyzeResponse, phrase: string, state: AnnounceState, now: number): Decision {
+function decideFor(res: AnalyzeResponse, state: AnnounceState, now: number): Decision {
   if (!LOOP_ENABLED) return { speak: true, interrupt: state.speaking }
-  return decide(res, phrase, state, now, MIN_GAP_MS, REPEAT_CLOSER_M)
+  return decide(res, state, now, MIN_GAP_MS, REPEAT_CLOSER_M)
 }
 
 export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): SecondEyes {
@@ -115,6 +115,8 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
   const boxSeqRef = useRef(0)
   const speechIdRef = useRef(0)
   const announceRef = useRef<AnnounceState>(INITIAL_ANNOUNCE)
+  // Screen phrase of the answer being spoken now (speech says the plain-language version of it).
+  const speakingTextRef = useRef<string | null>(null)
   // Requests in flight, capture order, and the newest capture whose answer has been handled.
   const inFlightRef = useRef(0)
   const captureSeqRef = useRef(0)
@@ -181,23 +183,25 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
         text,
         lamp: lampFor(res),
         quiet: res.hazard === 'unsure',
-        speaking: announceRef.current.speaking && announceRef.current.lastSpoken === text,
+        speaking: announceRef.current.speaking && speakingTextRef.current === text,
         speechFailed: same ? a.speechFailed : false,
         noVoice,
       }
     })
   }, [])
 
-  const say = useCallback((res: AnalyzeResponse, text: string, onStart: (speechStart: number) => void) => {
+  /** Speaks `speech` for the answer whose screen phrase is `text`. */
+  const say = useCallback((res: AnalyzeResponse, text: string, speech: string, onStart: (speechStart: number) => void) => {
     const speechId = ++speechIdRef.current
-    announceRef.current = spoke(res, text, performance.now())
+    announceRef.current = spoke(res, performance.now())
+    speakingTextRef.current = text
     const done = (failed: boolean) => {
       if (speechId !== speechIdRef.current) return // a newer phrase took over
       announceRef.current = { ...announceRef.current, speaking: false }
       setAnswer((a) => (a.kind === 'phrase' && a.text === text ? { ...a, speaking: false, speechFailed: failed } : a))
     }
     const speechLang = SPEECH_LANGS[langRef.current]
-    const handle = speak(text, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+    const handle = speak(speech, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
     handle.started.then(
       (speechStart) => {
         if (speechId !== speechIdRef.current) return
@@ -259,12 +263,13 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[]): Secon
           isWarning(res) && res.box ? { seq: ++boxSeqRef.current, hazard: res.hazard, box: res.box, frame } : null,
         )
         const text = phraseFor(res, langRef.current)
+        const speech = speechFor(res, langRef.current)
         const noVoice = voiceStatus(voicesRef.current, SPEECH_LANGS[langRef.current]) === 'missing'
-        const decision = decideFor(res, text, announceRef.current, performance.now())
+        const decision = decideFor(res, announceRef.current, performance.now())
         showAnswer(res, text, noVoice)
         const answerMs = Math.round(responseReceived - captureStart)
-        if (decision.speak && !noVoice) {
-          say(res, text, (speechStart) => {
+        if (decision.speak && speech !== null && !noVoice) {
+          say(res, text, speech, (speechStart) => {
             const record = toRecord({ captureStart, requestSent, responseReceived, speechStart, modelMs: res.model_ms })
             setTimings((t) => ({
               ...t,

@@ -1,18 +1,26 @@
 import { describe, expect, it } from 'vitest'
 import type { VisionAnswer } from '../api/types'
-import { INITIAL_ANNOUNCE, decide, spoke } from './announce'
-import { phraseFor } from './phrase'
+import { type AnnounceState, INITIAL_ANNOUNCE, decide, spoke } from './announce'
 
 const GAP = 1500
 const CLOSER = 2
-const step: VisionAnswer = { hazard: 'step_down', side: 'ahead', distance: 'near', box: [1, 2, 3, 4], distance_m: null }
-const curb: VisionAnswer = { hazard: 'curb', side: 'right', distance: null, box: null, distance_m: null }
-const clear: VisionAnswer = { hazard: 'clear', side: null, distance: null, box: null, distance_m: null }
-const unsure: VisionAnswer = { hazard: 'unsure', side: null, distance: null, box: null, distance_m: null }
-const run = (a: VisionAnswer, s = INITIAL_ANNOUNCE, now = 10_000) => decide(a, phraseFor(a, 'en'), s, now, GAP, CLOSER)
-const said = (a: VisionAnswer, at: number, speaking = false) => ({ ...spoke(a, phraseFor(a, 'en'), at), speaking })
+const LEFT_MAX = 333
+type A = Pick<VisionAnswer, 'hazard' | 'side' | 'distance' | 'distance_m'>
+const a = (hazard: A['hazard'], distance: A['distance'] = null, distance_m: A['distance_m'] = null, side: A['side'] = 'ahead'): A => ({
+  hazard,
+  side,
+  distance,
+  distance_m,
+})
+const step = a('step_down', 'near')
+const curb = a('curb', 'far')
+const clear = a('clear')
+const unsure = a('unsure')
+const run = (x: A, s: AnnounceState = INITIAL_ANNOUNCE, now = 10_000) => decide(x, s, now, GAP, CLOSER)
+const said = (x: A, at: number, speaking = false) => ({ ...spoke(x, at), speaking })
+const later = 30_000
 
-describe('decide (no-repeat rule, without metres)', () => {
+describe('decide: timing and unsure', () => {
   it('speaks the first answer', () => {
     expect(run(step)).toEqual({ speak: true, interrupt: false })
     expect(run(clear)).toEqual({ speak: true, interrupt: false })
@@ -23,11 +31,7 @@ describe('decide (no-repeat rule, without metres)', () => {
     expect(run(unsure, said(clear, 0))).toEqual({ speak: false, why: 'unsure' })
   })
 
-  it('stays silent on the same phrase, however long ago', () => {
-    expect(run(step, said(step, 0), 60_000)).toEqual({ speak: false, why: 'repeat' })
-  })
-
-  it('speaks a changed phrase once the gap has passed', () => {
+  it('speaks a new hazard once the gap has passed', () => {
     const s = said(step, 10_000)
     expect(run(clear, s, 10_000 + GAP - 1)).toEqual({ speak: false, why: 'too_soon' })
     expect(run(clear, s, 10_000 + GAP)).toEqual({ speak: true, interrupt: false })
@@ -47,62 +51,98 @@ describe('decide (no-repeat rule, without metres)', () => {
     expect(run(step, s, 14_000)).toEqual({ speak: false, why: 'repeat' })
   })
 
-  it('compares phrases, so a side change counts as new', () => {
-    expect(run({ ...step, side: 'left' }, said(step, 10_000), 20_000)).toEqual({ speak: true, interrupt: false })
+  it('clear stays silent after clear', () => {
+    expect(run(clear, said(clear, 0), later)).toEqual({ speak: false, why: 'repeat' })
   })
 })
 
-describe('decide with metres (key = hazard + side)', () => {
-  const at = (m: number, side: VisionAnswer['side'] = 'left'): VisionAnswer => ({
-    hazard: 'obstacle',
-    side,
-    distance: m <= 2 ? 'near' : 'far',
-    box: [1, 2, 3, 4],
-    distance_m: m,
-  })
-  const later = 30_000
+describe('decide with metres (key = hazard type)', () => {
+  const at = (m: number, side: A['side'] = 'left') => a('obstacle', m <= 2 ? 'near' : 'far', m, side)
 
-  it('same key, same or further: silent', () => {
+  it('same hazard, same or further: silent', () => {
     expect(run(at(5), said(at(5), 0), later)).toEqual({ speak: false, why: 'repeat' })
     expect(run(at(8), said(at(5), 0), later)).toEqual({ speak: false, why: 'repeat' })
   })
 
-  it('same key, less than REPEAT_CLOSER_M closer: silent, though the phrase changed', () => {
+  it('same hazard, less than REPEAT_CLOSER_M closer: silent', () => {
     expect(run(at(4), said(at(5), 0), later)).toEqual({ speak: false, why: 'repeat' })
   })
 
-  it('same key, at least REPEAT_CLOSER_M closer: spoken', () => {
+  it('same hazard, at least REPEAT_CLOSER_M closer: spoken', () => {
     expect(run(at(3), said(at(5), 0), later)).toEqual({ speak: true, interrupt: false })
     expect(run(at(1), said(at(5), 0), later)).toEqual({ speak: true, interrupt: false })
+  })
+
+  it('a side change alone never re-speaks', () => {
+    expect(run(at(5, 'right'), said(at(5, 'left'), 0), later)).toEqual({ speak: false, why: 'repeat' })
+    expect(run(at(5, 'ahead'), said(at(5, 'left'), 0), later)).toEqual({ speak: false, why: 'repeat' })
+  })
+
+  it('a different hazard type: spoken', () => {
+    expect(run(a('curb', 'far', 5, 'left'), said(at(5), 0), later)).toEqual({ speak: true, interrupt: false })
   })
 
   it('a closer repeat still obeys the gap', () => {
     expect(run(at(3), said(at(5), later), later + GAP - 1)).toEqual({ speak: false, why: 'too_soon' })
   })
 
-  it('a different side or hazard is a new key: spoken', () => {
-    expect(run(at(5, 'right'), said(at(5), 0), later)).toEqual({ speak: true, interrupt: false })
-    expect(run({ ...at(5), hazard: 'curb' }, said(at(5), 0), later)).toEqual({ speak: true, interrupt: false })
-  })
-
-  it('last spoken without metres: falls back to comparing phrases', () => {
-    const noMetres = { ...at(5), distance_m: null }
-    expect(run(at(5), said(noMetres, 0), later)).toEqual({ speak: true, interrupt: false })
-  })
-
   it('a reset state (language change) speaks the same answer again', () => {
     expect(run(at(5), INITIAL_ANNOUNCE, later)).toEqual({ speak: true, interrupt: false })
+  })
+
+  it('the live flapping sequence (box centre 307-342 around 333) speaks once', () => {
+    // Box centres seen in the Brief 5 live loop, one answer every ~1.8 s; obstacle at 2 m throughout.
+    const centres = [312, 307, 342, 340, 312, 312, 312, 340]
+    let state = INITIAL_ANNOUNCE
+    let spokenCount = 0
+    centres.forEach((c, i) => {
+      const answer = at(2, c <= LEFT_MAX ? 'left' : 'ahead')
+      const now = 1_000 + i * 1_800
+      const d = decide(answer, state, now, GAP, CLOSER)
+      if (d.speak) {
+        spokenCount += 1
+        state = spoke(answer, now)
+      }
+      state = { ...state, speaking: false }
+    })
+    expect(spokenCount).toBe(1)
+  })
+})
+
+describe('decide without metres (key = hazard type + near/far)', () => {
+  it('same hazard and distance: silent, whatever the side', () => {
+    expect(run(a('curb', 'far', null, 'right'), said(a('curb', 'far', null, 'left'), 0), later)).toEqual({
+      speak: false,
+      why: 'repeat',
+    })
+  })
+
+  it('far -> near speaks again', () => {
+    expect(run(a('curb', 'near'), said(a('curb', 'far'), 0), later)).toEqual({ speak: true, interrupt: false })
+  })
+
+  it('near -> far stays silent', () => {
+    expect(run(a('curb', 'far'), said(a('curb', 'near'), 0), later)).toEqual({ speak: false, why: 'repeat' })
+  })
+
+  it('a new hazard type speaks', () => {
+    expect(run(a('step_up', 'far'), said(a('curb', 'far'), 0), later)).toEqual({ speak: true, interrupt: false })
+  })
+
+  it('last spoken with metres, now without: falls back to near/far', () => {
+    expect(run(a('obstacle', 'far'), said(a('obstacle', 'far', 5), 0), later)).toEqual({ speak: false, why: 'repeat' })
+    expect(run(a('obstacle', 'near'), said(a('obstacle', 'far', 5), 0), later)).toEqual({ speak: true, interrupt: false })
   })
 })
 
 describe('spoke', () => {
-  it('records phrase, time, speaking, key and metres', () => {
-    expect(spoke({ hazard: 'curb', side: 'right', distance_m: 3 }, 'Curb, 3 metres, right', 5)).toEqual({
-      lastSpoken: 'Curb, 3 metres, right',
+  it('records hazard, metres, near, time and speaking', () => {
+    expect(spoke(a('curb', 'far', 3, 'right'), 5)).toEqual({
+      lastHazard: 'curb',
+      lastDistanceM: 3,
+      lastNear: false,
       lastSpokenAt: 5,
       speaking: true,
-      lastKey: 'curb|right',
-      lastDistanceM: 3,
     })
   })
 })

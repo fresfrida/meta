@@ -1,18 +1,31 @@
 // Every piece of user-facing text lives here.
 import type { Hazard, Side } from './api/types'
 import type { Lang } from './config'
+import type { WarningHazard } from './lib/phrase'
 
 /**
- * Spoken / shown hazard phrases, one table and one template per language (no cross-language concatenation).
- * Words and templates approved by the Owner on 3 Nov 2026 ("translation ok"), pending a native-speaker check.
+ * Hazard phrases, one table per language (no cross-language concatenation). Each language has:
+ * - screen: the short phrase shown on screen (Owner approved 3 Nov, "translation ok"), also the box tag words;
+ * - voice: the plain-language sentence that is spoken (Owner approved 3 Nov, Brief 5b, "yes to all").
+ * EN is approved; ZH / MS / TA are approved pending a native-speaker check.
  */
 export interface PhraseLanguage {
-  /** Hazard words. `unsure` is shown on screen only, never spoken. */
+  /** Screen hazard words. `unsure` is shown on screen only, never spoken. */
   hazard: Record<Hazard, string>
-  /** With metres: N = distance_m. */
+  /** Screen, with metres: N = distance_m. */
   metres: (hazard: string, metres: number, side: Side | null) => string
-  /** Without metres: near/far fallback. */
+  /** Screen, without metres: near/far fallback. */
   plain: (hazard: string, side: Side | null, near: boolean) => string
+  /** What is spoken. */
+  voice: {
+    /** Voice hazard words (Tamil: word + verb). */
+    hazard: Record<WarningHazard, string>
+    clear: string
+    /** With metres: N = distance_m. */
+    metres: (what: string, metres: number, side: Side | null) => string
+    /** Without metres: near / far (unknown distance counts as far). */
+    plain: (what: string, side: Side | null, near: boolean) => string
+  }
 }
 
 const pick = (side: Side | null, left: string, right: string, ahead = '') =>
@@ -30,6 +43,18 @@ export const phrases: Record<Lang, PhraseLanguage> = {
     },
     metres: (h, n, side) => `${h}, ${n} ${n === 1 ? 'metre' : 'metres'}${pick(side, ', left', ', right')}`,
     plain: (h, side, near) => `${h} ahead${pick(side, ', left', ', right')}${near ? ', close' : ''}`,
+    voice: {
+      hazard: {
+        step_down: 'Steps going down',
+        step_up: 'Steps going up',
+        curb: 'A kerb',
+        obstacle: 'Something in the way',
+      },
+      clear: 'The path looks clear.',
+      metres: (w, n, side) =>
+        `${w}, about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
+      plain: (w, side, near) => `${w} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
+    },
   },
   zh: {
     hazard: {
@@ -42,6 +67,17 @@ export const phrases: Record<Lang, PhraseLanguage> = {
     },
     metres: (h, n, side) => `${pick(side, '左前方', '右前方', '前方')}${n}米，${h}`,
     plain: (h, side, near) => `${pick(side, '左前方', '右前方', '前方')}${h}${near ? '，很近' : ''}`,
+    voice: {
+      hazard: {
+        step_down: '往下的台阶',
+        step_up: '往上的台阶',
+        curb: '路缘石',
+        obstacle: '东西挡路',
+      },
+      clear: '前面的路看起来没有障碍。',
+      metres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，有${w}。`,
+      plain: (w, side, near) => `${pick(side, '左前方', '右前方', '前面')}${near ? '很近的地方有' : '有'}${w}。`,
+    },
   },
   ms: {
     hazard: {
@@ -54,6 +90,19 @@ export const phrases: Record<Lang, PhraseLanguage> = {
     },
     metres: (h, n, side) => `${h}, ${n} meter${pick(side, ', sebelah kiri', ', sebelah kanan')}`,
     plain: (h, side, near) => `${h} di hadapan${pick(side, ', sebelah kiri', ', sebelah kanan')}${near ? ', dekat' : ''}`,
+    voice: {
+      hazard: {
+        step_down: 'tangga turun',
+        step_up: 'tangga naik',
+        curb: 'bebendul jalan',
+        obstacle: 'sesuatu yang menghalang',
+      },
+      clear: 'Laluan di hadapan nampak lapang.',
+      metres: (w, n, side) =>
+        `Ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+      plain: (w, side, near) =>
+        `Ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+    },
   },
   ta: {
     hazard: {
@@ -66,6 +115,19 @@ export const phrases: Record<Lang, PhraseLanguage> = {
     },
     metres: (h, n, side) => `${h}, ${n} மீட்டர்${pick(side, ', இடது பக்கம்', ', வலது பக்கம்')}`,
     plain: (h, side, near) => `முன்னால் ${h}${pick(side, ', இடது பக்கம்', ', வலது பக்கம்')}${near ? ', அருகில்' : ''}`,
+    voice: {
+      hazard: {
+        step_down: 'கீழே இறங்கும் படிகள் உள்ளன',
+        step_up: 'மேலே ஏறும் படிகள் உள்ளன',
+        curb: 'நடைபாதை ஓரம் உள்ளது',
+        obstacle: 'வழியில் ஏதோ ஒன்று உள்ளது',
+      },
+      clear: 'முன்னால் உள்ள பாதை தெளிவாகத் தெரிகிறது.',
+      metres: (w, n, side) =>
+        `சுமார் ${n} மீட்டர் முன்னால்${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
+      plain: (w, side, near) =>
+        `${near ? 'மிக அருகில் முன்னால்' : 'முன்னால்'}${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
+    },
   },
 }
 

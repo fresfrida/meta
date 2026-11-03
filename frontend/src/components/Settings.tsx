@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { LANGS, type Lang, SPEECH_LANGS } from '../config'
-import { phraseFor } from '../lib/phrase'
+import { speechFor } from '../lib/phrase'
 import { speak } from '../lib/speech'
 import { pickVoice, voiceStatus } from '../lib/voices'
 import { languages, strings } from '../strings'
 import { Notice } from './Notice'
 
 const t = strings.settings
-/** "Test voice" says what a close step down would sound like. */
+/** "Test voice" says the plain-language sentence for a close step down. */
 const SAMPLE = { hazard: 'step_down', side: 'ahead', distance: 'near', distance_m: 2 } as const
 
 interface SettingsProps {
@@ -25,7 +25,7 @@ export function Settings({ lang, voices, onLang, onDone }: SettingsProps) {
     const speechLang = SPEECH_LANGS[lang]
     if (status(lang) === 'missing') return setTestFailed(true)
     setTestFailed(false)
-    speak(phraseFor(SAMPLE, lang), { lang: speechLang, voice: pickVoice(voices, speechLang) }).started.catch(() =>
+    speak(speechFor(SAMPLE, lang) ?? '', { lang: speechLang, voice: pickVoice(voices, speechLang) }).started.catch(() =>
       setTestFailed(true),
     )
   }
