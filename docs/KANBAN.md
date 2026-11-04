@@ -11,7 +11,6 @@
 - Native-speaker check of the ZH / MS / TA Ask texts (Brief 8)
 - Translations of the Ask chip, "Listening stopped", "Microphone not available" (EN only for now)
 - Native-speaker check of the ZH / MS / TA fast phrase words (Owner approved 4 Nov)
-- `strings.ts`: drop the 8 "TENTATIVE (Brief 11)" comments on the steps words (approved) - edit after the live test, so Vite does not reload the phone mid-test
 - Set `VISION_MODE=mock` again after the Owner's filming
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
