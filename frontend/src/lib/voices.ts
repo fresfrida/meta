@@ -2,7 +2,8 @@
 // language (remembered), and waiting for the browser's voice list before the first speech.
 import type { VoiceStatus } from '../strings'
 
-type VoiceLike = Pick<SpeechSynthesisVoice, 'lang' | 'name'> & Partial<Pick<SpeechSynthesisVoice, 'localService'>>
+type VoiceLike = Pick<SpeechSynthesisVoice, 'lang' | 'name'> &
+  Partial<Pick<SpeechSynthesisVoice, 'localService' | 'voiceURI'>>
 
 const norm = (lang: string) => lang.replace('_', '-').toLowerCase()
 const QUALITY = /google|enhanced|premium|natural|neural/i
@@ -32,15 +33,65 @@ export function recommendedVoice<V extends VoiceLike>(voices: readonly V[], lang
   )
 }
 
-/** The remembered voice (by name) if the phone still has it for this language, else the recommended one. */
+/**
+ * A stable id per voice in a list: its voiceURI (or name + lang), with "#2", "#3" added when several voices share it
+ * (Android lists several voices with the same name and URI). Used for row keys, selection and the remembered choice.
+ */
+export function voiceIds<V extends VoiceLike>(list: readonly V[]): string[] {
+  const seen = new Map<string, number>()
+  return list.map((v) => {
+    const base = v.voiceURI || `${v.name}|${v.lang}`
+    const n = (seen.get(base) ?? 0) + 1
+    seen.set(base, n)
+    return n === 1 ? base : `${base}#${n}`
+  })
+}
+
+/** The remembered voice (by id, or by name from before Brief 22) if the phone still has it, else the recommended one. */
 export function chooseVoice<V extends VoiceLike>(voices: readonly V[], lang: string, preferred: string | null): V | null {
   const own = voicesFor(voices, lang)
-  return (preferred ? own.find((v) => v.name === preferred) : undefined) ?? recommendedVoice(voices, lang)
+  if (preferred) {
+    const ids = voiceIds(own)
+    const i = ids.indexOf(preferred)
+    if (i >= 0) return own[i]
+    const byOldName = own.find((v) => v.name === preferred)
+    if (byOldName) return byOldName
+  }
+  return recommendedVoice(voices, lang)
+}
+
+export interface VoiceRow<V> {
+  key: string
+  /** The voice's name, with " · 2", " · 3" added when names repeat. */
+  label: string
+  recommended: boolean
+  selected: boolean
+  voice: V
+}
+
+/** The Settings voice list for this language, built fresh each time: exactly one row selected when any exist. */
+export function voiceRows<V extends VoiceLike>(voices: readonly V[], lang: string, preferred: string | null): VoiceRow<V>[] {
+  const own = voicesFor(voices, lang)
+  const ids = voiceIds(own)
+  const recommended = recommendedVoice(voices, lang)
+  const selected = chooseVoice(voices, lang, preferred)
+  const nameCount = new Map<string, number>()
+  return own.map((v, i) => {
+    const n = (nameCount.get(v.name) ?? 0) + 1
+    nameCount.set(v.name, n)
+    return {
+      key: ids[i],
+      label: n === 1 ? v.name : `${v.name} · ${n}`,
+      recommended: v === recommended,
+      selected: v === selected,
+      voice: v,
+    }
+  })
 }
 
 const prefKey = (lang: string) => `second-eyes.voice.${norm(lang)}`
 
-/** The voice chosen in Settings for this speech language, or null (storage blocked counts as none). */
+/** The voice id chosen in Settings for this speech language, or null (storage blocked counts as none). */
 export function voicePref(lang: string): string | null {
   try {
     return window.localStorage.getItem(prefKey(lang))

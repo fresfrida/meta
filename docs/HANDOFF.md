@@ -178,7 +178,8 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 - Voice (Brief 20, `lib/voices.ts`): default = on-device voice named Google /
   Enhanced / Premium / Natural / Neural, else any on-device, else first by name
   (exact lang first, then base language). The Settings choice is kept per
-  language (`second-eyes.voice.<lang>`); gone -> the default. The first speech
+  language (`second-eyes.voice.<lang>`) by voice id (voiceURI, numbered when
+  Android repeats it; Brief 22); gone -> the default. Repeated names show " · 2". The first speech
   of a session waits up to `VOICE_WAIT_MS` (1.5 s) for voices. `SPEECH_RATE` 0.95.
 - Mic test page `?mictest=1`: mic on (echo cancellation requested), level meter,
   sample rate, a test sentence every 3 s, mic on/off toggle. No backend calls.

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { LANGS, type Lang, SPEECH_LANGS } from '../config'
 import { speechFor } from '../lib/phrase'
 import { speak } from '../lib/speech'
-import { chooseVoice, recommendedVoice, setVoicePref, voicePref, voiceStatus, voicesFor } from '../lib/voices'
+import { chooseVoice, setVoicePref, voicePref, voiceRows, voiceStatus } from '../lib/voices'
 import { languages, strings } from '../strings'
 import { Notice } from './Notice'
 
@@ -32,8 +32,8 @@ export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMor
     setPrefLang(speechLang)
     setPref(voicePref(speechLang))
   }
-  const own = voicesFor(voices, speechLang)
-  const recommended = recommendedVoice(voices, speechLang)
+  // Built fresh from the current language on every render; rows keyed by a unique voice id (Brief 22).
+  const rows = voiceRows(voices, speechLang, pref)
   const selected = chooseVoice(voices, speechLang, pref)
 
   const testVoice = (voice = selected) => {
@@ -42,9 +42,9 @@ export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMor
     speak(speechFor(SAMPLE, lang) ?? '', { lang: speechLang, voice }).started.catch(() => setTestFailed(true))
   }
 
-  const chooseOne = (voice: SpeechSynthesisVoice) => {
-    setVoicePref(speechLang, voice.name)
-    setPref(voice.name)
+  const chooseOne = (id: string, voice: SpeechSynthesisVoice) => {
+    setVoicePref(speechLang, id)
+    setPref(id)
     testVoice(voice) // hear it straight away
   }
 
@@ -84,26 +84,26 @@ export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMor
         ))}
       </div>
 
-      {own.length > 0 && (
+      {rows.length > 0 && (
         <>
           <h2 className="label" id="voice-label">
             {t.voice}
           </h2>
-          <div className="list" role="radiogroup" aria-labelledby="voice-label">
-            {own.map((v) => (
+          <div className="list" role="radiogroup" aria-labelledby="voice-label" key={speechLang}>
+            {rows.map((row) => (
               <button
-                key={v.voiceURI || v.name}
+                key={row.key}
                 type="button"
                 role="radio"
-                aria-checked={v === selected}
+                aria-checked={row.selected}
                 className="list__item"
-                onClick={() => chooseOne(v)}
+                onClick={() => chooseOne(row.key, row.voice)}
               >
                 <span className="list__text">
-                  <span className="list__title">{v.name}</span>
-                  {v === recommended && <span className="list__subtitle">{t.recommended}</span>}
+                  <span className="list__title">{row.label}</span>
+                  {row.recommended && <span className="list__subtitle">{t.recommended}</span>}
                 </span>
-                <i className={v === selected ? 'radio radio--on' : 'radio'} aria-hidden="true" />
+                <i className={row.selected ? 'radio radio--on' : 'radio'} aria-hidden="true" />
               </button>
             ))}
           </div>

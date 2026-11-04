@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { chooseVoice, pickVoice, recommendedVoice, voiceStatus, voicesFor, waitForVoices } from './voices'
+import { chooseVoice, pickVoice, recommendedVoice, voiceIds, voiceRows, voiceStatus, voicesFor, waitForVoices } from './voices'
 
 const v = (lang: string, name = lang, localService = true) => ({ lang, name, localService })
 const voices = [v('en-US', 'Samantha'), v('en-GB', 'Daniel'), v('zh_CN', 'Tingting'), v('ms-MY', 'Amira')]
@@ -103,5 +103,55 @@ describe('waitForVoices', () => {
     vi.advanceTimersByTime(1500)
     expect(await p).toEqual([])
     vi.useRealTimers()
+  })
+})
+
+describe('Android-like list (Brief 22)', () => {
+  // Several voices share a name and URI; zh has CN / HK / MO / MY; one Tamil voice.
+  const a = (lang: string, name: string, voiceURI = name, localService = true) => ({ lang, name, voiceURI, localService })
+  const android = [
+    a('zh-HK', 'Chinese Hong Kong'),
+    a('zh-HK', 'Chinese Hong Kong'),
+    a('zh-MO', 'Chinese Macao'),
+    a('zh-MY', 'Chinese Malaysia'),
+    a('zh-CN', 'Chinese China'),
+    a('zh-CN', 'Chinese China'),
+    a('zh-CN', 'Chinese China', 'Chinese China', false),
+    a('ta-IN', 'Tamil India'),
+    a('en-GB', 'English United Kingdom'),
+  ]
+  const one = (rows: { selected: boolean }[]) => rows.filter((r) => r.selected).length
+  it('zh -> ta -> zh: only that language, exactly one selected, unique keys', () => {
+    const zh = voiceRows(android, 'zh-CN', null)
+    expect(zh.map((r) => r.label)).toEqual(['Chinese China', 'Chinese China · 2', 'Chinese China · 3'])
+    expect(new Set(zh.map((r) => r.key)).size).toBe(3)
+    expect(one(zh)).toBe(1)
+    expect(zh.find((r) => r.recommended)?.voice.lang).toBe('zh-CN')
+
+    const ta = voiceRows(android, 'ta-IN', null)
+    expect(ta.map((r) => r.label)).toEqual(['Tamil India'])
+    expect(ta[0]).toMatchObject({ selected: true, recommended: true })
+
+    const pick = zh[1].key // the second "Chinese China"
+    const zhAgain = voiceRows(android, 'zh-CN', pick)
+    expect(zhAgain.map((r) => r.label)).toEqual(['Chinese China', 'Chinese China · 2', 'Chinese China · 3'])
+    expect(one(zhAgain)).toBe(1)
+    expect(zhAgain.find((r) => r.selected)?.key).toBe(pick)
+  })
+  it('no zh-CN voice: the base language (other zh) as before', () => {
+    const noCN = android.filter((v) => v.lang !== 'zh-CN')
+    expect(voiceRows(noCN, 'zh-CN', null).map((r) => r.label)).toEqual([
+      'Chinese Hong Kong',
+      'Chinese Hong Kong · 2',
+      'Chinese Macao',
+      'Chinese Malaysia',
+    ])
+  })
+  it('a remembered id that is gone falls back to the recommended voice; an old name still matches', () => {
+    expect(chooseVoice(android, 'zh-CN', 'Chinese China#9')?.voiceURI).toBe('Chinese China')
+    expect(chooseVoice(android, 'ta-IN', 'Tamil India')?.lang).toBe('ta-IN')
+  })
+  it('ids: voiceURI, numbered when repeated; name + lang when the URI is empty', () => {
+    expect(voiceIds([a('zh-CN', 'X'), a('zh-CN', 'X'), a('zh-CN', 'Y', '')])).toEqual(['X', 'X#2', 'Y|zh-CN'])
   })
 })
