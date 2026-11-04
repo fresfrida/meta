@@ -16,9 +16,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 14 wording v2 on `claude/second-eyes-v8`: built and checked (pytest 198, vitest 330, build OK; mock screenshot "Nothing seen"). Waiting: the Owner on ZH / MS / TA, then the Advisor's go to merge
+- (none)
 
 ## Done
+- Brief 14: wording v2 (person-centred, 4 languages, Owner approved) + Start / Stop lines; pytest 198, vitest 330; merged and live (`e73bcb4`, 4 Nov)
 - Brief 13 / 13b / 13c: prompt v7 (roads never clear, kerb sentence, sure), hedges ("There might be ..."), Kerb, SAM door, heartbeat, connection lost / back, Talk more; pytest 198, vitest 324; merged into `claude/second-eyes` and live (4 Nov)
 - Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
 - Brief 11: two-speed fast warning - `/api/detect` (SAM 3.1 stairs + curb, parallel, bounded), geometry distance rule, merge rule (kind key, up/down adds, 3 s holds, 10 s per-kind memory), tone + vibrate cue, fast/detail pill, `?fast=0`; pytest x173, vitest x122; live desktop first speech 1.2-1.7 s vs 5.2 s; live for the Owner with a $15 cap (4 Nov)

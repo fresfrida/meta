@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 4 Nov 2026, Brief 13 / 13b merged and live (prompt v7, hedges, Kerb, SAM door, alerts, heartbeat, Talk more; $15.91 cap).
+Last updated: 4 Nov 2026, Brief 14 merged and live (wording v2, Start / Stop lines; prompt v7; $15.91 cap, $2.14 spent).
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,7 +9,7 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
-- **Wording v2 (Brief 14, branch `claude/second-eyes-v8`, NOT merged, NOT live):** person-centred English (Owner
+- **Wording v2 (Brief 14), merged and live 4 Nov (`e73bcb4`):** person-centred English (Owner
   approved) - "Nothing seen in your path.", "Something in your path", "A group of people", "The edge of a road",
   "A pedestrian crossing", near = "very close", the new connection lines, and Start / Stop lines. ZH / MS / TA
   approved by the Owner 4 Nov (native check pending).
