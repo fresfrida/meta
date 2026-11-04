@@ -1,7 +1,7 @@
 # Kanban - Second Eyes
 
 ## Backlog
-- Brief 29 (drafted, waiting for the Owner's OK to send): "Where does the path go?" by Hey Eyes (Ask prompt sentence approved); fast SAM "car" warning behind a switch, after a near-car test
+- Brief 29 (sent 5 Nov ~00:35, Coder building): "Where does the path go?" by Hey Eyes (Ask prompt sentence approved); fast SAM "car" warning behind a switch, after a near-car test
 - 中文 / Bahasa Melayu / தமிழ் for the Brief 27 getting-ready lines and card (English only for now)
 - Restart the Mac backend so the Mac link uses prompt v8 (stop any page loop first)
 - iPad and Android re-test after Briefs 25-28
