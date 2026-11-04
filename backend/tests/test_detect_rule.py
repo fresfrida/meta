@@ -4,8 +4,8 @@ import math
 
 import pytest
 
-from app.config import CAMERA_HEIGHT_M, SAM_MIN_CONF, VFOV_LANDSCAPE_DEG, VFOV_PORTRAIT_DEG
-from app.detect_rule import RawHit, ground_distance_m, keep, kept_hits, parse_sam_text, to_grid
+from app.config import CAMERA_HEIGHT_M, PATH_HALF_WIDTH_M, SAM_MIN_CONF, VFOV_LANDSCAPE_DEG, VFOV_PORTRAIT_DEG
+from app.detect_rule import BESIDE, RawHit, ground_distance_m, keep, kept_hits, lateral_span_m, parse_sam_text, to_grid
 
 
 def raw(y2, x1=100, x2=260, y1=None, w=360, h=640, c=0.9, kind="steps"):
@@ -46,17 +46,18 @@ def test_distance_is_height_over_tan_of_angle_below_horizon(w, h, vfov):
     focal = (h / 2) / math.tan(math.radians(vfov) / 2)
     expected = CAMERA_HEIGHT_M / ((bottom - h / 2) / focal)
     assert ground_distance_m(bottom, h, portrait=h > w) == pytest.approx(expected)
-    hit = keep(RawHit("curb", 10, 10, 50, round(bottom) - 1, w, h, 0.9))
+    hit = keep(RawHit("curb", w // 2 - 40, 10, w // 2 + 40, round(bottom) - 1, w, h, 0.9))
     assert hit.distance_m == round(expected) and hit.distance == "far"
 
 
 def test_brief_10_measured_boxes():
     # Brief 10 live SAM boxes -> the distances its report computed by hand.
-    steps3 = kept_hits(parse_sam_text("<|box;x1=353;y1=169;x2=381;y2=209;w=640;h=480;c=0.546|><|box;x1=311;y1=209;x2=370;y2=312;w=640;h=480;c=0.816|>", "steps"))
+    steps3, _ = kept_hits(parse_sam_text("<|box;x1=353;y1=169;x2=381;y2=209;w=640;h=480;c=0.546|><|box;x1=311;y1=209;x2=370;y2=312;w=640;h=480;c=0.816|>", "steps"))
     assert [(h.distance_m, h.side) for h in steps3] == [(9, "ahead")]  # upper flight: above the horizon, dropped
-    cc0 = kept_hits(parse_sam_text("<|box;x1=160;y1=350;x2=639;y2=444;w=640;h=472;c=0.86|><|box;x1=17;y1=440;x2=95;y2=471;w=640;h=472;c=0.75|>", "curb"))
-    assert [(h.distance, h.distance_m, h.side) for h in cc0] == [("near", None, "left"), ("far", 3, "right")]
-    night = kept_hits(parse_sam_text("<|box;x1=0;y1=530;x2=289;y2=639;w=296;h=640;c=0.92|>", "steps"))
+    cc0, cc0_beside = kept_hits(parse_sam_text("<|box;x1=160;y1=350;x2=639;y2=444;w=640;h=472;c=0.86|><|box;x1=17;y1=440;x2=95;y2=471;w=640;h=472;c=0.75|>", "curb"))
+    # Brief 15: the near kerb bottom-left (x 17-95 of 640, touching the bottom) is beside the path now.
+    assert [(h.distance, h.distance_m, h.side) for h in cc0] == [("far", 3, "right")] and cc0_beside == 1
+    night, _ = kept_hits(parse_sam_text("<|box;x1=0;y1=530;x2=289;y2=639;w=296;h=640;c=0.92|>", "steps"))
     assert [(h.distance, h.distance_m, h.box) for h in night] == [("near", None, [0, 828, 980, 1000])]
 
 
@@ -84,5 +85,52 @@ def test_nearest_hit_comes_first():
     far = raw(420, kind="curb")
     near = raw(560, kind="steps")
     touching = raw(639, kind="curb", c=0.6)
-    assert [h.kind for h in kept_hits([far, near])] == ["steps", "curb"]
-    assert kept_hits([far, near, touching])[0].distance == "near"
+    assert [h.kind for h in kept_hits([far, near])[0]] == ["steps", "curb"]
+    assert kept_hits([far, near, touching])[0][0].distance == "near"
+
+
+
+# ---- Brief 15: only the walking path ------------------------------------------------------------------------------
+def side_box(x1, x2, bottom, w=360, h=640, kind="door"):
+    return RawHit(kind, x1, 150, x2, bottom - 1, w, h, 0.85)
+
+
+def test_lateral_span_is_metres_sideways_at_the_ground_point():
+    # Portrait 360 x 640: focal 483.5 px; a box from the centre to 100 px right, 4 m ahead -> 0 .. 0.83 m.
+    left, right = lateral_span_m(side_box(180, 279, 500), 4.0)
+    assert left == pytest.approx(0.0) and right == pytest.approx(100 * 4.0 / ((640 / 2) / math.tan(math.radians(VFOV_PORTRAIT_DEG) / 2)))
+
+
+def test_a_door_on_a_side_wall_is_dropped_and_counted():
+    # A corridor: doors on the left and right walls, ~5 m ahead.
+    left_door, right_door = side_box(7, 65, 448), side_box(295, 353, 448)
+    assert keep(left_door) == BESIDE and keep(right_door) == BESIDE
+    assert kept_hits([left_door, right_door]) == ([], 2)
+
+
+def test_a_door_straight_ahead_is_kept():
+    hits, beside = kept_hits([side_box(120, 240, 448)])
+    assert [h.kind for h in hits] == ["door"] and beside == 0
+
+
+def test_a_kerb_across_the_path_is_kept_and_a_side_kerb_dropped():
+    across = side_box(0, 359, 470, kind="curb")  # spans the whole frame width
+    beside_kerb = side_box(320, 359, 470, kind="curb")  # only the right edge of the frame, ~3 m ahead
+    hits, beside = kept_hits([across, beside_kerb])
+    assert [h.kind for h in hits] == ["curb"] and beside == 1
+
+
+def test_path_edge_is_path_half_width():
+    # A box whose left edge sits just inside / just outside +PATH_HALF_WIDTH_M at its ground point (~4 m ahead).
+    f = (640 / 2) / math.tan(math.radians(VFOV_PORTRAIT_DEG) / 2)
+    bottom = 320 + round(CAMERA_HEIGHT_M * f / 4.0)
+    forward = ground_distance_m(bottom, 640, portrait=True)
+    edge_px = 180 + PATH_HALF_WIDTH_M * f / forward
+    assert keep(side_box(int(edge_px) - 2, 359, bottom)) != BESIDE
+    assert keep(side_box(int(edge_px) + 2, 359, bottom)) == BESIDE
+
+
+def test_a_box_touching_the_bottom_is_in_the_path_when_it_overlaps_the_centre_half():
+    assert keep(side_box(100, 200, 640)).distance == "near"  # overlaps 90..270
+    assert keep(side_box(0, 80, 640)) == BESIDE  # left quarter only
+    assert keep(side_box(280, 359, 640)) == BESIDE  # right quarter only

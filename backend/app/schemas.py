@@ -231,6 +231,7 @@ class DetectHit(BaseModel):
 class DetectResponse(BaseModel):
     hits: list[DetectHit]  # kept hits, nearest first; empty when nothing passed the rule
     found: int  # boxes SAM returned before the rule
+    beside: int = 0  # kept by confidence and distance, but beside the walking path: not spoken, not drawn
     source: Source
     sam_ms: float
     cost_usd: Optional[float] = None

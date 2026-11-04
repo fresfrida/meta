@@ -94,6 +94,10 @@ CAMERA_HEIGHT_M = 1.3
 VFOV_PORTRAIT_DEG = 67.0  # typical phone main camera (26 mm equivalent, 4:3), long side vertical
 VFOV_LANDSCAPE_DEG = 53.0  # short side vertical
 BOTTOM_TOUCH_FRAC = 0.01  # a box ending within this fraction of the frame bottom touches it: "near", no metres
+# Only things in the walking path are warned about (Brief 15): a hit is kept when its box overlaps this half-width
+# either side of straight ahead, measured at the box's ground point. A box touching the frame bottom is in the path
+# when it overlaps the centre half of the frame.
+PATH_HALF_WIDTH_M = 0.75
 
 
 @dataclass(frozen=True)

@@ -29,6 +29,7 @@ class DetectResult:
     hits: list[DetectHit]
     found: int  # boxes before the rule
     sam_ms: float
+    beside: int = 0  # hits dropped because they are beside the walking path
     images_billed: int = 0  # SAM requests that the API accepted (each is billed per image)
 
 
@@ -66,6 +67,8 @@ MOCK_SCENES: tuple[tuple[tuple[DetectKind, float, float, float, float, float], .
     (("curb", 0.60, 0.62, 0.98, 0.78, 0.84),),  # kerb on the right
     (),  # nothing found
     (("steps", 0.05, 0.80, 0.95, 1.00, 0.88),),  # steps touching the frame bottom: near
+    # A corridor: a door on each side wall (beside the walking path: dropped, counted) and nothing ahead.
+    (("door", 0.02, 0.25, 0.18, 0.70, 0.85), ("door", 0.82, 0.25, 0.98, 0.70, 0.85)),
 )
 
 
@@ -86,7 +89,8 @@ class MockDetect:
             for kind, x1, y1, x2, y2, c in scene
         ]
         time.sleep(self._delay_s)
-        return DetectResult(kept_hits(raws), len(raws), (time.perf_counter() - started) * 1000)
+        hits, beside = kept_hits(raws)
+        return DetectResult(hits, len(raws), (time.perf_counter() - started) * 1000, beside=beside)
 
 
 class _Aborted(Exception):
@@ -182,5 +186,6 @@ class LiveDetect:
             if timed_out:
                 raise DetectFailed("model_timeout", f"SAM did not answer within {DETECT_TIMEOUT_S:g} s", 504, billed)
             raise DetectFailed("model_error", "SAM request failed", 502, billed)
-        return DetectResult(kept_hits(raws), len(raws), sam_ms, billed)
+        hits, beside = kept_hits(raws)
+        return DetectResult(hits, len(raws), sam_ms, images_billed=billed, beside=beside)
 

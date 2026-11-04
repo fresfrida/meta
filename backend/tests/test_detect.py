@@ -148,13 +148,14 @@ def test_key_never_logged(make_settings, caplog):
 
 def test_mock_detect_returns_rule_checked_hits_and_no_cost(make_settings):
     client = TestClient(create_app(make_settings(MOCK_HOLD_CALLS="1")))
-    seen = [client.post("/api/detect", json={"image_b64": IMG}).json() for _ in range(4)]
+    seen = [client.post("/api/detect", json={"image_b64": IMG}).json() for _ in range(5)]
     assert all(s["source"] == "mock" and s["cost_usd"] is None for s in seen)
     assert [[(h["kind"], h["side"], h["distance"]) for h in s["hits"]] for s in seen] == [
         [("steps", "ahead", "far")],
         [("curb", "right", "far")],
         [],
         [("steps", "ahead", "near")],
+        [],  # the corridor: two side doors, beside the path
     ]
 
 
@@ -183,3 +184,18 @@ def test_door_is_a_third_concept_and_its_hits_come_back_as_door(make_settings):
     client, _ = live_detect_app(make_settings, FakeSam(lambda c: httpx.Response(200, content=sam_stream(boxes[c]))))
     kinds = [h["kind"] for h in client.post("/api/detect", json={"image_b64": IMG}).json()["hits"]]
     assert "door" in kinds
+
+
+def test_corridor_end_to_end_side_doors_are_not_warned(make_settings):
+    """A fake SAM returns a door on each side wall of a corridor (portrait frame): nothing comes back to warn about."""
+    doors = "<|box;x1=7;y1=160;x2=65;y2=447;w=360;h=640;c=0.86|>,<|box;x1=295;y1=160;x2=353;y2=447;w=360;h=640;c=0.84|>"
+    texts = {"stairs": "", "curb": "", "door": doors}
+    client, _ = live_detect_app(make_settings, FakeSam(lambda c: httpx.Response(200, content=sam_stream(texts[c]))))
+    body = client.post("/api/detect", json={"image_b64": IMG}).json()
+    assert body["hits"] == [] and body["found"] == 2 and body["beside"] == 2
+
+
+def test_mock_corridor_scene_reports_side_doors_as_beside(make_settings):
+    client = TestClient(create_app(make_settings(MOCK_HOLD_CALLS="1")))
+    bodies = [client.post("/api/detect", json={"image_b64": IMG}).json() for _ in range(5)]
+    assert (bodies[4]["hits"], bodies[4]["beside"]) == ([], 2)

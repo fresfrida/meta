@@ -135,6 +135,7 @@ def create_app(
         return DetectResponse(
             hits=result.hits,
             found=result.found,
+            beside=result.beside,
             source=settings.detect_mode,
             sam_ms=result.sam_ms,
             cost_usd=billed(result.images_billed),
