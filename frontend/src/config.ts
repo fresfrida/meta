@@ -13,6 +13,56 @@ export const REQUEST_TIMEOUT_MS = 12_000
 export const MODEL_SLOW_MS = 6_000
 /** If speech has not started this long after speak(), count it as failed. */
 export const SPEECH_START_TIMEOUT_MS = 3_000
+/**
+ * WebKit (iPhone / Safari) only: after cancelling speech that is playing, wait this long before the next speak().
+ * Speaking at once is dropped there (the new phrase ends without starting). Brief 25, iOS Simulator: 0 ms dropped;
+ * 50, 100 and 250 ms all spoke.
+ */
+export const SPEECH_CANCEL_GAP_MS = 100
+/**
+ * Brief 27, iPhone sound that comes and goes. Test flags for the Owner's phone; the defaults are the fix.
+ *   ?session=0  no audio session type (Safari decides, as before Brief 26)
+ *   ?tone=0     no Web Audio at all for the warning cue and the heartbeat tick
+ *   ?resume=0   no speechSynthesis.resume() and no re-speak of a stuck phrase
+ * They only change the WebKit (iPhone / Safari) path; Android ignores them.
+ */
+export const AUDIO_SESSION_ENABLED = readFlag('session', true)
+export const TONES_ENABLED = readFlag('tone', true)
+export const SPEECH_RESUME_ENABLED = readFlag('resume', true)
+/** WebKit: a phrase that has not started this long after speak() while the engine says it is busy is cancelled and
+ *  spoken again, once. */
+export const SPEECH_STUCK_MS = 1_000
+/** WebKit: this many phrases in a row that never started -> "Tap to turn the sound back on". */
+export const SPEECH_BLOCKED_AFTER = 2
+/**
+ * Brief 30, a lost end (TENTATIVE): a phrase that started but has had neither onend nor onerror after
+ * max(SPEECH_END_MIN_MS, characters x SPEECH_END_PER_CHAR_MS) + SPEECH_END_SLACK_MS is treated as ended: the mic gate
+ * reopens and ticks resume. WebKit can lose onend; elsewhere the timer never fires in normal use.
+ */
+export const SPEECH_END_MIN_MS = 4_000
+export const SPEECH_END_PER_CHAR_MS = 120
+export const SPEECH_END_SLACK_MS = 2_000
+export function speechEndMaxMs(text: string): number {
+  return Math.max(SPEECH_END_MIN_MS, text.length * SPEECH_END_PER_CHAR_MS) + SPEECH_END_SLACK_MS
+}
+/** The camera track muted this long while running -> reopen the camera (WebKit). */
+export const VIDEO_MUTE_WAIT_MS = 2_000
+/**
+ * Brief 28, iPhone tick: WebKit suspends the AudioContext between tones (Brief 27), so a tone waits until the context
+ * really runs (at most TONE_RESUME_WAIT_MS, else it is skipped and counted), and the context is suspended again only
+ * TONE_TAIL_MS after the tone ends (the iPhone's output latency). Android: unchanged (its context always runs).
+ */
+export const TONE_RESUME_WAIT_MS = 500
+export const TONE_TAIL_MS = 150
+/** Getting ready (Brief 27): still preparing this long after Start -> say the still-preparing line once. */
+export const GETTING_READY_STILL_MS = 8_000
+/**
+ * Brief 29, fast car warning (SAM "car" -> the vehicle words): ?car=1 asks the server for it, ?car=0 turns it off;
+ * without the flag the server's CAR_FAST decides. null = no override.
+ */
+export const CAR_FAST_OVERRIDE = readOptionalFlag('car')
+/** Brief 27: the loop starts when the camera has its first frame, waiting at most this long (then it starts anyway). */
+export const FIRST_FRAME_WAIT_MS = 2_000
 /** Calm, steady pace like station announcements (Brief 20). */
 export const SPEECH_RATE = 0.95
 /** Before the first speech of a session, wait this long at most for the phone's voices to load (Brief 20). */
@@ -92,6 +142,8 @@ export const PATH_HALF_WIDTH_M = 0.75
 export const CAMERA_HEIGHT_M = 1.3
 export const VFOV_PORTRAIT_DEG = 67
 export const VFOV_LANDSCAPE_DEG = 53
+/** Brief 26: the two angles are for a 4:3 frame; other aspects crop one side (backend VFOV_BASE_ASPECT). */
+export const VFOV_BASE_ASPECT = 4 / 3
 
 /**
  * Distance at speaking time (Brief 16): metres are said as "metres at capture - walking speed x time since capture",
@@ -118,6 +170,8 @@ export const RED_MAX_M = 2
 
 /** Mic test page (`?mictest=1`): speak a test sentence this often. */
 export const MIC_TEST = readFlag('mictest', false)
+/** ?voices=1: a plain list of the phone's speech voices, to fix the voice rule against real data (Brief 24). */
+export const VOICE_TEST = readFlag('voices', false)
 export const MIC_TEST_INTERVAL_MS = 3_000
 
 /** The hazard box fades out when no new answer has arrived for this long. */
@@ -160,9 +214,22 @@ export const FACE_LOAD_TIMEOUT_MS = 8_000
 /** How many captures the on-screen timing list keeps. */
 export const TIMING_HISTORY_SIZE = 10
 
-/** Preferred camera resolution request (the browser may give less). */
+/**
+ * Camera request (Brief 26): every phone is asked for the same frame shape, 16:9 at 1280 x 720 (720 x 1280 when held
+ * upright), rear camera. "ideal", never "exact" (exact throws OverconstrainedError on some phones): the phone may give
+ * something else, and the app reads back what it got. The frame sent stays FRAME_LONG_EDGE_PX on its long side.
+ */
 export const CAMERA_IDEAL_WIDTH = 1280
 export const CAMERA_IDEAL_HEIGHT = 720
+export const CAMERA_ASPECT = 16 / 9
+
+/** A ?name=0 / ?name=1 flag, or null when the URL does not say (Brief 29). */
+export function readOptionalFlag(name: string, search = typeof window === 'undefined' ? '' : window.location.search): boolean | null {
+  const value = new URLSearchParams(search).get(name)
+  if (value === '0' || value === 'false') return false
+  if (value === '1' || value === 'true') return true
+  return null
+}
 
 function readFlag(name: string, fallback: boolean): boolean {
   if (typeof window === 'undefined') return fallback

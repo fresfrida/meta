@@ -2,17 +2,18 @@
 Deadline: Thu 5 Nov 10:00 SGT (= Wed 4 Nov 9:00 PM EST). Target submit 09:30.
 Source docs: admin/ (incl. the event Details PDF and submission form screenshots).
 
-## Status (4 Nov 10:00 SGT) - sections below are from 3 Nov and partly outdated
-- Built since: monochrome design with a traffic-light lamp; 4 languages chosen in Settings; distance in metres;
-  hands-free "Hey Eyes" Ask (muse-voice-transcribe-1.0 + muse-spark-1.3) in 4 languages; face blur on the phone;
-  light/dark and Larger Text; output cap on every model call.
-- Latency: muse-spark-1.3 takes ~4 s (reasoning can't be turned off). Two-speed design: SAM 3.1 finds stairs and
-  kerbs in ~1.5 s and speaks first; Muse adds detail. Three Meta models in use.
-- Prompt v5 names 11 hazard kinds; v6 (in progress) adds roads, crossings, cycle paths, escalators, uneven ground,
-  and never calls a road "clear". The app never guides crossings.
-- Tested outdoors on Android over Tailscale (phone -> the Mac at home). No hosting.
-- Next: v6 + heartbeat + spoken connection alerts; polish; video tonight; README, submission text, repo public on
-  the Owner's yes. Details: docs/HANDOFF.md, docs/KANBAN.md, docs/DECISIONS.md.
+## Status (4 Nov 21:15 SGT) - sections below are from 3 Nov and partly outdated
+- Live public demo: https://second-eyes.52.76.242.161.sslip.io (Coolify on AWS Lightsail, Singapore), with 3-minute
+  visitor slots, 10 a day, $8 a day, $10 total. Mac version on Tailscale for filming.
+- Three Meta models: SAM 3.1 warns first (~1.5 s; stairs, kerbs, doors in the walking path), Muse Spark 1.3 adds
+  the detail (prompt v7: 19 named kinds + a catch-all, "There might be..." when unsure, roads never clear),
+  Muse Voice Transcribe hears "Hey Eyes" in 4 languages.
+- Built after outdoor walks: distance allows for walking during the delay, heartbeat tick, spoken "Connection lost",
+  person-centred wording, Singapore-first voices (in progress), welcome screen for visitors.
+- main has the build up to the public demo packaging (PR #1). README approved, on branch claude/readme, waiting for
+  real phone screenshots and the video link.
+- Next: film the 3-minute video, README PR, merge the latest branch, submission texts, repo public on the Owner's yes.
+  Details: 007-meta-artifacts/reports/advisor-handoff.md and docs/HANDOFF.md, docs/KANBAN.md, docs/DECISIONS.md.
 
 ## Pitch
 A phone camera watches the path ahead, Meta's vision model spots steps and

@@ -4,6 +4,8 @@ import { BoxOverlay } from './components/BoxOverlay'
 import { Button } from './components/Button'
 import { Chips } from './components/Chips'
 import { DemoFull, DemoWelcome } from './components/Demo'
+import { GettingReady } from './components/GettingReady'
+import { AlertIcon } from './components/Icons'
 import { Home } from './components/Home'
 import { Notice } from './components/Notice'
 import { PhraseCard } from './components/PhraseCard'
@@ -15,6 +17,7 @@ import { useHandsFree, useLanguage, useTalkMore, useVoices } from './hooks/useLa
 import { unlockAudio } from './lib/audio'
 import { deviceId, formatLeft, minutesText, setSlotToken } from './lib/demoSlot'
 import { getFaceBlurStatus, subscribeFaceBlur } from './lib/faceGuard'
+import { onSpeechDebug, speechBlocked, speechDebug } from './lib/speech'
 import { stoppedScreen } from './lib/screen'
 import { useSecondEyes } from './hooks/useSecondEyes'
 import { strings } from './strings'
@@ -26,9 +29,12 @@ export default function App() {
   const [talkMore, setTalkMore] = useTalkMore()
   const eyes = useSecondEyes(lang, voices, handsFree, talkMore)
   const faceBlur = useSyncExternalStore(subscribeFaceBlur, getFaceBlurStatus)
+  const speech = useSyncExternalStore(onSpeechDebug, speechDebug)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { videoRef, camera, backend, answer, holdStart, holdEnd } = eyes
   const cameraOn = camera === 'on'
+  // Brief 27: "Getting ready…" from the Start tap until the first answer.
+  const readySteps = { camera: cameraOn, privacy: faceBlur !== 'loading', firstLook: false }
 
   // Public demo (Briefs 17, 19): the welcome screen instead of Home; its button gets a slot and starts in one tap.
   const minutes = minutesText(eyes.demo.slotS ?? 180)
@@ -105,7 +111,14 @@ export default function App() {
       <video ref={videoRef} className="camera" playsInline muted autoPlay hidden={!cameraOn} />
       {cameraOn && <BoxOverlay hazardBox={eyes.hazardBox} videoRef={videoRef} lang={lang} />}
 
+      {!cameraOn && eyes.preparing && (
+        <div className="ready-screen">
+          <GettingReady steps={readySteps} />
+        </div>
+      )}
+
       {!cameraOn &&
+        !eyes.preparing &&
         {
           full: <DemoFull reason={refused ?? 'later'} videoUrl={eyes.demo.videoUrl} onBack={() => setRefused(null)} />,
           settings: (
@@ -154,14 +167,25 @@ export default function App() {
           {backend === 'unreachable' && <Notice {...strings.state.backendUnreachable} />}
           {eyes.listen === 'stopped' && <Notice {...strings.ask.stopped} />}
           {eyes.listen === 'failed' && <Notice {...strings.ask.micFailed} />}
-          <PhraseCard
-            answer={answer}
-            budget={eyes.budget}
-            slow={eyes.slow}
-            loop={eyes.loop}
-            lang={lang}
-            ask={eyes.ask}
-          />
+          {speechBlocked(speech) && (
+            // Brief 27: only a tap can unlock speech again on an iPhone.
+            <button type="button" className="notice notice--button" onClick={eyes.soundBack} lang="en">
+              <AlertIcon />
+              <span className="notice__title">{strings.state.soundBack.title}</span>
+            </button>
+          )}
+          {eyes.preparing ? (
+            <GettingReady steps={readySteps} />
+          ) : (
+            <PhraseCard
+              answer={answer}
+              budget={eyes.budget}
+              slow={eyes.slow}
+              loop={eyes.loop}
+              lang={lang}
+              ask={eyes.ask}
+            />
+          )}
           <div className="app__clear" />
           <footer className="bottom">
             {eyes.loop ? (
@@ -179,6 +203,12 @@ export default function App() {
                 askTimings={eyes.askTimings}
                 lastSent={eyes.lastSent}
               />
+            )}
+            {eyes.listen === 'on' && (
+              // Brief 30: how to ask, while hands-free listening is on. English in every language.
+              <p className="ask-hint" lang="en">
+                {strings.ask.hintLine}
+              </p>
             )}
             <nav className="controls" aria-label={strings.appName}>
               {!eyes.loop && (

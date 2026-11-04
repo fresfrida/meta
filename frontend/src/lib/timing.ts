@@ -45,3 +45,47 @@ export function stats(values: readonly number[]): TimingStats | null {
 export function pushHistory<T>(history: readonly T[], item: T, size: number): T[] {
   return [item, ...history].slice(0, size)
 }
+
+/** Brief 26 debug: where the time of the last answer went, ms (wait / speech null when it was not spoken). */
+export interface StageTimes {
+  channel: 'fast' | 'detail'
+  /** drawImage + getImageData. */
+  captureMs: number
+  /** Face detector + blur. */
+  blurMs: number
+  encodeMs: number
+  /** Capture start to request sent, minus the three above: waiting (in-flight limit, the detector busy with another frame). */
+  queueMs: number
+  /** Upload + download + server overhead: round trip minus the model's own time. */
+  netMs: number
+  modelMs: number
+  /** Answer received to speak() called (merge and repeat rules, the fast cue). */
+  waitMs: number | null
+  /** speak() called to speech onstart (includes the WebKit cancel gap when it interrupts). */
+  speechMs: number | null
+}
+
+export interface StageMarks {
+  captureStart: number
+  requestSent: number
+  responseReceived: number
+  serverMs: number
+  frame: { drawMs: number; readMs: number; detectMs: number; encodeMs: number }
+}
+
+export function stageTimes(channel: 'fast' | 'detail', m: StageMarks, sayAt: number | null = null, speechStart: number | null = null): StageTimes {
+  const captureMs = m.frame.drawMs + m.frame.readMs
+  const frameMs = Math.round(m.requestSent - m.captureStart)
+  const roundTrip = m.responseReceived - m.requestSent
+  return {
+    channel,
+    captureMs,
+    blurMs: m.frame.detectMs,
+    encodeMs: m.frame.encodeMs,
+    queueMs: Math.max(0, frameMs - captureMs - m.frame.detectMs - m.frame.encodeMs),
+    netMs: Math.max(0, Math.round(roundTrip - m.serverMs)),
+    modelMs: Math.round(m.serverMs),
+    waitMs: sayAt === null ? null : Math.round(sayAt - m.responseReceived),
+    speechMs: sayAt === null || speechStart === null ? null : Math.round(speechStart - sayAt),
+  }
+}

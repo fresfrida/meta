@@ -16,7 +16,7 @@ from itertools import cycle
 from threading import Lock
 from typing import Any, Protocol
 
-from .config import DETECT_MAX_BYTES, DETECT_TIMEOUT_S, SAM_CONCEPTS, SAM_MODEL, Settings
+from .config import DETECT_MAX_BYTES, DETECT_TIMEOUT_S, SAM_MODEL, Settings, sam_concepts
 from .detect_rule import RawHit, kept_hits, parse_sam_text
 from .schemas import DetectHit, DetectKind
 from .vision import VisionError
@@ -42,7 +42,7 @@ class DetectFailed(VisionError):
 
 
 class Detector(Protocol):
-    def detect(self, image_b64: str) -> DetectResult: ...
+    def detect(self, image_b64: str, car: bool = False) -> DetectResult: ...
 
 
 def jpeg_size(image_b64: str) -> tuple[int, int]:
@@ -78,7 +78,7 @@ class MockDetect:
         self._lock = Lock()
         self._delay_s = delay_ms / 1000
 
-    def detect(self, image_b64: str) -> DetectResult:
+    def detect(self, image_b64: str, car: bool = False) -> DetectResult:  # noqa: ARG002 - mock scenes have no cars
         started = time.perf_counter()
         with self._lock:
             scene = next(self._scenes)
@@ -112,7 +112,7 @@ class LiveDetect:
         )
         self._pool = ThreadPoolExecutor(max_workers=8, thread_name_prefix="sam")
 
-    def _one(self, kind: DetectKind, image_b64: str) -> tuple[list[RawHit], bool]:
+    def _one(self, kind: DetectKind, image_b64: str, concept: str) -> tuple[list[RawHit], bool]:
         """One concept. Returns (boxes, accepted by the API). Raises on failure or abort."""
         body = {
             "model": SAM_MODEL,
@@ -123,7 +123,7 @@ class LiveDetect:
                     "type": "message",
                     "role": "user",
                     "content": [
-                        {"type": "input_text", "text": SAM_CONCEPTS[kind]},
+                        {"type": "input_text", "text": concept},
                         {"type": "input_image", "image_url": f"data:image/jpeg;base64,{image_b64}"},
                     ],
                 }
@@ -159,13 +159,14 @@ class LiveDetect:
             raise
         return parse_sam_text(text, kind), accepted
 
-    def detect(self, image_b64: str) -> DetectResult:
+    def detect(self, image_b64: str, car: bool = False) -> DetectResult:
         import httpx
 
         if not self._key:
             raise VisionError("key_missing", "MODEL_API_KEY is not set on the backend", 503)
         started = time.perf_counter()
-        futures = {kind: self._pool.submit(self._one, kind, image_b64) for kind in SAM_CONCEPTS}
+        concepts = sam_concepts(car)
+        futures = {kind: self._pool.submit(self._one, kind, image_b64, text) for kind, text in concepts.items()}
         raws: list[RawHit] = []
         billed = 0
         failures: list[str] = []

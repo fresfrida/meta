@@ -27,6 +27,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['Crossing', 'A pedestrian crossing'],
     cycle_path: ['Cycle path', 'A cycle path'],
     escalator: ['Escalator', 'An escalator'],
+    lift: ['Lift', 'A lift'], // Brief 28, Owner approved 5 Nov
     uneven: ['Uneven ground', 'Uneven ground'],
     obstacle: ['In your path', 'Something in your path'],
   },
@@ -46,6 +47,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['人行横道', '人行横道'],
     cycle_path: ['自行车道', '自行车道'],
     escalator: ['扶梯', '自动扶梯'],
+    lift: ['电梯', '电梯'],
     uneven: ['地面不平', '不平的地面'],
     obstacle: ['挡路物', '挡路的东西'],
   },
@@ -65,6 +67,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['Lintasan', 'lintasan pejalan kaki'],
     cycle_path: ['Laluan basikal', 'laluan basikal'],
     escalator: ['Eskalator', 'eskalator'],
+    lift: ['Lif', 'lif'],
     uneven: ['Tidak rata', 'permukaan tidak rata'],
     obstacle: ['Di laluan anda', 'sesuatu di laluan anda'],
   },
@@ -84,6 +87,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['பாதசாரி கடவை', 'பாதசாரி கடவை உள்ளது'],
     cycle_path: ['மிதிவண்டிப் பாதை', 'மிதிவண்டிப் பாதை உள்ளது'],
     escalator: ['நகரும் படிக்கட்டு', 'நகரும் படிக்கட்டு உள்ளது'],
+    lift: ['லிஃப்ட்', 'லிஃப்ட் உள்ளது'],
     uneven: ['சீரற்ற தரை', 'சீரற்ற தரை உள்ளது'],
     obstacle: ['பாதையில் தடை', 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது'],
   },
@@ -203,5 +207,19 @@ describe('road kinds are never green: amber, red when near or <= 2 m', () => {
     expect(lampFor({ hazard: kind, distance: 'far', distance_m: null })).toBe('amber')
     expect(lampFor({ hazard: kind, distance: 'far', distance_m: 2 })).toBe('red')
     expect(lampFor({ hazard: kind, distance: 'near', distance_m: null })).toBe('red')
+  })
+})
+
+describe('lift (Brief 28, Owner approved 5 Nov): the full spoken lines', () => {
+  const lift = (distance_m: number | null, near = false) =>
+    ({ hazard: 'lift', side: 'ahead', distance: near ? 'near' : 'far', distance_m, hedged: false }) as Shown
+  it('EN "A lift, about 3 metres ahead." and screen "Lift, 3 metres"', () => {
+    expect(speechFor(lift(3), 'en')).toBe('A lift, about 3 metres ahead.')
+    expect(phraseFor(lift(3), 'en')).toBe('Lift, 3 metres')
+  })
+  it('ZH / MS / TA use the approved words', () => {
+    expect(speechFor(lift(3), 'zh')).toContain('电梯')
+    expect(speechFor(lift(3), 'ms')).toContain('lif')
+    expect(speechFor(lift(3), 'ta')).toContain('லிஃப்ட் உள்ளது')
   })
 })

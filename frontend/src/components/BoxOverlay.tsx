@@ -5,6 +5,7 @@ import {
   type Lang,
   PATH_GUIDE,
   PATH_HALF_WIDTH_M,
+  VFOV_BASE_ASPECT,
   VFOV_LANDSCAPE_DEG,
   VFOV_PORTRAIT_DEG,
 } from '../config'
@@ -44,6 +45,7 @@ function PathGuide({ view }: { view: Size & { fit: string; frame: Size } }) {
     heightM: CAMERA_HEIGHT_M,
     vfovPortraitDeg: VFOV_PORTRAIT_DEG,
     vfovLandscapeDeg: VFOV_LANDSCAPE_DEG,
+    baseAspect: VFOV_BASE_ASPECT,
   })
   if (!lines) return null
   return (

@@ -64,6 +64,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'Crossing',
       cycle_path: 'Cycle path',
       escalator: 'Escalator',
+      lift: 'Lift', // Brief 28, Owner approved 5 Nov ("Approve all")
       uneven: 'Uneven ground',
       obstacle: 'In your path',
       clear: 'Nothing seen',
@@ -92,6 +93,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'A pedestrian crossing',
         cycle_path: 'A cycle path',
         escalator: 'An escalator',
+        lift: 'A lift', // Brief 28, Owner approved 5 Nov
         uneven: 'Uneven ground',
         obstacle: 'Something in your path',
         steps: 'Steps',
@@ -126,6 +128,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: '人行横道',
       cycle_path: '自行车道',
       escalator: '扶梯',
+      lift: '电梯', // Brief 28, Owner approved 5 Nov
       uneven: '地面不平',
       obstacle: '挡路物',
       clear: '未见障碍',
@@ -154,6 +157,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: '人行横道',
         cycle_path: '自行车道',
         escalator: '自动扶梯',
+        lift: '电梯', // Brief 28, Owner approved 5 Nov
         uneven: '不平的地面',
         obstacle: '挡路的东西',
         steps: '台阶',
@@ -185,6 +189,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'Lintasan',
       cycle_path: 'Laluan basikal',
       escalator: 'Eskalator',
+      lift: 'Lif', // Brief 28, Owner approved 5 Nov
       uneven: 'Tidak rata',
       obstacle: 'Di laluan anda',
       clear: 'Tiada apa-apa',
@@ -213,6 +218,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'lintasan pejalan kaki',
         cycle_path: 'laluan basikal',
         escalator: 'eskalator',
+        lift: 'lif', // Brief 28, Owner approved 5 Nov
         uneven: 'permukaan tidak rata',
         obstacle: 'sesuatu di laluan anda',
         steps: 'tangga',
@@ -248,6 +254,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'பாதசாரி கடவை',
       cycle_path: 'மிதிவண்டிப் பாதை',
       escalator: 'நகரும் படிக்கட்டு',
+      lift: 'லிஃப்ட்', // Brief 28, Owner approved 5 Nov
       uneven: 'சீரற்ற தரை',
       obstacle: 'பாதையில் தடை',
       clear: 'எதுவும் தெரியவில்லை',
@@ -276,6 +283,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'பாதசாரி கடவை உள்ளது',
         cycle_path: 'மிதிவண்டிப் பாதை உள்ளது',
         escalator: 'நகரும் படிக்கட்டு உள்ளது',
+        lift: 'லிஃப்ட் உள்ளது', // Brief 28, Owner approved 5 Nov
         uneven: 'சீரற்ற தரை உள்ளது',
         obstacle: 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது',
         steps: 'படிகள் உள்ளன',
@@ -298,6 +306,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
  * Owner approved 4 Nov 2026 (Brief 8), verbatim. EN is final; ZH / MS / TA are final pending a native-speaker check.
  * Example question (tests, demo): EN "Hey Eyes, what is there?" · ZH "Hey Eyes，前面有什么？" ·
  * MS "Hey Eyes, apa yang ada di hadapan?" · TA "Hey Eyes, முன்னால் என்ன இருக்கிறது?"
+ * Brief 29: also EN "Hey Eyes, where does the path go?" (the Ask prompt describes the path, never gives directions).
  */
 export interface AskText {
   listening: string
@@ -349,14 +358,42 @@ export const connectionText: Record<Lang, { lost: string; back: string }> = {
 }
 
 /** Said once when the user taps Start / Stop (Brief 14). Owner approved 4 Nov; ZH / MS / TA native check pending. */
-export const sessionText: Record<Lang, { start: string; stop: string }> = {
-  en: { start: "Second Eyes is on. I'll tell you what I see in your path.", stop: 'Second Eyes is off.' },
-  zh: { start: 'Second Eyes 已开启。我会告诉您路上看到的情况。', stop: 'Second Eyes 已关闭。' },
+/**
+ * Start / Stop lines (Brief 14), and the getting-ready lines (Brief 27, English approved by the Owner 4 Nov, verbatim).
+ * `ready` / `still` are null until the ZH / MS / TA wording comes: those languages keep their Brief 14 start line and
+ * skip the two new lines.
+ */
+export const sessionText: Record<Lang, { start: string; stop: string; ready: string | null; still: string | null }> = {
+  en: {
+    start: 'Second Eyes is getting ready. Please wait a moment before you walk.',
+    stop: 'Second Eyes is off.',
+    ready: "Ready. I'll tell you what I see in your path.",
+    still: 'Still getting ready. Thank you for waiting.',
+  },
+  zh: { start: 'Second Eyes 已开启。我会告诉您路上看到的情况。', stop: 'Second Eyes 已关闭。', ready: null, still: null },
   ms: {
     start: 'Second Eyes sudah dihidupkan. Saya akan beritahu apa yang saya nampak di laluan anda.',
     stop: 'Second Eyes sudah dimatikan.',
+    ready: null,
+    still: null,
   },
-  ta: { start: 'Second Eyes இயக்கப்பட்டது. உங்கள் பாதையில் நான் பார்ப்பதைச் சொல்வேன்.', stop: 'Second Eyes நிறுத்தப்பட்டது.' },
+  ta: {
+    start: 'Second Eyes இயக்கப்பட்டது. உங்கள் பாதையில் நான் பார்ப்பதைச் சொல்வேன்.',
+    stop: 'Second Eyes நிறுத்தப்பட்டது.',
+    ready: null,
+    still: null,
+  },
+}
+
+/**
+ * Brief 30: the spoken Ask hint, once per Start after the ready line, with hands-free listening on. English approved by
+ * the Owner 5 Nov ("Approve and send"), verbatim. Null: no spoken hint in that language for now.
+ */
+export const askHintText: Record<Lang, string | null> = {
+  en: 'You can ask me anything. Just say "Hey Eyes", then your question.',
+  zh: null,
+  ms: null,
+  ta: null,
 }
 
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */
@@ -418,6 +455,9 @@ export const strings = {
   // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.
   ask: {
     micChip: 'Listening',
+    // Brief 30, Owner approved 5 Nov, verbatim: the camera screen line while hands-free listening is on. English in
+    // every language ("Hey Eyes" is said in English everywhere).
+    hintLine: 'Say "Hey Eyes", then ask',
     stopped: { title: 'Listening stopped', body: 'Touch and hold the screen to ask instead.' },
     micFailed: { title: 'Microphone not available', body: 'Touch and hold will not work either.' },
     timing: (totalS: string, asrS: string, modelS: string) =>
@@ -430,7 +470,8 @@ export const strings = {
     welcomeLine:
       'Point your phone ahead. Second Eyes tells you about steps, kerbs and other things in your path, out loud.',
     youHave: (minutes: string) => `You have ${minutes}.`,
-    askBullet: 'Ask anything: say "Hey Eyes, what\'s in front of me?"',
+    // Brief 30, Owner approved 5 Nov ("Approve and send"), verbatim
+    askBullet: 'Ask me anything. Say "Hey Eyes", then your question, like "What\'s in front of me?" or "Where does the path go?"',
     privacyBullet:
       "Faces are blurred on your phone. Images and questions go to Meta's AI to be understood, and we don't keep them.",
     safety: 'This is an early demo. Please keep using your cane or guide, and take extra care near roads.',
@@ -454,6 +495,14 @@ export const strings = {
   },
 
   state: {
+    // Brief 27 (English approved by the Owner 4 Nov, verbatim; shown in English in every language for now)
+    gettingReady: {
+      title: 'Getting ready…',
+      body: 'This takes a few seconds the first time.',
+      steps: { camera: 'Camera', privacy: 'Privacy', firstLook: 'First look' },
+      done: 'done',
+    },
+    soundBack: { title: 'Tap to turn the sound back on' },
     cameraStarting: {
       title: 'Opening camera…',
       body: 'Allow camera access if asked.',
@@ -529,6 +578,46 @@ export const strings = {
     // Debug (Brief 16): distance at capture and at speaking time
     distanceNow: (capturedM: string, nowM: string) => `distance: at capture ${capturedM} · when said ${nowM}`,
     dropped: (n: number) => `dropped late ${n}`,
+    // Debug (Brief 25), English only: is speech unlocked, how did the last phrase go, Web Audio state
+    speech: (unlocked: boolean, last: string | null, detail: string | null, audio: string, session: string) =>
+      `speech: unlocked ${unlocked ? 'yes' : 'no'} · last speak ${last ?? '–'}${detail ? ` (${detail})` : ''} · audio ${audio} · session ${session}`,
+    // Debug (Brief 27), English only: audio route changes, picture pauses, stuck phrases spoken again
+    recovery: (changes: number, last: string | null, paused: number, recovered: number, respoken: number, failures: number) =>
+      `route changes ${changes}${last ? ` (last: ${last})` : ''} · video paused ${paused} · recovered ${recovered} · re-spoken ${respoken} · not started in a row ${failures}`,
+    // Debug (Brief 30), English only: phrases whose end never came (the safety net ended them)
+    endsLost: (n: number) => `ends lost ${n}`,
+    // Debug (Brief 30), English only: mic frames sent / dropped by the self-sound gate, the listen socket, capture rate
+    mic: (sent: number, gated: number, socket: string, rateHz: number | null) =>
+      `mic: sent ${sent} · gated ${gated} · listen ${socket}${rateHz ? ` · in ${rateHz} Hz -> 16000` : ''}`,
+    // Debug (Brief 28), English only: heartbeat ticks
+    ticks: (played: number, skipped: number) => `ticks played ${played} · skipped ${skipped}`,
+    // Debug (Brief 26), English only: what the camera gives, and the vertical field of view the distances use
+    camera: (c: {
+      size: string
+      aspect: string
+      frame: string
+      zoom: string
+      facing: string
+      label: string
+      switched: boolean
+      vfov: string
+    }) =>
+      `camera: ${c.size} (${c.aspect}) · frame ${c.frame} · zoom ${c.zoom} · ${c.facing} · "${c.label}"${c.switched ? ' (switched from ultra-wide)' : ''} · vfov ${c.vfov}`,
+    // Debug (Brief 26), English only: where the time of the last answer went, ms
+    stages: (s: {
+      channel: string
+      captureMs: number
+      blurMs: number
+      encodeMs: number
+      queueMs: number
+      netMs: number
+      modelMs: number
+      waitMs: number | null
+      speechMs: number | null
+    }) =>
+      `last answer (${s.channel}): capture ${s.captureMs} · blur ${s.blurMs} · encode ${s.encodeMs} · queue ${s.queueMs} · net ${s.netMs} · model ${s.modelMs}` +
+      (s.waitMs === null ? ' · not spoken' : ` · wait ${s.waitMs} · speech start ${s.speechMs ?? '…'}`) +
+      ' ms',
     // TENTATIVE (Brief 7): the last frame actually sent
     sentFrame: 'Last frame sent',
     sentFrameLine: (blur: 'on' | 'off', faces: number, ms: number) =>
@@ -536,6 +625,16 @@ export const strings = {
     // TENTATIVE (Brief 2)
     usage: (inputTokens: number, outputTokens: number, costUsd: number) =>
       `tokens in ${inputTokens} · out ${outputTokens} · $${costUsd.toFixed(4)}`,
+  },
+
+  // Diagnostic (Brief 24): voice list page (?voices=1), English only, never in the normal app
+  voiceTest: {
+    title: 'Voices on this device',
+    count: (n: number) => `${n} voices`,
+    none: 'No voices reported yet.',
+    fields: (v: { lang: string; voiceURI: string; localService: boolean; default: boolean }) =>
+      `lang "${v.lang}" · voiceURI "${v.voiceURI}" · localService ${v.localService} · default ${v.default}`,
+    seenAs: (lang: string | null, region: string | null) => `read as: ${lang ?? '?'} / ${region ?? '?'}`,
   },
 
   // TENTATIVE (Brief 5): mic test page (?mictest=1), English only

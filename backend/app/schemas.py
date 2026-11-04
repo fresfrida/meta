@@ -35,6 +35,7 @@ Hazard = Literal[
     "crossing",
     "cycle_path",
     "escalator",
+    "lift",
     "uneven",
     "obstacle",
     "clear",
@@ -227,11 +228,13 @@ class AskResponse(BaseModel):
     cost_usd: Optional[float] = None
 
 
-DetectKind = Literal["steps", "curb", "door"]
+DetectKind = Literal["steps", "curb", "door", "vehicle"]  # vehicle: SAM "car" (Brief 29)
 
 
 class DetectRequest(BaseModel):
     image_b64: str = Field(min_length=1, max_length=MAX_IMAGE_B64_CHARS)
+    # Brief 29: the fast car warning for this frame (?car=0 / ?car=1 on the phone); None = the server's CAR_FAST.
+    car: Optional[bool] = None
 
 
 class DetectHit(BaseModel):
