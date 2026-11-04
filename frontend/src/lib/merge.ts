@@ -74,7 +74,8 @@ export function mergedLamp(lamp: Lamp, seq: number, shown: ShownState): Lamp {
   return seq === shown.seq && SEVERITY[shown.lamp] > SEVERITY[lamp] ? shown.lamp : lamp
 }
 
-/** The fast cue (short tone + vibration) plays only before a fast warning that is about to be spoken. */
+/** The fast cue (short tone + vibration) plays only before a fast warning that is about to be spoken for the first
+ *  time (not before a Talk more repeat). */
 export function fastCue(channel: Channel, decision: Decision): boolean {
-  return channel === 'fast' && decision.speak
+  return channel === 'fast' && decision.speak && !decision.again
 }

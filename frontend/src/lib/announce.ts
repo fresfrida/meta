@@ -16,7 +16,8 @@ export interface AnnounceState {
 }
 
 export type Decision =
-  | { speak: true; interrupt: boolean }
+  /** again: a Talk more repeat of what was last said (no fast cue). */
+  | { speak: true; interrupt: boolean; again?: boolean }
   | { speak: false; why: 'unsure' | 'repeat' | 'too_soon' | 'busy' }
 
 type Answer = Pick<Shown, 'hazard' | 'distance' | 'distance_m'>
@@ -67,10 +68,24 @@ function isRepeat(answer: Answer, state: AnnounceState, closerM: number): boolea
  * - A repeat (see isRepeat) stays silent.
  * - Speech starts only if at least `minGapMs` has passed since the last speech.
  * - A new warning cuts off speech in progress; a non-warning ("clear") waits for it to finish.
+ * - Talk more (`talkMoreMs` set): a repeat is said again once `talkMoreMs` has passed since the last speech, never
+ *   over speech in progress.
  */
-export function decide(answer: Answer, state: AnnounceState, now: number, minGapMs: number, closerM: number): Decision {
+export function decide(
+  answer: Answer,
+  state: AnnounceState,
+  now: number,
+  minGapMs: number,
+  closerM: number,
+  talkMoreMs: number | null = null,
+): Decision {
   if (answer.hazard === 'unsure') return { speak: false, why: 'unsure' }
-  if (isRepeat(answer, state, closerM)) return { speak: false, why: 'repeat' }
+  if (isRepeat(answer, state, closerM)) {
+    if (talkMoreMs !== null && !state.speaking && now - state.lastSpokenAt >= talkMoreMs) {
+      return { speak: true, interrupt: false, again: true }
+    }
+    return { speak: false, why: 'repeat' }
+  }
   if (now - state.lastSpokenAt < minGapMs) return { speak: false, why: 'too_soon' }
   if (state.speaking && !isWarning(answer)) return { speak: false, why: 'busy' }
   return { speak: true, interrupt: state.speaking }

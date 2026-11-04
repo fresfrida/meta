@@ -58,6 +58,25 @@ export const WARN_TONE_HZ = 880
 export const WARN_TONE_MS = 90
 export const WARN_VIBRATE_MS = 120
 
+/**
+ * Heartbeat (Brief 13): a soft short tick each time a fresh answer arrives (either channel) and nothing is spoken,
+ * so silence never means "dropped out". Quieter and lower than the fast cue. Not while speaking or during Ask.
+ * TENTATIVE sound; at most one tick per HEARTBEAT_MIN_GAP_MS (the two channels can answer together).
+ */
+export const TICK_HZ = 330
+export const TICK_MS = 35
+export const TICK_GAIN = 0.05
+export const HEARTBEAT_MIN_GAP_MS = 700
+/** Connection alert: no answer on any channel for this long while running -> "Connection lost" (spoken, shown). */
+export const CONNECTION_LOST_MS = 6_000
+/** The lost line is said again this often until an answer arrives; then "Back online" once. */
+export const CONNECTION_REPEAT_MS = 10_000
+export const CONNECTION_CHECK_MS = 500
+/** Talk more (Settings, off by default): repeat the current warning, or the clear sentence, about this often. */
+export const TALK_MORE_DEFAULT = false
+export const TALK_MORE_STORAGE_KEY = 'second-eyes.talkmore'
+export const TALK_MORE_MS = 4_000
+
 /** Traffic light: a warning this close (metres) or nearer is red; further is amber. */
 export const RED_MAX_M = 2
 

@@ -9,7 +9,7 @@ import { Settings } from './components/Settings'
 import { TimingPanel } from './components/TimingPanel'
 import { TimingPill } from './components/TimingPill'
 import { HOLD_TO_ASK_MS } from './config'
-import { useHandsFree, useLanguage, useVoices } from './hooks/useLanguage'
+import { useHandsFree, useLanguage, useTalkMore, useVoices } from './hooks/useLanguage'
 import { unlockAudio } from './lib/audio'
 import { getFaceBlurStatus, subscribeFaceBlur } from './lib/faceGuard'
 import { useSecondEyes } from './hooks/useSecondEyes'
@@ -19,7 +19,8 @@ export default function App() {
   const [lang, setLang] = useLanguage()
   const voices = useVoices()
   const [handsFree, setHandsFree] = useHandsFree()
-  const eyes = useSecondEyes(lang, voices, handsFree)
+  const [talkMore, setTalkMore] = useTalkMore()
+  const eyes = useSecondEyes(lang, voices, handsFree, talkMore)
   const faceBlur = useSyncExternalStore(subscribeFaceBlur, getFaceBlurStatus)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { videoRef, camera, backend, answer, holdStart, holdEnd } = eyes
@@ -65,6 +66,8 @@ export default function App() {
             onLang={setLang}
             handsFree={handsFree}
             onHandsFree={setHandsFree}
+            talkMore={talkMore}
+            onTalkMore={setTalkMore}
             onDone={() => setSettingsOpen(false)}
           />
         ) : (

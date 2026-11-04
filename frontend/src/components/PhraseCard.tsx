@@ -3,7 +3,7 @@ import type { Lang } from '../config'
 import type { AskView } from '../hooks/useAsk'
 import type { Answer, Budget } from '../hooks/useSecondEyes'
 import { askLines } from '../lib/askText'
-import { languages, strings } from '../strings'
+import { connectionText, languages, strings } from '../strings'
 import { AlertIcon } from './Icons'
 import { TrafficLight } from './TrafficLight'
 
@@ -71,6 +71,11 @@ export function PhraseCard({ answer, budget, slow, loop, lang, ask = null }: Phr
     case 'waiting':
       text = slow ? st.modelSlow.title : st.waiting
       if (slow) note = st.modelSlow.body
+      break
+    case 'lost':
+      text = connectionText[lang].lost
+      quiet = false
+      error = true
       break
     case 'failed': {
       const f = failureText(answer.reason, budget)

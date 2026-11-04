@@ -187,3 +187,23 @@ describe('fastRecentlySaid: no "kerb, obstacle, kerb, obstacle" ping-pong (Brief
     expect(fastRecentlySaid(hitAsShown(hit('steps', 4)), kinds, 7_000, WINDOW, CLOSER)).toBe(false)
   })
 })
+
+describe('Talk more (fake clock)', () => {
+  const TALK = 4000
+  const k = hitAsShown(hit('curb', 3))
+  it('off: a repeat stays silent', () => {
+    expect(decide(k, after(k, 10_000), 20_000, GAP, CLOSER, null)).toEqual({ speak: false, why: 'repeat' })
+  })
+  it('on: the same warning is said again after 4 s, not before, and never over speech', () => {
+    expect(decide(k, after(k, 10_000), 13_999, GAP, CLOSER, TALK)).toEqual({ speak: false, why: 'repeat' })
+    expect(decide(k, after(k, 10_000), 14_000, GAP, CLOSER, TALK)).toEqual({ speak: true, interrupt: false, again: true })
+    expect(decide(k, { ...spoke(k, 10_000), speaking: true }, 14_500, GAP, CLOSER, TALK)).toEqual({ speak: false, why: 'repeat' })
+  })
+  it('on: clear is said again too', () => {
+    const c = muse('clear')
+    expect(decide(c, after(c, 0), 4_000, GAP, CLOSER, TALK).speak).toBe(true)
+  })
+  it('a Talk more repeat of a fast hit has no cue', () => {
+    expect(fastCue('fast', { speak: true, interrupt: false, again: true })).toBe(false)
+  })
+})

@@ -309,6 +309,14 @@ export const askText: Record<Lang, AskText> = {
   },
 }
 
+/** Connection alerts (Brief 13), spoken and shown in the chosen language. Owner approved 4 Nov, verbatim. */
+export const connectionText: Record<Lang, { lost: string; back: string }> = {
+  en: { lost: 'Connection lost. Warnings have stopped.', back: 'Back online.' },
+  zh: { lost: '连接中断，警告已停止。', back: '已重新连接。' },
+  ms: { lost: 'Sambungan terputus. Amaran telah berhenti.', back: 'Sambungan pulih.' },
+  ta: { lost: 'இணைப்பு துண்டிக்கப்பட்டது. எச்சரிக்கைகள் நின்றுவிட்டன.', back: 'மீண்டும் இணைக்கப்பட்டது.' },
+}
+
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */
 export const languages: Record<Lang, { name: string; english: string | null }> = {
   en: { name: 'English', english: null },
@@ -357,6 +365,9 @@ export const strings = {
     // TENTATIVE (Brief 6)
     handsFree: 'Hands-free listening',
     handsFreeLine: 'While running, microphone audio is sent to Meta to hear your questions.',
+    // TENTATIVE (Brief 13)
+    talkMore: 'Talk more',
+    talkMoreLine: 'Repeats the current warning every few seconds.',
   },
 
   // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.

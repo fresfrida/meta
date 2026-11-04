@@ -16,10 +16,12 @@ interface SettingsProps {
   onLang: (lang: Lang) => void
   handsFree: boolean
   onHandsFree: (on: boolean) => void
+  talkMore: boolean
+  onTalkMore: (on: boolean) => void
   onDone: () => void
 }
 
-export function Settings({ lang, voices, onLang, handsFree, onHandsFree, onDone }: SettingsProps) {
+export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMore, onTalkMore, onDone }: SettingsProps) {
   const [testFailed, setTestFailed] = useState(false)
   const status = (l: Lang) => voiceStatus(voices, SPEECH_LANGS[l])
 
@@ -86,6 +88,19 @@ export function Settings({ lang, voices, onLang, handsFree, onHandsFree, onDone 
             <span className="list__subtitle">{t.handsFreeLine}</span>
           </span>
           <i className={handsFree ? 'switch switch--on' : 'switch'} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={talkMore}
+          className="list__item"
+          onClick={() => onTalkMore(!talkMore)}
+        >
+          <span className="list__text">
+            <span className="list__title">{t.talkMore}</span>
+            <span className="list__subtitle">{t.talkMoreLine}</span>
+          </span>
+          <i className={talkMore ? 'switch switch--on' : 'switch'} aria-hidden="true" />
         </button>
       </div>
 
