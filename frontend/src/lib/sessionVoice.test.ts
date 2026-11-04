@@ -26,7 +26,7 @@ describe('Start / Stop lines', () => {
     expect(holdForGreeting(speak, greetingDone(greeting))).toEqual(speak)
     expect(holdForGreeting({ speak: false, why: 'repeat' }, greeting)).toEqual({ speak: false, why: 'repeat' })
   })
-  it('the lines, verbatim (EN approved; ZH / MS / TA tentative)', () => {
+  it('the lines, verbatim (Owner approved, 4 languages)', () => {
     expect(sessionText.en).toEqual({ start: "Second Eyes is on. I'll tell you what I see in your path.", stop: 'Second Eyes is off.' })
     expect(sessionText.zh).toEqual({ start: 'Second Eyes 已开启。我会告诉您路上看到的情况。', stop: 'Second Eyes 已关闭。' })
     expect(sessionText.ms).toEqual({
