@@ -1,6 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Native-speaker check of the v5 words (ZH / MS / TA); ZH drain voice "有没有盖的水沟" reads as a question (Owner to decide)
+- Head-height boxes sit under the phrase card (top of the screen); only the card shows them
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
 - README privacy paragraph (proposed in brief-07.md; Owner approves the wording first)
 - Face blur recall: 2x tiles for distant faces (~4x time) if the iPhone has headroom
@@ -13,6 +15,7 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
+- Brief 12: prompt v5 on `claude/second-eyes-v5` - built, measured, pushed; waiting for the Advisor's go to merge into `claude/second-eyes` (the Owner may be mid-test on the live checkout)
 - (none)
 
 ## Done

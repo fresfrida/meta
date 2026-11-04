@@ -9,6 +9,15 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **Prompt v5 (Brief 12, branch `claude/second-eyes-v5`, not yet merged into `claude/second-eyes` or live):**
+  Muse names the hazard from a fixed list: step_down, step_up, curb, drain, head_height, person, people (3+),
+  bike, vehicle, pole, barrier, ramp, door (incl. glass), wall (incl. glass), obstacle (catch-all: "something
+  else the person could walk into"), clear, unsure. Prompt verbatim in `backend/app/config.py`
+  (`VISION_PROMPT_VERSION = "v5"`). Words per kind in `strings.ts` (screen / voice, 4 languages, Owner approved
+  4 Nov; ZH / MS / TA native check pending); same templates, traffic light and side / metres rules. Repeat key:
+  person and people are one kind; person <-> people speaks (like up / down). SAM fast path unchanged. Live, 12
+  photos: every step and kerb right (Curb1 now "curb", was "step_up" in v3), doors named in both doorway photos,
+  the CC0 pole named "pole"; median 4.3 s.
 - **Live for the Owner (Brief 11, 4 Nov):** `backend/.env` has `VISION_MODE=live` (listening, Ask and detect
   follow it) and `BUDGET_USD=15.91` = spend.json $0.9178 + the Owner's $15 cap (rounded down). Links: Tailscale
   `https://100.113.121.44:5173`, LAN `https://192.168.50.177:5173` (certificate warning: Advanced -> Proceed).
