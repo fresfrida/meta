@@ -11,6 +11,10 @@ import {
   CONNECTION_LOST_MS,
   CONNECTION_REPEAT_MS,
   HEARTBEAT_MIN_GAP_MS,
+  STALE_MS,
+  WALK_ACCEL_VAR,
+  WALK_SPEED_M_S,
+  WALK_WINDOW_MS,
   TALK_MORE_MS,
   FAST_STAGGER_MS,
   LOOP_ENABLED,
@@ -48,6 +52,8 @@ import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
 import { museHedged } from '../lib/hedge'
+import { atSpeakingTime } from '../lib/distanceNow'
+import { WalkDetector } from '../lib/motion'
 import { SESSION_IDLE, type SessionVoice, greetingDone, holdForGreeting, onStart, onStop } from '../lib/sessionVoice'
 import { connectionText, sessionText } from '../strings'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
@@ -106,6 +112,8 @@ export interface Timings {
   /** Server-side time of the last SAM answer and the last Muse answer. */
   lastSamMs: number | null
   lastModelMs: number | null
+  /** Debug (Brief 16): metres of the last shown warning at capture and at speaking time (null = no metres / very close). */
+  lastDistance: { capturedM: number | null; nowM: number | null } | null
   spokenCount: number
   silentCount: number
   /** Answers that arrived after a newer capture's answer had been handled (not shown, not spoken). */
@@ -148,6 +156,7 @@ const EMPTY_TIMINGS: Timings = {
   fastMs: [],
   lastSamMs: null,
   lastModelMs: null,
+  lastDistance: null,
   spokenCount: 0,
   silentCount: 0,
   droppedCount: 0,
@@ -194,6 +203,8 @@ export function useSecondEyes(
   const lastTickAtRef = useRef(-Infinity)
   // A question is being asked or answered (no tick, no connection alert over it).
   const askActiveRef = useRef(false)
+  // Walking or still (DeviceMotion), for the distance at speaking time.
+  const walkRef = useRef(new WalkDetector(WALK_WINDOW_MS, WALK_ACCEL_VAR))
   // Start / Stop lines (said once per tap; hazard speech waits for the start line).
   const sessionVoiceRef = useRef<SessionVoice>(SESSION_IDLE)
   // Bumped on Start and Stop so the loop and late responses from an old session stop.
@@ -361,18 +372,27 @@ export function useSecondEyes(
   const present = useCallback(
     (
       channel: Channel,
-      shown: Shown,
+      captured: Shown,
       box: Box | null,
       seq: number,
       frame: Size,
       marks: { captureStart: number; requestSent: number; responseReceived: number; serverMs: number },
     ) => {
       const now = performance.now()
+      // Brief 16: say the metres left now, not the metres at capture (the person kept walking meanwhile).
+      const atNow = atSpeakingTime(captured, marks.captureStart, now, walkRef.current.walking(now), WALK_SPEED_M_S, STALE_MS)
       const answerMs = Math.round(marks.responseReceived - marks.captureStart)
       const countAnswer = (t: Timings): Timings =>
         channel === 'fast'
           ? { ...t, fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE) }
           : { ...t, answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE) }
+      if (atNow.drop) {
+        setTimings((t) => ({ ...countAnswer(t), silentCount: t.silentCount + 1 }))
+        maybeTick()
+        return // stale, and already walked past
+      }
+      const shown = atNow.shown
+      if (isWarning(shown)) setTimings((t) => ({ ...t, lastDistance: { capturedM: atNow.capturedM, nowM: atNow.nowM } }))
       // Hazard speech waits while the start line plays (it is said on the next answer).
       let decision = holdForGreeting(decideFor(shown, announceRef.current, now, talkMoreRef.current), sessionVoiceRef.current)
       const recent = () => fastRecentlySaid(shown, spokenKindsRef.current, now, FAST_REPEAT_MS, REPEAT_CLOSER_M)
@@ -564,6 +584,19 @@ export function useSecondEyes(
     [runDetail, runFast],
   )
 
+  /** Walking detection: the phone's acceleration while running (no data = assume walking). */
+  useEffect(() => {
+    if (camera !== 'on') return
+    walkRef.current = new WalkDetector(WALK_WINDOW_MS, WALK_ACCEL_VAR)
+    const onMotion = (e: DeviceMotionEvent) => {
+      const a = e.acceleration ?? e.accelerationIncludingGravity
+      if (!a || a.x === null || a.y === null || a.z === null) return
+      walkRef.current.add(performance.now(), Math.hypot(a.x, a.y, a.z))
+    }
+    window.addEventListener('devicemotion', onMotion)
+    return () => window.removeEventListener('devicemotion', onMotion)
+  }, [camera])
+
   /** Connection rule: while running, no answer for CONNECTION_LOST_MS -> lamp dark, "Connection lost" said and shown. */
   useEffect(() => {
     if (camera !== 'on' || !LOOP_ENABLED) return
@@ -603,6 +636,10 @@ export function useSecondEyes(
 
   const start = useCallback(() => {
     unlockSpeech() // must run synchronously inside the tap
+    // iOS asks for motion access inside a tap; refused or unsupported -> the distance rule assumes walking.
+    const motion = (window as unknown as { DeviceMotionEvent?: { requestPermission?: () => Promise<string> } })
+      .DeviceMotionEvent
+    motion?.requestPermission?.().catch(() => undefined)
     unlockAudio() // earcons and the microphone (iOS)
     warmUpFaceDetector() // load the face model now, before the first frame
     lastWarningRef.current = null

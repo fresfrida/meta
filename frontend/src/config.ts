@@ -90,6 +90,18 @@ export const CAMERA_HEIGHT_M = 1.3
 export const VFOV_PORTRAIT_DEG = 67
 export const VFOV_LANDSCAPE_DEG = 53
 
+/**
+ * Distance at speaking time (Brief 16): metres are said as "metres at capture - walking speed x time since capture",
+ * so a 4 m answer that arrives 4 s later is not said as 4 m. Walking speed applies only while the phone detects
+ * walking (DeviceMotion); with no motion data it assumes walking (says closer, never further).
+ */
+export const WALK_SPEED_M_S = 0.8 // typical for cane users
+export const WALK_WINDOW_MS = 2_000
+/** Variance of the acceleration magnitude, (m/s^2)^2, over WALK_WINDOW_MS above which the phone counts as walking. */
+export const WALK_ACCEL_VAR = 0.3
+/** An answer whose distance has already been walked is said as "very close" only if younger than this; else dropped. */
+export const STALE_MS = 6_000
+
 /** Traffic light: a warning this close (metres) or nearer is red; further is amber. */
 export const RED_MAX_M = 2
 

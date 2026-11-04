@@ -501,6 +501,8 @@ export const strings = {
     pillTwo: (fastS: string | null, detailS: string | null) =>
       `fast ${fastS === null ? '–' : `${fastS} s`} · detail ${detailS === null ? '–' : `${detailS} s`}`,
     channels: (samMs: string, modelMs: string) => `last SAM ${samMs} ms · last model ${modelMs} ms`,
+    // Debug (Brief 16): distance at capture and at speaking time
+    distanceNow: (capturedM: string, nowM: string) => `distance: at capture ${capturedM} · when said ${nowM}`,
     dropped: (n: number) => `dropped late ${n}`,
     // TENTATIVE (Brief 7): the last frame actually sent
     sentFrame: 'Last frame sent',

@@ -64,6 +64,14 @@ export function TimingPanel({
           {t.channels(String(timings.lastSamMs ?? '–'), String(timings.lastModelMs ?? '–'))}
         </div>
       )}
+      {timings.lastDistance && (
+        <div className="timing__breakdown">
+          {t.distanceNow(
+            timings.lastDistance.capturedM === null ? '–' : `${timings.lastDistance.capturedM} m`,
+            timings.lastDistance.nowM === null ? 'very close' : `${timings.lastDistance.nowM} m`,
+          )}
+        </div>
+      )}
       {timings.spokenCount + timings.silentCount > 0 && (
         <div className="timing__row timing__breakdown">
           <span>
