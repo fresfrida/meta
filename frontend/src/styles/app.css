@@ -731,6 +731,77 @@ p {
   transform-origin: left center;
 }
 
+/* ---------- Getting ready (Brief 27): one calm card, three steps; static marks, no spinner ---------- */
+.ready-screen {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.ready .card__body {
+  gap: var(--space-8);
+}
+
+.ready__title {
+  font-size: var(--font-size-28);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--tracking-tight);
+}
+
+.ready__body {
+  color: var(--color-text-chip);
+}
+
+.ready__steps {
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-8) var(--space-16);
+}
+
+.ready__step {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+  color: var(--color-text-muted);
+}
+
+.ready__step--done {
+  color: var(--color-text);
+}
+
+.ready__mark {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+/* A notice you can tap (Brief 27: "Tap to turn the sound back on"): looks like a notice, full width, 48 px tall. */
+.notice--button {
+  width: 100%;
+  min-height: 48px;
+  align-items: center;
+  text-align: left;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 /* ---------- Reduced motion ---------- */
 @media (prefers-reduced-motion: reduce) {
   .light--speaking .lamp--on,

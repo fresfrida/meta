@@ -3,7 +3,9 @@ import type { Timings, Usage } from '../hooks/useSecondEyes'
 import { useSyncExternalStore } from 'react'
 import { audioSessionType, audioState } from '../lib/audio'
 import { type CameraInfo, type SentFrame, cameraInfo, onCameraInfo } from '../lib/camera'
+import { onRouteDebug, routeDebug } from '../lib/audioRoute'
 import { onSpeechDebug, speechDebug } from '../lib/speech'
+import { onVideoDebug, videoDebug } from '../lib/videoGuard'
 import { vfovDeg } from '../lib/pathGuide'
 import { stats } from '../lib/timing'
 import { VFOV_BASE_ASPECT, VFOV_LANDSCAPE_DEG, VFOV_PORTRAIT_DEG } from '../config'
@@ -49,6 +51,8 @@ export function TimingPanel({
   const silent = stats(timings.silentRoundTrips)
   const speech = useSyncExternalStore(onSpeechDebug, speechDebug)
   const camera = useSyncExternalStore(onCameraInfo, cameraInfo)
+  const route = useSyncExternalStore(onRouteDebug, routeDebug)
+  const video = useSyncExternalStore(onVideoDebug, videoDebug)
 
   return (
     <section className="timing" aria-label={t.heading}>
@@ -101,6 +105,9 @@ export function TimingPanel({
         {t.speech(speech.unlocked, speech.last, speech.detail, audioState(), audioSessionType())}
       </div>
       {camera && <div className="timing__breakdown">{cameraLine(camera)}</div>}
+      <div className="timing__breakdown">
+        {t.recovery(route.changes, route.last, video.paused, video.recovered, speech.respoken, speech.failures)}
+      </div>
       {timings.lastStages && <div className="timing__breakdown">{t.stages(timings.lastStages)}</div>}
       {timings.spokenCount + timings.silentCount > 0 && (
         <div className="timing__row timing__breakdown">

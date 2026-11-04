@@ -19,6 +19,27 @@ export const SPEECH_START_TIMEOUT_MS = 3_000
  * 50, 100 and 250 ms all spoke.
  */
 export const SPEECH_CANCEL_GAP_MS = 100
+/**
+ * Brief 27, iPhone sound that comes and goes. Test flags for the Owner's phone; the defaults are the fix.
+ *   ?session=0  no audio session type (Safari decides, as before Brief 26)
+ *   ?tone=0     no Web Audio at all for the warning cue and the heartbeat tick
+ *   ?resume=0   no speechSynthesis.resume() and no re-speak of a stuck phrase
+ * They only change the WebKit (iPhone / Safari) path; Android ignores them.
+ */
+export const AUDIO_SESSION_ENABLED = readFlag('session', true)
+export const TONES_ENABLED = readFlag('tone', true)
+export const SPEECH_RESUME_ENABLED = readFlag('resume', true)
+/** WebKit: a phrase that has not started this long after speak() while the engine says it is busy is cancelled and
+ *  spoken again, once. */
+export const SPEECH_STUCK_MS = 1_000
+/** WebKit: this many phrases in a row that never started -> "Tap to turn the sound back on". */
+export const SPEECH_BLOCKED_AFTER = 2
+/** The camera track muted this long while running -> reopen the camera (WebKit). */
+export const VIDEO_MUTE_WAIT_MS = 2_000
+/** Getting ready (Brief 27): still preparing this long after Start -> say the still-preparing line once. */
+export const GETTING_READY_STILL_MS = 8_000
+/** Brief 27: the loop starts when the camera has its first frame, waiting at most this long (then it starts anyway). */
+export const FIRST_FRAME_WAIT_MS = 2_000
 /** Calm, steady pace like station announcements (Brief 20). */
 export const SPEECH_RATE = 0.95
 /** Before the first speech of a session, wait this long at most for the phone's voices to load (Brief 20). */
