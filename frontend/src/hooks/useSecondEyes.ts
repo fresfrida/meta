@@ -92,7 +92,9 @@ import {
   showSlow,
   stillPreparing,
 } from '../lib/sessionVoice'
-import { askHintText, connectionText, sessionText, strings } from '../strings'
+import { askHintText, connectionText, coveredText, sessionText, strings } from '../strings'
+import { CoverWatch, looksCovered } from '../lib/cover'
+import { flipBox, noteGravity, resetFlip } from '../lib/orientation'
 import { type HintState, hintAfterReady, hintOnSpeech, hintOnStart } from '../lib/askHint'
 import { cancelSpeech, nudgeSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
 import { sayStartLine } from '../lib/startLine'
@@ -121,6 +123,8 @@ export type Answer =
   | { kind: 'failed'; reason: Exclude<FailureReason, 'unreachable'> }
   /** No answer on any channel for CONNECTION_LOST_MS while running (lamp dark, "Connection lost"). */
   | { kind: 'lost' }
+  /** Brief 34: the camera looks covered: lamp dark, no tick, frames not sent. */
+  | { kind: 'covered' }
 
 /** The latest warning's box, with the size of the frame it was found on. */
 export interface HazardBox {
@@ -280,6 +284,9 @@ export function useSecondEyes(
   const langRef = useRef(lang)
   /** Brief 30: the spoken Ask hint for this run. */
   const hintRef = useRef<HintState>('off')
+  /** Brief 34: the covered-camera rule for this run, and which captures were turned 180 degrees. */
+  const coverRef = useRef(new CoverWatch())
+  const flippedRef = useRef(new Map<number, boolean>())
   const voicesRef = useRef(voices)
   // English plain sentence of the last warning, for the Ask prompt ("Their last warning was: ...").
   const lastWarningRef = useRef<string | null>(null)
@@ -403,6 +410,7 @@ export function useSecondEyes(
   /** Heartbeat: a soft tick for a fresh answer that is not spoken (never over speech or during Ask). */
   const maybeTick = useCallback(() => {
     const now = performance.now()
+    if (coverRef.current.covered) return // Brief 34: no heartbeat while the camera is covered
     const asking = askActiveRef.current || suppressRef.current
     const input = { speaking: announceRef.current.speaking, asking, now, lastTickAt: lastTickAtRef.current }
     if (!shouldTick({ ...input, minGapMs: HEARTBEAT_MIN_GAP_MS })) return
@@ -539,6 +547,7 @@ export function useSecondEyes(
       frame: Size,
       marks: { captureStart: number; requestSent: number; responseReceived: number; serverMs: number },
     ) => {
+      if (coverRef.current.covered) return // Brief 34: an answer from before the camera was covered is dropped
       const now = performance.now()
       noteStages(channel, seq, marks)
       const readyNow = firstAnswer(isWarning(captured))
@@ -574,7 +583,9 @@ export function useSecondEyes(
       const lamp = mergedLamp(lampFor(shown), seq, shownRef.current)
       shownRef.current = { channel, hazard: shown.hazard, seq, lamp, at: now }
       setHazardBox(
-        isWarning(shown) && box ? { seq: ++boxSeqRef.current, hazard: shown.hazard, box, frame } : null,
+        isWarning(shown) && box
+          ? { seq: ++boxSeqRef.current, hazard: shown.hazard, box: flippedRef.current.get(seq) ? flipBox(box) : box, frame }
+          : null,
       )
       if (isWarning(shown)) lastWarningRef.current = speechFor(shown, 'en')
       const text = phraseFor(shown, langRef.current)
@@ -728,6 +739,29 @@ export function useSecondEyes(
     [firstAnswer, isLate, maybeTick, noteAnswer, noteStages, onFailure, present],
   )
 
+  /** Brief 34: the camera became covered (2 s in a row), or clear again. */
+  const onCoverChange = useCallback(
+    (event: 'covered' | 'clear') => {
+      if (event === 'covered') {
+        // Covered from the start: "Getting ready" ends, so the card shows why nothing comes (and no still-preparing line).
+        if (phaseRef.current.preparing) {
+          phaseRef.current = leavePreparing()
+          setPreparing(false)
+        }
+        shownRef.current = NOTHING_SHOWN
+        setHazardBox(null)
+        setAnswer({ kind: 'covered' })
+        if (langRef.current === 'en') sayAlert(coveredText) // English only for now (Owner approved line)
+        return
+      }
+      // Clear again: no extra speech; the next answer is said as usual.
+      spokenKindsRef.current = {}
+      spokenSidesRef.current = {}
+      setAnswer((a) => (a.kind === 'covered' ? { kind: 'none' } : a))
+    },
+    [sayAlert],
+  )
+
   /**
    * One frame through the pipeline: face blur once, then the same frame to SAM (two speeds) and, every
    * DETAIL_EVERY-th frame while Muse has room, to Muse. Several frames can be in flight; each channel handles its
@@ -749,6 +783,16 @@ export function useSecondEyes(
           frameStagesRef.current.set(seq, sent.stages)
           frameStagesRef.current.delete(seq - 20)
           setLastSent(sent)
+          flippedRef.current.set(seq, sent.flipped)
+          flippedRef.current.delete(seq - 40)
+          // Brief 34: a covered camera's frames are never sent; the connection rule is kept quiet meanwhile.
+          const covered = looksCovered(sent.luma)
+          const change = coverRef.current.update(covered, performance.now())
+          if (change && session === sessionRef.current) onCoverChange(change)
+          if (covered) {
+            linkRef.current = onAnswer(linkRef.current, performance.now(), false)[0]
+            return
+          }
         } catch {
           setAnswer({ kind: 'failed', reason: 'answer' })
           return
@@ -772,7 +816,7 @@ export function useSecondEyes(
         inFlightRef.current -= 1
       }
     },
-    [runDetail, runFast],
+    [onCoverChange, runDetail, runFast],
   )
 
   /** Walking detection: the phone's acceleration while running (no data = assume walking). */
@@ -780,6 +824,8 @@ export function useSecondEyes(
     if (camera !== 'on') return
     walkRef.current = new WalkDetector(WALK_WINDOW_MS, WALK_ACCEL_VAR)
     const onMotion = (e: DeviceMotionEvent) => {
+      const g = e.accelerationIncludingGravity
+      if (g && g.y !== null) noteGravity(performance.now(), g.y) // Brief 34: is the phone upside down?
       const a = e.acceleration ?? e.accelerationIncludingGravity
       if (!a || a.x === null || a.y === null || a.z === null) return
       walkRef.current.add(performance.now(), Math.hypot(a.x, a.y, a.z))
@@ -843,6 +889,9 @@ export function useSecondEyes(
     lastWarningRef.current = null
     const session = ++sessionRef.current
     phaseRef.current = enterPreparing(performance.now()) // Brief 27: "Getting ready…" until the first answer
+    coverRef.current = new CoverWatch() // Brief 34
+    flippedRef.current.clear()
+    resetFlip()
     hintRef.current = hintOnStart(handsFreeRef.current, askHintText[langRef.current]) // Brief 30
     setPreparing(true)
     videoRunRef.current = { reopened: false }

@@ -1,5 +1,7 @@
 // Rear camera access and single-frame capture.
 import { CAMERA_ASPECT, CAMERA_IDEAL_HEIGHT, CAMERA_IDEAL_WIDTH, FRAME_LONG_EDGE_PX, JPEG_QUALITY } from '../config'
+import { frameStats, type Luma } from './cover'
+import { frameUpsideDown, rotate180 } from './orientation'
 import { type FaceBlurStatus, guardPixels } from './faceGuard'
 
 export type CameraFailure = 'denied' | 'unavailable' | 'insecure'
@@ -163,6 +165,10 @@ export interface SentFrame {
   blurMs: number
   /** Brief 26 debug: the stages of this capture, ms. */
   stages: CaptureStages
+  /** Brief 34: this frame was turned 180 degrees (phone upside down). */
+  flipped: boolean
+  /** Brief 34: luma of this frame (before blur), for the covered-camera rule. */
+  luma: Luma
 }
 
 export interface CaptureStages {
@@ -194,9 +200,13 @@ export async function captureGuarded(video: HTMLVideoElement): Promise<SentFrame
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
   const started = performance.now()
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  // Brief 34: a phone worn upside down sends an upright picture (before face blur, so boxes and blur match).
+  const flipped = frameUpsideDown(performance.now())
+  if (flipped) rotate180(pixels.data)
+  const luma = frameStats(pixels.data)
   const read = performance.now()
   const guard = await guardPixels(pixels)
-  if (guard.blurred.length) ctx.putImageData(pixels, 0, 0)
+  if (guard.blurred.length || flipped) ctx.putImageData(pixels, 0, 0)
   const blurred = performance.now()
   const blurMs = Math.round(blurred - started)
   const dataUrl = canvas.toDataURL('image/jpeg', JPEG_QUALITY)
@@ -206,7 +216,7 @@ export async function captureGuarded(video: HTMLVideoElement): Promise<SentFrame
     detectMs: Math.round(blurred - read),
     encodeMs: Math.round(performance.now() - blurred),
   }
-  return { imageB64: dataUrl.slice(dataUrl.indexOf(',') + 1), dataUrl, blur: guard.status, faces: guard.blurred.length, blurMs, stages }
+  return { imageB64: dataUrl.slice(dataUrl.indexOf(',') + 1), dataUrl, blur: guard.status, faces: guard.blurred.length, blurMs, stages, flipped, luma }
 }
 
 /**

@@ -61,6 +61,30 @@ export const GETTING_READY_STILL_MS = 8_000
  * without the flag the server's CAR_FAST decides. null = no override.
  */
 export const CAR_FAST_OVERRIDE = readOptionalFlag('car')
+/**
+ * Brief 34, a phone worn upside down on a lanyard (TENTATIVE values). Gravity along the phone's y axis, in the spec's
+ * sign (+9.8 m/s² upright in portrait, -9.8 upside down; WebKit reports the opposite sign and is turned round),
+ * averaged over FLIP_STEADY_MS with at least FLIP_MIN_SAMPLES samples: below FLIP_ENTER_Y -> upside down, above
+ * FLIP_EXIT_Y -> upright again (hysteresis). No motion data (or none for FLIP_STALE_MS) = upright. ?flip=1 / ?flip=0
+ * force it on / off.
+ */
+export const FLIP_STEADY_MS = 1_000
+export const FLIP_MIN_SAMPLES = 5
+export const FLIP_ENTER_Y = -5
+export const FLIP_EXIT_Y = 3
+export const FLIP_STALE_MS = 3_000
+export const FLIP_OVERRIDE = readOptionalFlag('flip')
+/**
+ * Brief 34, a covered camera (TENTATIVE values, 0-255 luma over the captured frame). Covered = almost no detail
+ * (standard deviation below COVER_FLAT_SD, unless the frame is bright: a plain lit wall stays a frame), or very dark
+ * with little detail. Covered for COVER_HOLD_MS in a row -> the covered line once, lamp dark, no tick. Covered frames
+ * are never sent.
+ */
+export const COVER_FLAT_SD = 9
+export const COVER_FLAT_MAX_MEAN = 150
+export const COVER_DARK_MEAN = 25
+export const COVER_DARK_SD = 12
+export const COVER_HOLD_MS = 2_000
 /** Brief 27: the loop starts when the camera has its first frame, waiting at most this long (then it starts anyway). */
 export const FIRST_FRAME_WAIT_MS = 2_000
 /** Calm, steady pace like station announcements (Brief 20). */
