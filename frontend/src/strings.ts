@@ -570,6 +570,8 @@ export const strings = {
     // Debug (Brief 27), English only: audio route changes, picture pauses, stuck phrases spoken again
     recovery: (changes: number, last: string | null, paused: number, recovered: number, respoken: number, failures: number) =>
       `route changes ${changes}${last ? ` (last: ${last})` : ''} · video paused ${paused} · recovered ${recovered} · re-spoken ${respoken} · not started in a row ${failures}`,
+    // Debug (Brief 30), English only: phrases whose end never came (the safety net ended them)
+    endsLost: (n: number) => `ends lost ${n}`,
     // Debug (Brief 28), English only: heartbeat ticks
     ticks: (played: number, skipped: number) => `ticks played ${played} · skipped ${skipped}`,
     // Debug (Brief 26), English only: what the camera gives, and the vertical field of view the distances use

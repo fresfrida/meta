@@ -109,7 +109,7 @@ export function TimingPanel({
       {camera && <div className="timing__breakdown">{cameraLine(camera)}</div>}
       <div className="timing__breakdown">
         {t.recovery(route.changes, route.last, video.paused, video.recovered, speech.respoken, speech.failures)}
-        {` · ${t.ticks(tones.ticksPlayed, tones.ticksSkipped)}`}
+        {` · ${t.endsLost(speech.endsLost)} · ${t.ticks(tones.ticksPlayed, tones.ticksSkipped)}`}
       </div>
       {timings.lastStages && <div className="timing__breakdown">{t.stages(timings.lastStages)}</div>}
       {timings.spokenCount + timings.silentCount > 0 && (

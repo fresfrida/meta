@@ -6,6 +6,7 @@ import {
   SPEECH_RESUME_ENABLED,
   SPEECH_START_TIMEOUT_MS,
   SPEECH_STUCK_MS,
+  speechEndMaxMs,
 } from '../config'
 import { selfSound } from './micGate'
 
@@ -15,6 +16,13 @@ let current: SpeechSynthesisUtterance | null = null
 let quietCurrent: (() => void) | null = null
 // WebKit: a phrase waiting out SPEECH_CANCEL_GAP_MS; a newer speak() or cancelSpeech() drops it.
 let waiting: { timer: ReturnType<typeof setTimeout>; drop: () => void } | null = null
+// Brief 30: the end safety net of the phrase that started (one at a time); cleared on end, error, cancel or replace.
+let endTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearEndTimer(): void {
+  if (endTimer !== null) clearTimeout(endTimer)
+  endTimer = null
+}
 
 export function speechSupported(): boolean {
   return typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -49,9 +57,11 @@ export interface SpeechDebug {
   failures: number
   /** Brief 27: stuck phrases cancelled and spoken again. */
   respoken: number
+  /** Brief 30: phrases that started but never sent onend / onerror, ended by the safety net. */
+  endsLost: number
 }
 
-const DEBUG_START: SpeechDebug = { unlocked: false, last: null, detail: null, failures: 0, respoken: 0 }
+const DEBUG_START: SpeechDebug = { unlocked: false, last: null, detail: null, failures: 0, respoken: 0, endsLost: 0 }
 let debug: SpeechDebug = DEBUG_START
 const listeners = new Set<() => void>()
 
@@ -103,6 +113,7 @@ function dropWaiting(): void {
 
 export function cancelSpeech(): void {
   dropWaiting()
+  clearEndTimer()
   if (speechSupported()) window.speechSynthesis.cancel()
   quietCurrent = null
   selfSound.reset(performance.now())
@@ -146,6 +157,7 @@ export function speak(text: string, { lang, voice }: SpeakOptions): SpeakHandle 
     const webkit = webKitSpeech()
     const respeak = webkit && SPEECH_RESUME_ENABLED
     dropWaiting() // a newer phrase replaces one still waiting for its gap
+    clearEndTimer() // and the one playing: its safety net goes with it
     // WebKit: cancel only what is playing or queued, then wait the gap (speaking at once is dropped there).
     // Other browsers: cancel and speak at once, as before.
     const busy = synth.speaking || synth.pending
@@ -179,7 +191,10 @@ export function speak(text: string, { lang, voice }: SpeakOptions): SpeakHandle 
       u.lang = lang
       if (voice) u.voice = voice
       u.rate = SPEECH_RATE
+      let ownEnd: ReturnType<typeof setTimeout> | null = null
       const finish = () => {
+        if (ownEnd !== null && endTimer === ownEnd) clearEndTimer()
+        ownEnd = null
         if (current === u) current = null
         quiet()
         resolveEnded()
@@ -190,6 +205,15 @@ export function speak(text: string, { lang, voice }: SpeakOptions): SpeakHandle 
         settled = true
         clearTimers()
         setDebug({ unlocked: true, last: 'ok', detail: null, failures: 0 })
+        // Brief 30: WebKit can lose onend; without this the mic gate stays shut and ticks stop until the next phrase.
+        clearEndTimer()
+        ownEnd = endTimer = setTimeout(() => {
+          endTimer = ownEnd = null
+          if (u !== active) return
+          setDebug({ endsLost: debug.endsLost + 1 })
+          console.warn(`[speech] end lost: "${text}"`)
+          finish()
+        }, speechEndMaxMs(text))
         resolve(performance.now())
       }
       u.onend = () => {
