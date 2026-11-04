@@ -5,7 +5,9 @@ import { audioSessionType, audioState } from '../lib/audio'
 import { type CameraInfo, type SentFrame, cameraInfo, onCameraInfo } from '../lib/camera'
 import { onRouteDebug, routeDebug } from '../lib/audioRoute'
 import { onToneDebug, toneDebug } from '../lib/earcon'
+import { looksCovered } from '../lib/cover'
 import { micDebug, onMicDebug } from '../lib/micDebug'
+import { flipDebug } from '../lib/orientation'
 import { onSpeechDebug, speechDebug } from '../lib/speech'
 import { onVideoDebug, videoDebug } from '../lib/videoGuard'
 import { vfovDeg } from '../lib/pathGuide'
@@ -114,6 +116,13 @@ export function TimingPanel({
         {` · ${t.endsLost(speech.endsLost)} · ${t.ticks(tones.ticksPlayed, tones.ticksSkipped)}`}
       </div>
       <div className="timing__breakdown">{t.mic(mic.sent, mic.gated, mic.socket, mic.inputRate)}</div>
+      <div className="timing__breakdown">
+        {(() => {
+          const f = flipDebug()
+          return t.orientation(f.upsideDown, f.source, f.y, lastSent?.flipped ?? false)
+        })()}
+        {lastSent ? ` · ${t.cover(lastSent.luma.mean, lastSent.luma.sd, looksCovered(lastSent.luma))}` : ''}
+      </div>
       {timings.lastStages && <div className="timing__breakdown">{t.stages(timings.lastStages)}</div>}
       {timings.spokenCount + timings.silentCount > 0 && (
         <div className="timing__row timing__breakdown">
