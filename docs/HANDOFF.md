@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 4 Nov 2026, Brief 11 (two-speed fast warning; live for the Owner with a $15 cap; spend.json $0.9178 + $0.67 of direct measurements not in it). Branch `claude/second-eyes`.
+Last updated: 4 Nov 2026, Brief 13 IN PROGRESS on branch `claude/second-eyes-v6` (worktree `../007-meta-v6`); live checkout still runs v5 (`33eded2`) with a $15.91 cap.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,6 +9,22 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **Brief 13 (branch `claude/second-eyes-v6`, NOT merged, NOT live):** built and unit-tested, not yet run in a
+  browser. Merge only when the Advisor says.
+  - Prompt **v6** = v5 + road for cars / road crossing / cycle path / escalator / uneven ground, "Prefer roads,
+    drops and things at head height", and "Never answer clear if the path leads onto a road for cars, a road
+    crossing or a cycle path". Road part and road words PENDING the Owner: **no live v6 calls until approved**.
+  - Schema + words for road, crossing, cycle_path, escalator, uneven (4 languages). Clear is now "No hazard seen"
+    / "No hazard seen." (and translations). Road kinds are warnings, so never green (amber; red when near / <= 2 m).
+  - SAM "door" added as a third concept (`SAM_CONCEPTS`); measured: found the glass door in both doorway photos
+    (0.81 / 0.85), nothing on Steps2; also 2 cabinet doors at 0.53 / 0.55. Cost ~ +50%: about $32/hour of Start.
+  - Heartbeat: soft 330 Hz 35 ms tick (gain 0.05) when a fresh answer arrives and nothing is spoken; not while
+    speaking or during Ask; at most one per 700 ms (`lib/heartbeat.ts`).
+  - Connection alerts (`lib/connection.ts`): no answer for 6 s while running -> lamp dark, card + speech
+    "Connection lost. Warnings have stopped." (4 languages), repeated every 10 s; next answer -> "Back online." once,
+    and the current warning is said again. Not over an Ask answer. Budget / model failures keep their state.
+  - Talk more (Settings, off by default, remembered): repeats the current warning or clear about every 4 s, never
+    over speech; no fast cue on repeats.
 - **Prompt v5 (Brief 12), live since 4 Nov (merged into `claude/second-eyes`):**
   Muse names the hazard from a fixed list: step_down, step_up, curb, drain, head_height, person, people (3+),
   bike, vehicle, pole, barrier, ramp, door (incl. glass), wall (incl. glass), obstacle (catch-all: "something

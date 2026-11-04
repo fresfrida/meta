@@ -1,6 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Backend access log has no timestamps: gaps and per-request times of a walk cannot be measured (use a uvicorn log config with times when restarting live)
+- Two-speed mode: a Muse timeout replaces the card with "Model failed" while SAM still answers; "Model is slow…" shows whenever Muse > 6 s (likely the "connecting" text the Owner saw)
 - Native-speaker check of the v5 words (ZH / MS / TA)
 - Polish pass: head-height boxes sit under the phrase card (top of the screen), so their outline and tag are hidden
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
@@ -15,6 +17,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
+- Brief 13 on `claude/second-eyes-v6`: code + unit tests done (pytest 192, vitest 232, build OK). LEFT TO DO:
+  mock screenshots at 390 ("Connection lost" EN, a road warning ZH; worktree ports 8001 / 5174, `?fast=0`,
+  mock cycle has road 4th); v6 live calls (<= 10) only after the Owner approves the road part; report
+  `brief-13.md` final; merge when the Advisor says
 - (none)
 
 ## Done
