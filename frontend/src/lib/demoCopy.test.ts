@@ -12,7 +12,8 @@ describe('public demo copy (verbatim)', () => {
       'Point your phone ahead. Second Eyes tells you about steps, kerbs and other things in your path, out loud.',
     )
     expect(d.youHave(minutesText(180))).toBe('You have 3 minutes.')
-    expect(d.askBullet).toBe('Ask anything: say "Hey Eyes, what\'s in front of me?"')
+    // Brief 29: + the path question (TENTATIVE join)
+    expect(d.askBullet).toBe('Ask anything: say "Hey Eyes, what\'s in front of me?" or "Hey Eyes, where does the path go?"')
     expect(d.privacyBullet).toBe(
       "Faces are blurred on your phone. Images and questions go to Meta's AI to be understood, and we don't keep them.",
     )

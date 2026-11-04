@@ -15,9 +15,16 @@ from .test_live import FakeClient, completion
 APPROVED = (
     "You are helping a person who is blind or has low vision understand the photo from their phone camera, taken "
     "from chest height facing forward. Their last warning was: {last warning}. They asked: {question}. Answer in "
-    "{language}, in at most two short sentences, describing only what you can see. Never say it is safe to walk, "
-    "cross or move; if you cannot tell, say so. Do not identify or describe people beyond saying there is a person."
-)
+    "{language}, in at most two short sentences, describing only what you can see. Describe where the path goes; "
+    "never tell the person which way to go. Never say it is safe to walk, cross or move; if you cannot tell, say "
+    "so. Do not identify or describe people beyond saying there is a person."
+)  # Brief 29: + the path sentence, Owner approved 5 Nov, verbatim
+
+
+def test_ask_prompt_has_the_path_sentence_once_brief_29():
+    sentence = "Describe where the path goes; never tell the person which way to go."
+    assert ASK_PROMPT.count(sentence) == 1
+    assert "describing only what you can see. " + sentence + " Never say it is safe" in ASK_PROMPT
 
 
 def test_ask_prompt_template_is_verbatim():

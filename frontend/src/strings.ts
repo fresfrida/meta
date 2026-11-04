@@ -306,6 +306,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
  * Owner approved 4 Nov 2026 (Brief 8), verbatim. EN is final; ZH / MS / TA are final pending a native-speaker check.
  * Example question (tests, demo): EN "Hey Eyes, what is there?" · ZH "Hey Eyes，前面有什么？" ·
  * MS "Hey Eyes, apa yang ada di hadapan?" · TA "Hey Eyes, முன்னால் என்ன இருக்கிறது?"
+ * Brief 29: also EN "Hey Eyes, where does the path go?" (the Ask prompt describes the path, never gives directions).
  */
 export interface AskText {
   listening: string
@@ -455,7 +456,8 @@ export const strings = {
     welcomeLine:
       'Point your phone ahead. Second Eyes tells you about steps, kerbs and other things in your path, out loud.',
     youHave: (minutes: string) => `You have ${minutes}.`,
-    askBullet: 'Ask anything: say "Hey Eyes, what\'s in front of me?"',
+    // Brief 29: + the path question (TENTATIVE: how the two examples are joined)
+    askBullet: 'Ask anything: say "Hey Eyes, what\'s in front of me?" or "Hey Eyes, where does the path go?"',
     privacyBullet:
       "Faces are blurred on your phone. Images and questions go to Meta's AI to be understood, and we don't keep them.",
     safety: 'This is an early demo. Please keep using your cane or guide, and take extra care near roads.',

@@ -45,6 +45,11 @@ export const TONE_RESUME_WAIT_MS = 500
 export const TONE_TAIL_MS = 150
 /** Getting ready (Brief 27): still preparing this long after Start -> say the still-preparing line once. */
 export const GETTING_READY_STILL_MS = 8_000
+/**
+ * Brief 29, fast car warning (SAM "car" -> the vehicle words): ?car=1 asks the server for it, ?car=0 turns it off;
+ * without the flag the server's CAR_FAST decides. null = no override.
+ */
+export const CAR_FAST_OVERRIDE = readOptionalFlag('car')
 /** Brief 27: the loop starts when the camera has its first frame, waiting at most this long (then it starts anyway). */
 export const FIRST_FRAME_WAIT_MS = 2_000
 /** Calm, steady pace like station announcements (Brief 20). */
@@ -206,6 +211,14 @@ export const TIMING_HISTORY_SIZE = 10
 export const CAMERA_IDEAL_WIDTH = 1280
 export const CAMERA_IDEAL_HEIGHT = 720
 export const CAMERA_ASPECT = 16 / 9
+
+/** A ?name=0 / ?name=1 flag, or null when the URL does not say (Brief 29). */
+export function readOptionalFlag(name: string, search = typeof window === 'undefined' ? '' : window.location.search): boolean | null {
+  const value = new URLSearchParams(search).get(name)
+  if (value === '0' || value === 'false') return false
+  if (value === '1' || value === 'true') return true
+  return null
+}
 
 function readFlag(name: string, fallback: boolean): boolean {
   if (typeof window === 'undefined') return fallback
