@@ -32,11 +32,18 @@ PROMPT_V8 = PROMPT_V7.replace(
 ) + " A door can be a single door, double doors or a glass door."
 
 
-def test_prompt_v8_verbatim():
-    assert VISION_PROMPT == PROMPT_V8
-    assert VISION_PROMPT_VERSION == "v8"
+# Brief 31 (5 Nov 2026, test branch, TENTATIVE): v9 = v8 + the lift sentence at the end.
+PROMPT_V9 = PROMPT_V8 + " If a door is a lift (elevator) door, for example with call buttons beside it, call it a lift."
+
+
+def test_prompt_v9_verbatim():
+    assert VISION_PROMPT == PROMPT_V9
+    assert VISION_PROMPT_VERSION == "v9"
     assert "a lift (elevator) door" in VISION_PROMPT
-    assert VISION_PROMPT.endswith("A single raised edge between a footpath and a road is a curb, not a step. A door can be a single door, double doors or a glass door.")
+    assert VISION_PROMPT.endswith(
+        "A door can be a single door, double doors or a glass door. If a door is a lift (elevator) door, for example "
+        "with call buttons beside it, call it a lift."
+    )
 
 
 def test_schema_asks_for_sure_as_a_required_boolean():
