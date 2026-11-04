@@ -68,6 +68,14 @@ describe('mic debug line', () => {
     expect(dbg.micDebug().socket).toBe('closed')
   })
 
+  it('public demo: the listen socket carries the slot token as ?slot=', async () => {
+    const { ListenClient } = await load()
+    const { setSlotToken } = await import('./demoSlot')
+    setSlotToken('abc.123.def')
+    new ListenClient('en', () => undefined, () => undefined)
+    expect(FakeSocket.last.url).toBe('wss://eyes.test/api/listen?lang=en&slot=abc.123.def')
+  })
+
   it('the line itself', () => {
     expect(strings.timing.mic(12, 3, 'open', 48_000)).toBe('mic: sent 12 · gated 3 · listen open · in 48000 Hz -> 16000')
     expect(strings.timing.mic(0, 0, 'none', null)).toBe('mic: sent 0 · gated 0 · listen none')
