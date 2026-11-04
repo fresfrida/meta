@@ -1,6 +1,12 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Brief 29 (drafted, waiting for the Owner's OK to send): "Where does the path go?" by Hey Eyes (Ask prompt sentence approved); fast SAM "car" warning behind a switch, after a near-car test
+- 中文 / Bahasa Melayu / தமிழ் for the Brief 27 getting-ready lines and card (English only for now)
+- Restart the Mac backend so the Mac link uses prompt v8 (stop any page loop first)
+- iPad and Android re-test after Briefs 25-28
+- Getting-ready polish: centre the Home card; bring back "Allow camera access if asked."; hold "Connection lost" until the first answer; screen-reader "done" (TENTATIVE)
+- Decide: 'playback' audio session pauses the user's own music on iPhone while running
 - Public demo copy in ZH / MS / TA (English only for now)
 - Decide DAILY_BUDGET_USD vs DEMO_SLOTS_PER_DAY: at ~$32/h, $8/day covers ~5 full slots of 10
 - Side lines: hysteresis (or a wider ahead band) so a box near 400 / 600 does not flip side between answers; log Muse's own side vs box side live
@@ -19,9 +25,14 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 17 on `claude/second-eyes-cloud`: one container + public demo limits built and verified locally (Docker, mock). Waiting: Owner's server (Coolify), the copy, and the go to deploy / make public
+- Brief 28 on the cloud demo: waiting for the Owner's Deploy (merged and verified, 404812d / 1531d0b)
 
 ## Done
+- Brief 28: ready line after the start line, iPhone tick fix, prompt v8 (lift, double / glass doors), lift words in 4 languages (Owner approved); live check 21 calls $0.0473; vitest 465, pytest 228 (5 Nov)
+- Brief 27: iPhone sound (one session per run, AudioContext suspended between tones, resume + re-speak, route watcher, picture recovery, test flags) and the getting-ready phase; vitest 443, pytest 227; iPhone sound confirmed by the Owner; live on the cloud demo 23:23 (4 Nov)
+- Brief 26: audio session, 16:9 ideal camera, main-lens rule, field of view from the real aspect, debug lines; vitest 412, pytest 227; live 22:41 (4 Nov)
+- Brief 25: WebKit cancel gap, failed phrase not remembered, speech debug line; vitest 392, pytest 226; live 22:06 (4 Nov)
+- Brief 17: cloud demo live on Coolify / Lightsail with public demo limits (4 Nov)
 - Brief 24: voice rule reads tags robustly (lower case, _ -> -, cmn / yue, scripts) and locale words in names; Singapore first per language; no Cantonese for 中文; Indonesian only as the last Malay fallback; `?voices=1` diagnostic; vitest 376 (4 Nov). Waiting: the Owner's `?voices=1` screenshot from the S23+
 - Brief 22: Android voice list fix - unique row ids (voiceURI, numbered when repeated), list rebuilt per language, one row selected, repeated names " · 2", choice stored per language by id; vitest 369 (4 Nov)
 - Brief 21: Settings gear on the public welcome screen (welcome -> Settings -> Done -> welcome); vitest 365; on `claude/second-eyes-cloud` and `claude/second-eyes` (4 Nov)
@@ -53,7 +64,7 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
-- Owner's fast-warning test and filming (Android, Tailscale), $15 cap
+- Filming (Mac link, own budget; cloud demo $5.14 of $10 at 23:23)
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
 - iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`
 - iPhone "Hey Eyes" test (real voice, real room)

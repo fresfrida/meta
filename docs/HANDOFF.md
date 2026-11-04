@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 4 Nov 2026, Briefs 15 / 16 / 16b merged and live (walking-path rule, path guide, distance at speaking time, side hysteresis; prompt v7; $15.91 cap, $5.19 spent).
+Last updated: 5 Nov 2026 ~00:30 SGT, Briefs 25-28 merged into `claude/second-eyes` (404812d); Brief 28 waiting for the Owner to Deploy on the cloud demo. Brief 29 drafted, not sent.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -8,11 +8,48 @@ FastAPI backend -> structured obstacle answer -> fixed phrase spoken on the
 phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
+## Features to show in the video (keep in step with the code)
+Each item is in the code on `claude/second-eyes` (404812d) unless marked.
+1. Point the phone ahead and hear what is in your path: a fast warning (SAM 3.1: steps, kerbs, doors) about 1.5 s after a frame, with a short tone, then detail from Muse Spark 1.3 (about 4 s) with the kind, side and metres.
+2. Only what is in your walking path: doors and kerbs beside you stay quiet (in-path rule).
+3. Distance at speaking time: metres are counted down for walking time since the photo; close means "very close".
+4. Honest, never "safe": "No hazard seen", "There might be a kerb...", and roads are named ("The edge of a road"), never when to cross.
+5. Four languages, Singapore voices first: English, 中文, Bahasa Melayu, தமிழ் (screen and voice).
+6. Hands-free "Hey Eyes, what's in front of me?" in four languages (speech recognition plus Muse).
+7. Privacy: faces are blurred on the phone before any frame leaves it.
+8. Calm start: "Getting ready..." card (Camera, Privacy, First look), "Second Eyes is getting ready. Please wait a moment before you walk.", then "Ready. I'll tell you what I see in your path."
+9. Stays honest about the connection: soft tick while answers arrive, "Connection lost. Warnings have stopped." / "Back online."
+10. Lifts, escalators, double and glass doors (prompt v8; "A lift, about 3 metres ahead.").
+11. Works in the browser, no install: Android, iPhone (sound confirmed by the Owner 4 Nov after Brief 27), iPad.
+12. Accessibility: Larger Text, Increase Contrast, light and dark.
+13. Public demo with 3-minute slots and daily caps, so anyone can try it safely.
+14. Not built yet: "Hey Eyes, where does the path go?" (Brief 29 item 1) and the fast car warning (Brief 29 item 2).
+
 ## Current state (true of the code today)
-- **Cloud packaging (Brief 17, branch `claude/second-eyes-cloud`, NOT merged, NOT deployed, NOT public):** a root
-  `Dockerfile` builds the frontend and serves it from FastAPI with `/api` and the WebSocket on one port; `PUBLIC_DEMO=1`
-  adds the visitor notice, 180 s signed slots, 10 slots per Singapore day, a $8 daily cap and a per-IP limit; state in
-  `DATA_DIR` (/data volume). Verified with Docker on the Mac in mock mode. How to deploy: `docs/DEPLOY.md`.
+- **Briefs 25-28 (4-5 Nov night, `claude/second-eyes` 404812d; cloud branch 1531d0b):**
+  - Brief 25: WebKit speech. Cancel-then-speak drops the phrase on WebKit (reproduced in the iOS Simulator; WebKit
+    bug 238189), so `speak()` cancels only when busy and waits `SPEECH_CANCEL_GAP_MS` 100 ms; a phrase ended without
+    starting fails at once; a failed phrase is not remembered as said; timing-panel debug line.
+  - Brief 26: `navigator.audioSession` type set in the Start tap (feature-detected); camera asked for 16:9 1280x720
+    with ideal constraints only (`CAMERA_ASPECT`), ultra-wide replaced by "Back Camera" when labelled, real size read
+    back; field of view follows the real frame aspect (`VFOV_BASE_ASPECT` 4/3, frontend and backend; portrait and 4:3
+    unchanged); per-stage timing and camera debug lines.
+  - Brief 27: one audio session type per run; WebKit AudioContext suspended between tones; `resume()` and one
+    re-speak of a stuck phrase (`SPEECH_STUCK_MS` 1 s); route / interruption watcher; camera picture recovery;
+    "Tap to turn the sound back on"; test flags `?session=0`, `?tone=0`, `?resume=0`; "Getting ready" phase
+    (card, approved English lines, ready line, still-preparing line at `GETTING_READY_STILL_MS` 8 s, no "Model is
+    slow"); face model warmed while Home is idle. The Owner's iPhone then worked ("all good!", 4 Nov ~23:40).
+  - Brief 28: the ready line always after the start line's real end (start line said again if it never started);
+    iPhone tick waits for a running AudioContext; prompt **v8** (`VISION_PROMPT_VERSION`) adds "a lift (elevator)
+    door" and "A door can be a single door, double doors or a glass door."; kind `lift` with approved words (EN Lift
+    / A lift; 电梯; Lif / lif; லிஃப்ட் / லிஃப்ட் உள்ளது). Live check 21 calls, $0.0473 (direct, not in spend.json): v8
+    right 6/6; SAM "road" too broad (not used); SAM "car" precise but untested on near cars.
+  - Live state: cloud demo serves Brief 27 (confirmed 23:23); Brief 28 needs the Owner's Deploy. The Mac backend
+    still runs prompt v7 (not restarted); the Mac's Vite serves the newest frontend.
+- **Cloud demo (Brief 17), LIVE since 4 Nov:** https://second-eyes.52.76.242.161.sslip.io (Coolify on AWS
+  Lightsail, Singapore), deploys from `claude/second-eyes-cloud` when the Owner clicks Deploy (no auto-deploy).
+  `PUBLIC_DEMO=1`: 180 s slots, 10 per Singapore day, $8 per day, $10 total; $5.14 spent at 23:23. Repo still
+  private. How to deploy: `docs/DEPLOY.md`.
 - **Distance at speaking time (Brief 16, live 4 Nov):** metres said = metres at capture - 0.8 m/s x
   time since capture while walking (DeviceMotion; no data = walking); <= 1 m -> "very close"; stale and walked past ->
   dropped. Debug line in the timing panel.
