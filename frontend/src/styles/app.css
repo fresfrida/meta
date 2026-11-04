@@ -767,3 +767,11 @@ p {
   text-decoration: none;
   flex: none;
 }
+
+/* ---------- Voice list diagnostic (?voices=1) ---------- */
+.voicetest {
+  margin: 0 0 var(--space-24);
+  padding-left: var(--space-32);
+  overflow-wrap: anywhere;
+  user-select: text;
+}

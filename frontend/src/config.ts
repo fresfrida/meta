@@ -118,6 +118,8 @@ export const RED_MAX_M = 2
 
 /** Mic test page (`?mictest=1`): speak a test sentence this often. */
 export const MIC_TEST = readFlag('mictest', false)
+/** ?voices=1: a plain list of the phone's speech voices, to fix the voice rule against real data (Brief 24). */
+export const VOICE_TEST = readFlag('voices', false)
 export const MIC_TEST_INTERVAL_MS = 3_000
 
 /** The hazard box fades out when no new answer has arrived for this long. */

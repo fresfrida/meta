@@ -22,6 +22,7 @@
 - Brief 17 on `claude/second-eyes-cloud`: one container + public demo limits built and verified locally (Docker, mock). Waiting: Owner's server (Coolify), the copy, and the go to deploy / make public
 
 ## Done
+- Brief 24: voice rule reads tags robustly (lower case, _ -> -, cmn / yue, scripts) and locale words in names; Singapore first per language; no Cantonese for 中文; Indonesian only as the last Malay fallback; `?voices=1` diagnostic; vitest 376 (4 Nov). Waiting: the Owner's `?voices=1` screenshot from the S23+
 - Brief 22: Android voice list fix - unique row ids (voiceURI, numbered when repeated), list rebuilt per language, one row selected, repeated names " · 2", choice stored per language by id; vitest 369 (4 Nov)
 - Brief 21: Settings gear on the public welcome screen (welcome -> Settings -> Done -> welcome); vitest 365; on `claude/second-eyes-cloud` and `claude/second-eyes` (4 Nov)
 - Brief 20: steadier voice - default-voice rule, Settings voice list ("Recommended", remembered per language), wait for voices before the first speech, rate 0.95; vitest 362, pytest 226; on `claude/second-eyes-cloud` and merged into `claude/second-eyes` (4 Nov)

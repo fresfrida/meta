@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { chooseVoice, pickVoice, recommendedVoice, voiceIds, voiceRows, voiceStatus, voicesFor, waitForVoices } from './voices'
+import { chooseVoice, pickVoice, recommendedVoice, voiceIds, voiceInfo, voiceRows, voiceStatus, voicesFor, waitForVoices } from './voices'
 
 const v = (lang: string, name = lang, localService = true) => ({ lang, name, localService })
 const voices = [v('en-US', 'Samantha'), v('en-GB', 'Daniel'), v('zh_CN', 'Tingting'), v('ms-MY', 'Amira')]
@@ -121,10 +121,10 @@ describe('Android-like list (Brief 22)', () => {
     a('en-GB', 'English United Kingdom'),
   ]
   const one = (rows: { selected: boolean }[]) => rows.filter((r) => r.selected).length
-  it('zh -> ta -> zh: only that language, exactly one selected, unique keys', () => {
+  it('zh -> ta -> zh: only that language (Mandarin, no Cantonese), exactly one selected, unique keys', () => {
     const zh = voiceRows(android, 'zh-CN', null)
-    expect(zh.map((r) => r.label)).toEqual(['Chinese China', 'Chinese China · 2', 'Chinese China · 3'])
-    expect(new Set(zh.map((r) => r.key)).size).toBe(3)
+    expect(zh.map((r) => r.label)).toEqual(['Chinese China', 'Chinese China · 2', 'Chinese China · 3', 'Chinese Malaysia'])
+    expect(new Set(zh.map((r) => r.key)).size).toBe(4)
     expect(one(zh)).toBe(1)
     expect(zh.find((r) => r.recommended)?.voice.lang).toBe('zh-CN')
 
@@ -134,18 +134,13 @@ describe('Android-like list (Brief 22)', () => {
 
     const pick = zh[1].key // the second "Chinese China"
     const zhAgain = voiceRows(android, 'zh-CN', pick)
-    expect(zhAgain.map((r) => r.label)).toEqual(['Chinese China', 'Chinese China · 2', 'Chinese China · 3'])
+    expect(zhAgain.map((r) => r.label)).toEqual(['Chinese China', 'Chinese China · 2', 'Chinese China · 3', 'Chinese Malaysia'])
     expect(one(zhAgain)).toBe(1)
     expect(zhAgain.find((r) => r.selected)?.key).toBe(pick)
   })
-  it('no zh-CN voice: the base language (other zh) as before', () => {
+  it('no zh-CN voice: the other Mandarin voices, never Hong Kong / Macao', () => {
     const noCN = android.filter((v) => v.lang !== 'zh-CN')
-    expect(voiceRows(noCN, 'zh-CN', null).map((r) => r.label)).toEqual([
-      'Chinese Hong Kong',
-      'Chinese Hong Kong · 2',
-      'Chinese Macao',
-      'Chinese Malaysia',
-    ])
+    expect(voiceRows(noCN, 'zh-CN', null).map((r) => r.label)).toEqual(['Chinese Malaysia'])
   })
   it('a remembered id that is gone falls back to the recommended voice; an old name still matches', () => {
     expect(chooseVoice(android, 'zh-CN', 'Chinese China#9')?.voiceURI).toBe('Chinese China')
@@ -153,5 +148,58 @@ describe('Android-like list (Brief 22)', () => {
   })
   it('ids: voiceURI, numbered when repeated; name + lang when the URI is empty', () => {
     expect(voiceIds([a('zh-CN', 'X'), a('zh-CN', 'X'), a('zh-CN', 'Y', '')])).toEqual(['X', 'X#2', 'Y|zh-CN'])
+  })
+})
+
+describe('tag styles and Singapore first (Brief 24)', () => {
+  const a = (lang: string, name: string, localService = true) => ({ lang, name, voiceURI: name, localService })
+  const names = (list: { name: string }[]) => list.map((v) => v.name)
+  it('normalises tags: _ separators, upper case, cmn, yue, scripts', () => {
+    expect(voiceInfo(a('ZH_cn', 'x'))).toEqual({ lang: 'zh', region: 'cn' })
+    expect(voiceInfo(a('cmn-Hans-CN', 'x'))).toEqual({ lang: 'zh', region: 'cn' })
+    expect(voiceInfo(a('zh-Hant-TW', 'x'))).toEqual({ lang: 'zh', region: 'tw' })
+    expect(voiceInfo(a('yue-HK', 'x'))).toEqual({ lang: 'yue', region: 'hk' })
+    expect(voiceInfo(a('zh-HK', 'x')).lang).toBe('yue')
+    expect(voiceInfo(a('zh_CN_#Hans', 'x'))).toEqual({ lang: 'zh', region: 'cn' })
+  })
+  it('unhelpful tags: the locale words in the name decide', () => {
+    // Every Chinese voice tagged zh-CN (as the Owner's phone seems to do), or no tag at all.
+    expect(voiceInfo(a('zh-CN', 'Chinese Hong Kong')).lang).toBe('yue')
+    expect(voiceInfo(a('zh-CN', 'Chinese Singapore'))).toEqual({ lang: 'zh', region: 'sg' })
+    expect(voiceInfo(a('', 'Chinese Macao')).lang).toBe('yue')
+    expect(voiceInfo(a('', 'Tamil Singapore'))).toEqual({ lang: 'ta', region: 'sg' })
+    expect(voiceInfo(a('en-GB', 'Google UK English Female')).region).toBe('gb')
+  })
+  it("the Owner's list (all tagged zh-CN): Mandarin only, Singapore first", () => {
+    const owner = [
+      'Chinese China', 'Chinese Hong Kong', 'Chinese Hong Kong', 'Chinese Macao', 'Chinese Macao',
+      'Chinese Malaysia', 'Chinese Malaysia', 'Chinese Singapore', 'Chinese Taiwan',
+    ].map((n) => a('zh-CN', n))
+    const rows = voiceRows(owner, 'zh-CN', 'Chinese Macao#2') // a remembered Cantonese voice: not used
+    expect(rows.map((r) => r.label)).toEqual([
+      'Chinese Singapore', 'Chinese China', 'Chinese Malaysia', 'Chinese Malaysia · 2', 'Chinese Taiwan',
+    ])
+    expect(rows.filter((r) => r.selected).map((r) => r.label)).toEqual(['Chinese Singapore'])
+    expect(rows[0].recommended).toBe(true)
+  })
+  it('English: Singapore, United Kingdom, then others; quality within a region', () => {
+    const en = [a('en-US', 'English United States'), a('en-GB', 'English United Kingdom'), a('en-GB', 'Google UK English Female'), a('en-SG', 'English Singapore'), a('en-IN', 'English India')]
+    expect(names(voicesFor(en, 'en-GB'))).toEqual([
+      'English Singapore', 'Google UK English Female', 'English United Kingdom', 'English India', 'English United States',
+    ])
+  })
+  it('Bahasa Melayu: Singapore, Malaysia; Indonesian only when there is no Malay at all', () => {
+    const ms = [a('id-ID', 'Indonesian Indonesia'), a('ms-MY', 'Malay Malaysia'), a('ms_SG', 'Malay Singapore')]
+    expect(names(voicesFor(ms, 'ms-MY'))).toEqual(['Malay Singapore', 'Malay Malaysia'])
+    expect(names(voicesFor([a('id-ID', 'Indonesian Indonesia')], 'ms-MY'))).toEqual(['Indonesian Indonesia'])
+    expect(voiceStatus([a('id-ID', 'Indonesian Indonesia')], 'ms-MY')).toBe('installed')
+  })
+  it('தமிழ்: Singapore, India, then others', () => {
+    const ta = [a('ta-LK', 'Tamil Sri Lanka'), a('ta-IN', 'Tamil India'), a('ta-SG', 'Tamil Singapore')]
+    expect(names(voicesFor(ta, 'ta-IN'))).toEqual(['Tamil Singapore', 'Tamil India', 'Tamil Sri Lanka'])
+  })
+  it('a remembered voice that is still offered is kept', () => {
+    const list = [a('zh-CN', 'Chinese Singapore'), a('zh-CN', 'Chinese Taiwan')]
+    expect(chooseVoice(list, 'zh-CN', 'Chinese Taiwan')?.name).toBe('Chinese Taiwan')
   })
 })

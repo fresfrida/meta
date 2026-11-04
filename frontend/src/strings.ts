@@ -538,6 +538,16 @@ export const strings = {
       `tokens in ${inputTokens} · out ${outputTokens} · $${costUsd.toFixed(4)}`,
   },
 
+  // Diagnostic (Brief 24): voice list page (?voices=1), English only, never in the normal app
+  voiceTest: {
+    title: 'Voices on this device',
+    count: (n: number) => `${n} voices`,
+    none: 'No voices reported yet.',
+    fields: (v: { lang: string; voiceURI: string; localService: boolean; default: boolean }) =>
+      `lang "${v.lang}" · voiceURI "${v.voiceURI}" · localService ${v.localService} · default ${v.default}`,
+    seenAs: (lang: string | null, region: string | null) => `read as: ${lang ?? '?'} / ${region ?? '?'}`,
+  },
+
   // TENTATIVE (Brief 5): mic test page (?mictest=1), English only
   micTest: {
     title: 'Mic test',

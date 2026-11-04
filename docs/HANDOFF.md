@@ -175,9 +175,14 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   `strings.ts` (Owner approved, pending a native check). Speech lang en-GB /
   zh-CN / ms-MY / ta-IN with a matching installed voice; no voice -> phrase shown
   with a notice, not spoken. Choice remembered in localStorage.
-- Voice (Brief 20, `lib/voices.ts`): default = on-device voice named Google /
-  Enhanced / Premium / Natural / Neural, else any on-device, else first by name
-  (exact lang first, then base language). The Settings choice is kept per
+- Voice (Briefs 20 / 24, `lib/voices.ts`): `voiceInfo` reads each voice's
+  language and region from its tag (lower case, _ -> -, cmn = zh, yue) and the
+  locale words in its name (a region in the name wins). The list per language is
+  ordered Singapore first (zh: SG, CN, MY, TW; en: SG, GB; ms: SG, MY; ta: SG,
+  IN; then others), then on-device Google / Enhanced / Premium / Natural / Neural,
+  then on-device, then by name; the first is Recommended. 中文 never offers
+  Cantonese (yue, Hong Kong, Macao); Malay falls back to Indonesian only when
+  there is no Malay. `?voices=1` lists every voice for a screenshot. The Settings choice is kept per
   language (`second-eyes.voice.<lang>`) by voice id (voiceURI, numbered when
   Android repeats it; Brief 22); gone -> the default. Repeated names show " · 2". The first speech
   of a session waits up to `VOICE_WAIT_MS` (1.5 s) for voices. `SPEECH_RATE` 0.95.
