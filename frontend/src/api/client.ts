@@ -1,6 +1,16 @@
 // The only module that talks to the backend.
-import { API_BASE, REQUEST_TIMEOUT_MS } from '../config'
-import type { AnalyzeRequest, AnalyzeResponse, AskRequest, AskResponse, ErrorCode, ErrorDetail, HealthResponse } from './types'
+import { API_BASE, DETECT_REQUEST_TIMEOUT_MS, REQUEST_TIMEOUT_MS } from '../config'
+import type {
+  AnalyzeRequest,
+  AnalyzeResponse,
+  AskRequest,
+  AskResponse,
+  DetectRequest,
+  DetectResponse,
+  ErrorCode,
+  ErrorDetail,
+  HealthResponse,
+} from './types'
 
 export type ApiErrorKind = 'unreachable' | 'failed'
 
@@ -75,6 +85,15 @@ export async function analyze(body: AnalyzeRequest): Promise<AnalyzeResponse> {
     if (err instanceof ApiError && err.kind === 'failed') await getHealth()
     throw err
   }
+}
+
+/** Fast warning: SAM steps and kerb hits for one frame. */
+export function detect(body: DetectRequest): Promise<DetectResponse> {
+  return request<DetectResponse>(
+    '/detect',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) },
+    DETECT_REQUEST_TIMEOUT_MS,
+  )
 }
 
 /** A spoken question about the current frame -> a short answer in the chosen language. */

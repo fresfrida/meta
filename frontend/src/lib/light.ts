@@ -1,7 +1,6 @@
 // The traffic light rule: which lamp is lit for the answer on screen.
-import type { VisionAnswer } from '../api/types'
 import { RED_MAX_M } from '../config'
-import { isWarning } from './phrase'
+import { type Shown, isWarning } from './phrase'
 
 export type Lamp = 'red' | 'amber' | 'green' | 'off'
 
@@ -11,7 +10,7 @@ export type Lamp = 'red' | 'amber' | 'green' | 'off'
  * green = clear
  * off   = unsure, or no answer (waiting, stopped, error): pass null
  */
-export function lampFor(answer: Pick<VisionAnswer, 'hazard' | 'distance' | 'distance_m'> | null): Lamp {
+export function lampFor(answer: Pick<Shown, 'hazard' | 'distance' | 'distance_m'> | null): Lamp {
   if (!answer || answer.hazard === 'unsure') return 'off'
   if (answer.hazard === 'clear') return 'green'
   if (!isWarning(answer)) return 'off'

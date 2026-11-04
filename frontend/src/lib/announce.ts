@@ -1,10 +1,10 @@
 // The no-repeat rule: one place decides whether an answer is spoken or stays silent.
-import type { VisionAnswer } from '../api/types'
-import { isWarning } from './phrase'
+import type { ShownHazard } from '../api/types'
+import { type Shown, isWarning } from './phrase'
 
 export interface AnnounceState {
   /** Hazard type most recently sent to speech ("clear" included), or null before the first (and after a language change). */
-  lastHazard: VisionAnswer['hazard'] | null
+  lastHazard: ShownHazard | null
   /** distance_m of the last spoken answer, or null when it had no metres. */
   lastDistanceM: number | null
   /** The last spoken answer was "near" (near/far fallback). */
@@ -19,7 +19,7 @@ export type Decision =
   | { speak: true; interrupt: boolean }
   | { speak: false; why: 'unsure' | 'repeat' | 'too_soon' | 'busy' }
 
-type Answer = Pick<VisionAnswer, 'hazard' | 'distance' | 'distance_m'>
+type Answer = Pick<Shown, 'hazard' | 'distance' | 'distance_m'>
 
 export const INITIAL_ANNOUNCE: AnnounceState = {
   lastHazard: null,
@@ -29,14 +29,25 @@ export const INITIAL_ANNOUNCE: AnnounceState = {
   speaking: false,
 }
 
+/** Steps of any direction (SAM's "steps", Muse's up / down) are one kind; every other hazard is its own. */
+export function kindOf(hazard: ShownHazard): ShownHazard {
+  return hazard === 'step_down' || hazard === 'step_up' ? 'steps' : hazard
+}
+
+const direction = (hazard: ShownHazard) => (hazard === 'step_down' ? 'down' : hazard === 'step_up' ? 'up' : null)
+
 /**
  * Repeat test. A side change alone never re-speaks (the side is read from the box and flaps near its lines).
- * - With metres (this answer and the last spoken one): the key is the hazard type; the same hazard stays silent
- *   unless it is at least `closerM` metres closer than when last spoken.
- * - Otherwise: the key is hazard type + near/far; the same hazard speaks again only when it goes far -> near.
+ * - The key is the kind (kindOf). Up or down is new when it was not said yet or it changed: Muse's "steps going
+ *   down" after SAM's "steps" speaks; SAM's "steps" after "steps going down" does not.
+ * - With metres (this answer and the last spoken one): the same kind stays silent unless it is at least `closerM`
+ *   metres closer than when last spoken.
+ * - Otherwise: the key is kind + near/far; the same kind speaks again only when it goes far -> near.
  */
 function isRepeat(answer: Answer, state: AnnounceState, closerM: number): boolean {
-  if (answer.hazard !== state.lastHazard) return false
+  if (state.lastHazard === null || kindOf(answer.hazard) !== kindOf(state.lastHazard)) return false
+  const dir = direction(answer.hazard)
+  if (dir !== null && dir !== direction(state.lastHazard)) return false
   if (answer.distance_m !== null && state.lastDistanceM !== null) {
     return answer.distance_m > state.lastDistanceM - closerM
   }

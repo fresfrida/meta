@@ -1,6 +1,8 @@
 // API shapes. Keep in sync with backend/app/schemas.py.
 
 export type Hazard = 'step_down' | 'step_up' | 'curb' | 'obstacle' | 'clear' | 'unsure'
+/** What the phone can show: Muse's hazards, plus SAM's "steps" (direction unknown). */
+export type ShownHazard = Hazard | 'steps'
 export type Side = 'left' | 'ahead' | 'right'
 export type Distance = 'near' | 'far'
 export type Source = 'mock' | 'live'
@@ -82,3 +84,29 @@ export type ListenEvent =
   | { type: 'question'; text: string; asr_ms?: number }
   | { type: 'stopped' }
   | { type: 'error'; code: 'bad_language' | 'key_missing' | 'budget_reached' }
+
+/** Fast warning (SAM 3.1). Hits are already filtered on the backend (detect_rule.py), nearest first. */
+export type DetectKind = 'steps' | 'curb'
+
+export interface DetectHit {
+  kind: DetectKind
+  box: Box
+  confidence: number
+  side: Side
+  /** "near" when the box touches the frame bottom (then distance_m is null). */
+  distance: Distance
+  distance_m: number | null
+}
+
+export interface DetectRequest {
+  image_b64: string
+}
+
+export interface DetectResponse {
+  hits: DetectHit[]
+  /** Boxes SAM returned before the rule. */
+  found: number
+  source: Source
+  sam_ms: number
+  cost_usd: number | null
+}

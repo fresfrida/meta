@@ -1,5 +1,5 @@
-// The short sound that says "I am listening for your question".
-import { EARCON_GAIN, EARCON_TONE_MS, EARCON_TONES_HZ } from '../config'
+// The short sounds: "I am listening for your question", and the fast-warning cue.
+import { EARCON_GAIN, EARCON_TONE_MS, EARCON_TONES_HZ, WARN_TONE_HZ, WARN_TONE_MS, WARN_VIBRATE_MS } from '../config'
 import { audioContext } from './audio'
 import { selfSound } from './micGate'
 
@@ -29,4 +29,29 @@ export function playEarcon(): Promise<void> {
       resolve()
     }, totalMs),
   )
+}
+
+/** Fast warning cue, just before its phrase: one short tone, and a vibration where the browser supports it
+ *  (Android Chrome; iPhone Safari has no navigator.vibrate). Does not wait. The microphone is closed while it plays. */
+export function playWarnCue(): void {
+  try {
+    navigator.vibrate?.(WARN_VIBRATE_MS)
+  } catch {
+    // vibration is a bonus; never block the warning
+  }
+  const ctx = audioContext()
+  if (!ctx) return
+  const toneS = WARN_TONE_MS / 1000
+  const start = ctx.currentTime + 0.01
+  const osc = ctx.createOscillator()
+  const gain = ctx.createGain()
+  osc.frequency.value = WARN_TONE_HZ
+  gain.gain.setValueAtTime(0, start)
+  gain.gain.linearRampToValueAtTime(EARCON_GAIN, start + 0.01)
+  gain.gain.linearRampToValueAtTime(0, start + toneS)
+  osc.connect(gain).connect(ctx.destination)
+  osc.start(start)
+  osc.stop(start + toneS)
+  selfSound.start()
+  setTimeout(() => selfSound.end(performance.now()), WARN_TONE_MS + 10)
 }

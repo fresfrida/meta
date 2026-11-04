@@ -1,5 +1,5 @@
 // Every piece of user-facing text lives here.
-import type { Hazard, Side } from './api/types'
+import type { ShownHazard, Side } from './api/types'
 import type { Lang } from './config'
 import type { WarningHazard } from './lib/phrase'
 
@@ -10,8 +10,8 @@ import type { WarningHazard } from './lib/phrase'
  * EN is approved; ZH / MS / TA are approved pending a native-speaker check.
  */
 export interface PhraseLanguage {
-  /** Screen hazard words. `unsure` is shown on screen only, never spoken. */
-  hazard: Record<Hazard, string>
+  /** Screen hazard words. `unsure` is shown on screen only, never spoken. `steps` is the fast warning (SAM). */
+  hazard: Record<ShownHazard, string>
   /** Screen, with metres: N = distance_m. */
   metres: (hazard: string, metres: number, side: Side | null) => string
   /** Screen, without metres: near/far fallback. */
@@ -40,6 +40,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       obstacle: 'Obstacle',
       clear: 'Clear',
       unsure: 'Not sure',
+      steps: 'Steps', // TENTATIVE (Brief 11): fast warning, direction unknown
     },
     metres: (h, n, side) => `${h}, ${n} ${n === 1 ? 'metre' : 'metres'}${pick(side, ', left', ', right')}`,
     plain: (h, side, near) => `${h} ahead${pick(side, ', left', ', right')}${near ? ', close' : ''}`,
@@ -49,6 +50,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         step_up: 'Steps going up',
         curb: 'A kerb',
         obstacle: 'Something in the way',
+        steps: 'Steps', // TENTATIVE (Brief 11)
       },
       clear: 'The path looks clear.',
       metres: (w, n, side) =>
@@ -64,6 +66,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       obstacle: '障碍物',
       clear: '畅通',
       unsure: '不确定',
+      steps: '台阶', // TENTATIVE (Brief 11)
     },
     metres: (h, n, side) => `${pick(side, '左前方', '右前方', '前方')}${n}米，${h}`,
     plain: (h, side, near) => `${pick(side, '左前方', '右前方', '前方')}${h}${near ? '，很近' : ''}`,
@@ -73,6 +76,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         step_up: '往上的台阶',
         curb: '路缘石',
         obstacle: '东西挡路',
+        steps: '台阶', // TENTATIVE (Brief 11)
       },
       clear: '前面的路看起来没有障碍。',
       metres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，有${w}。`,
@@ -87,6 +91,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       obstacle: 'Halangan',
       clear: 'Tiada halangan',
       unsure: 'Tidak pasti',
+      steps: 'Tangga', // TENTATIVE (Brief 11)
     },
     metres: (h, n, side) => `${h}, ${n} meter${pick(side, ', sebelah kiri', ', sebelah kanan')}`,
     plain: (h, side, near) => `${h} di hadapan${pick(side, ', sebelah kiri', ', sebelah kanan')}${near ? ', dekat' : ''}`,
@@ -96,6 +101,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         step_up: 'tangga naik',
         curb: 'bebendul jalan',
         obstacle: 'sesuatu yang menghalang',
+        steps: 'tangga', // TENTATIVE (Brief 11)
       },
       clear: 'Laluan di hadapan nampak lapang.',
       metres: (w, n, side) =>
@@ -112,6 +118,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       obstacle: 'தடை',
       clear: 'தடை இல்லை',
       unsure: 'உறுதியில்லை',
+      steps: 'படிகள்', // TENTATIVE (Brief 11)
     },
     metres: (h, n, side) => `${h}, ${n} மீட்டர்${pick(side, ', இடது பக்கம்', ', வலது பக்கம்')}`,
     plain: (h, side, near) => `முன்னால் ${h}${pick(side, ', இடது பக்கம்', ', வலது பக்கம்')}${near ? ', அருகில்' : ''}`,
@@ -121,6 +128,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         step_up: 'மேலே ஏறும் படிகள் உள்ளன',
         curb: 'நடைபாதை ஓரம் உள்ளது',
         obstacle: 'வழியில் ஏதோ ஒன்று உள்ளது',
+        steps: 'படிகள் உள்ளன', // TENTATIVE (Brief 11)
       },
       clear: 'முன்னால் உள்ள பாதை தெளிவாகத் தெரிகிறது.',
       metres: (w, n, side) =>
@@ -306,6 +314,9 @@ export const strings = {
     // TENTATIVE (Brief 5): loop-mode pill (capture to answer, seconds) and dropped late answers
     pill: (lastS: string, medianS: string) => `Last ${lastS} s · median ${medianS} s`,
     pillNone: 'No answers yet',
+    // TENTATIVE (Brief 11): two channels, median capture to answer
+    pillTwo: (fastS: string, detailS: string) => `fast ${fastS} s · detail ${detailS} s`,
+    channels: (samMs: string, modelMs: string) => `last SAM ${samMs} ms · last model ${modelMs} ms`,
     dropped: (n: number) => `dropped late ${n}`,
     // TENTATIVE (Brief 7): the last frame actually sent
     sentFrame: 'Last frame sent',

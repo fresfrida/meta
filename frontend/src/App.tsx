@@ -101,6 +101,7 @@ export default function App() {
                 lastUsage={eyes.lastUsage}
                 askTimings={eyes.askTimings}
                 lastSent={eyes.lastSent}
+                fast={eyes.fast}
               />
             ) : (
               <TimingPanel

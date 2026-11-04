@@ -35,6 +35,27 @@ export const MIN_GAP_MS = 1_500
 /** With metres, the same hazard and side is spoken again only once it is at least this many metres closer. */
 export const REPEAT_CLOSER_M = 2
 
+/**
+ * Fast warning (Brief 11): every frame also goes to SAM 3.1 (/api/detect, ~1-2 s), which warns first about steps
+ * and kerbs; Muse (/api/analyze, ~4 s) gets every DETAIL_EVERY-th frame and adds up/down, obstacles and metres.
+ * Turn it off (Muse only, as before) with `?fast=0`.
+ */
+export const FAST_ENABLED = readFlag('fast', true)
+/** With the fast channel on, the next capture starts this long after the previous one started. */
+export const FAST_STAGGER_MS = 900
+/** At most this many /api/detect requests in flight; the loop waits for one to finish. */
+export const FAST_MAX_IN_FLIGHT = 2
+/** Every this-many-th frame also goes to Muse (so Muse keeps its ~1.8 s spacing and cost). */
+export const DETAIL_EVERY = 2
+/** A Muse "clear" or "not sure" does not replace a fast warning younger than this. */
+export const SAM_HOLD_MS = 3_000
+/** Abort a /api/detect request after this long (the backend gives each SAM request 4 s). */
+export const DETECT_REQUEST_TIMEOUT_MS = 6_000
+/** Fast warning cue before its phrase: one short tone, and a vibration where the browser supports it (TENTATIVE). */
+export const WARN_TONE_HZ = 880
+export const WARN_TONE_MS = 90
+export const WARN_VIBRATE_MS = 120
+
 /** Traffic light: a warning this close (metres) or nearer is red; further is amber. */
 export const RED_MAX_M = 2
 

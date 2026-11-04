@@ -1,8 +1,12 @@
 // Orchestrates camera -> frame -> backend -> phrase -> speech, and the visible states.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { analyze, getHealth } from '../api/client'
-import type { AnalyzeResponse, Box, HealthResponse, Source } from '../api/types'
+import { analyze, detect, getHealth } from '../api/client'
+import type { Box, HealthResponse, Source } from '../api/types'
 import {
+  DETAIL_EVERY,
+  FAST_ENABLED,
+  FAST_MAX_IN_FLIGHT,
+  FAST_STAGGER_MS,
   LOOP_ENABLED,
   LOOP_STAGGER_MS,
   type Lang,
@@ -10,6 +14,7 @@ import {
   MIN_GAP_MS,
   MODEL_SLOW_MS,
   REPEAT_CLOSER_M,
+  SAM_HOLD_MS,
   SPEECH_LANGS,
   TIMING_HISTORY_SIZE,
 } from '../config'
@@ -19,8 +24,10 @@ import { CameraError, type CameraFailure, type SentFrame, captureGuarded, openRe
 import { warmUpFaceDetector } from '../lib/faceGuard'
 import { type FailureReason, failureReason } from '../lib/failure'
 import { type Lamp, lampFor } from '../lib/light'
-import { type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
+import { type Channel, NOTHING_SHOWN, type ShownState, fastCue, hitAsShown, mergedLamp, replaces } from '../lib/merge'
+import { type Shown, type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
 import { unlockAudio } from '../lib/audio'
+import { playWarnCue } from '../lib/earcon'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus } from '../lib/voices'
@@ -68,8 +75,13 @@ export interface Timings {
   spoken: TimingRecord[]
   /** Silent frames: round trip ms only, newest first. */
   silentRoundTrips: number[]
-  /** Every handled answer: capture to answer, ms, newest first. */
+  /** Every handled Muse answer: capture to answer, ms, newest first. */
   answerMs: number[]
+  /** Every handled fast (SAM) answer, hits or not: capture to answer, ms, newest first. */
+  fastMs: number[]
+  /** Server-side time of the last SAM answer and the last Muse answer. */
+  lastSamMs: number | null
+  lastModelMs: number | null
   spokenCount: number
   silentCount: number
   /** Answers that arrived after a newer capture's answer had been handled (not shown, not spoken). */
@@ -79,6 +91,8 @@ export interface Timings {
 export interface SecondEyes {
   videoRef: React.RefObject<HTMLVideoElement | null>
   loop: boolean
+  /** The fast channel (SAM) runs next to Muse. */
+  fast: boolean
   camera: CameraState
   backend: BackendState
   mode: Source | null
@@ -107,14 +121,20 @@ const EMPTY_TIMINGS: Timings = {
   spoken: [],
   silentRoundTrips: [],
   answerMs: [],
+  fastMs: [],
+  lastSamMs: null,
+  lastModelMs: null,
   spokenCount: 0,
   silentCount: 0,
   droppedCount: 0,
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** Two channels: every frame to SAM (fast), every DETAIL_EVERY-th to Muse. `?fast=0` or `?loop=0`: Muse only. */
+const TWO_SPEED = LOOP_ENABLED && FAST_ENABLED
+
 /** Loop mode uses the no-repeat rule; single-capture mode speaks every answer (Brief 1 timing test). */
-function decideFor(res: AnalyzeResponse, state: AnnounceState, now: number): Decision {
+function decideFor(res: Shown, state: AnnounceState, now: number): Decision {
   if (!LOOP_ENABLED) return { speak: true, interrupt: state.speaking }
   return decide(res, state, now, MIN_GAP_MS, REPEAT_CLOSER_M)
 }
@@ -128,10 +148,14 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   const announceRef = useRef<AnnounceState>(INITIAL_ANNOUNCE)
   // Screen phrase of the answer being spoken now (speech says the plain-language version of it).
   const speakingTextRef = useRef<string | null>(null)
-  // Requests in flight, capture order, and the newest capture whose answer has been handled.
+  // Requests in flight (the loop waits on these: SAM with two speeds, else Muse), Muse requests in flight, capture
+  // order, and per channel the newest capture whose answer has been handled.
   const inFlightRef = useRef(0)
+  const detailInFlightRef = useRef(0)
   const captureSeqRef = useRef(0)
-  const handledSeqRef = useRef(0)
+  const handledSeqRef = useRef<Record<Channel, number>>({ fast: 0, detail: 0 })
+  // What is on screen (channel, frame, lamp, when), for the merge rule.
+  const shownRef = useRef<ShownState>(NOTHING_SHOWN)
   // Bumped on Start and Stop so the loop and late responses from an old session stop.
   const sessionRef = useRef(0)
   // Set to the session when the loop must stop itself (budget reached, no key).
@@ -208,14 +232,14 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   })
 
   /** Shows the answer; keeps the same id (no crossfade) while the phrase is unchanged. */
-  const showAnswer = useCallback((res: AnalyzeResponse, text: string, noVoice: boolean) => {
+  const showAnswer = useCallback((res: Shown, text: string, noVoice: boolean, lamp: Lamp) => {
     setAnswer((a) => {
       const same = a.kind === 'phrase' && a.text === text
       return {
         kind: 'phrase',
         id: same ? a.id : ++answerIdRef.current,
         text,
-        lamp: lampFor(res),
+        lamp,
         quiet: res.hazard === 'unsure',
         speaking: announceRef.current.speaking && speakingTextRef.current === text,
         speechFailed: same ? a.speechFailed : false,
@@ -225,7 +249,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   }, [])
 
   /** Speaks `speech` for the answer whose screen phrase is `text`. */
-  const say = useCallback((res: AnalyzeResponse, text: string, speech: string, onStart: (speechStart: number) => void) => {
+  const say = useCallback((res: Shown, text: string, speech: string, onStart: (speechStart: number) => void) => {
     const speechId = ++speechIdRef.current
     announceRef.current = spoke(res, performance.now())
     speakingTextRef.current = text
@@ -247,7 +271,160 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     )
   }, [])
 
-  /** One frame through the pipeline. Several can be in flight; answers are handled in capture order. */
+  /**
+   * An answer from either channel: the merge rule decides whether it replaces what is shown, the repeat rule whether
+   * it is spoken. A fast warning that is spoken gets the cue (tone + vibration) first.
+   */
+  const present = useCallback(
+    (
+      channel: Channel,
+      shown: Shown,
+      box: Box | null,
+      seq: number,
+      frame: Size,
+      marks: { captureStart: number; requestSent: number; responseReceived: number; serverMs: number },
+    ) => {
+      const now = performance.now()
+      const answerMs = Math.round(marks.responseReceived - marks.captureStart)
+      const countAnswer = (t: Timings): Timings =>
+        channel === 'fast'
+          ? { ...t, fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE) }
+          : { ...t, answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE) }
+      if (!replaces(channel, shown, shownRef.current, now, SAM_HOLD_MS)) {
+        setTimings((t) => ({ ...countAnswer(t), silentCount: t.silentCount + 1 }))
+        return // a Muse "clear" / "not sure" while a fast warning is young: not shown, not spoken
+      }
+      const lamp = mergedLamp(lampFor(shown), seq, shownRef.current)
+      shownRef.current = { channel, seq, lamp, at: now }
+      setHazardBox(
+        isWarning(shown) && box ? { seq: ++boxSeqRef.current, hazard: shown.hazard, box, frame } : null,
+      )
+      if (isWarning(shown)) lastWarningRef.current = speechFor(shown, 'en')
+      const text = phraseFor(shown, langRef.current)
+      const speech = speechFor(shown, langRef.current)
+      const noVoice = voiceStatus(voicesRef.current, SPEECH_LANGS[langRef.current]) === 'missing'
+      const decision = decideFor(shown, announceRef.current, now)
+      showAnswer(shown, text, noVoice, lamp)
+      // While waiting for the user's question, hazard speech stays quiet (and is not marked as spoken).
+      if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
+        if (fastCue(channel, decision)) playWarnCue()
+        say(shown, text, speech, (speechStart) => {
+          const record = toRecord({ ...marks, speechStart, modelMs: marks.serverMs })
+          setTimings((t) => ({
+            ...countAnswer(t),
+            spoken: pushHistory(t.spoken, record, TIMING_HISTORY_SIZE),
+            spokenCount: t.spokenCount + 1,
+          }))
+        })
+      } else {
+        const roundTrip = Math.round(marks.responseReceived - marks.requestSent)
+        setTimings((t) => ({
+          ...countAnswer(t),
+          silentRoundTrips: pushHistory(t.silentRoundTrips, roundTrip, TIMING_HISTORY_SIZE),
+          silentCount: t.silentCount + 1,
+        }))
+      }
+    },
+    [say, showAnswer, suppressRef],
+  )
+
+  /** An answer older than one already handled on its channel is dropped: counted, not shown, not spoken. */
+  const isLate = useCallback((channel: Channel, seq: number) => {
+    if (seq > handledSeqRef.current[channel]) {
+      handledSeqRef.current[channel] = seq
+      return false
+    }
+    setTimings((t) => ({ ...t, droppedCount: t.droppedCount + 1 }))
+    return true
+  }, [])
+
+  /** A failed request on either channel. Returns true when the loop must stop (budget, no key). */
+  const onFailure = useCallback(
+    (err: unknown, session: number, channel: Channel) => {
+      const reason = failureReason(err)
+      if (reason === 'unreachable') {
+        setBackend('unreachable')
+        setAnswer({ kind: 'none' })
+        return // keep retrying
+      }
+      setBackend('ok')
+      if (channel === 'fast' && reason !== 'budget' && reason !== 'key') return // Muse still answers this frame
+      setAnswer({ kind: 'failed', reason })
+      void checkHealth() // refresh spend / budget for the message
+      if (reason === 'budget' || reason === 'key') haltedRef.current = session // these will not fix themselves
+    },
+    [checkHealth],
+  )
+
+  /** Muse (detail): obstacles, up / down, metres, clear. */
+  const runDetail = useCallback(
+    async (session: number, seq: number, image: string, frame: Size, captureStart: number, requestSent: number) => {
+      detailInFlightRef.current += 1
+      const slowTimer = setTimeout(() => session === sessionRef.current && setSlow(true), MODEL_SLOW_MS)
+      try {
+        const res = await analyze({ image_b64: image })
+        const responseReceived = performance.now()
+        if (session !== sessionRef.current || isLate('detail', seq)) return
+        setSlow(false)
+        setBackend('ok')
+        setMode(res.source)
+        if (res.input_tokens !== null && res.output_tokens !== null && res.cost_usd !== null) {
+          setLastUsage({ inputTokens: res.input_tokens, outputTokens: res.output_tokens, costUsd: res.cost_usd })
+          setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
+        }
+        setTimings((t) => ({ ...t, lastModelMs: Math.round(res.model_ms) }))
+        present('detail', res, res.box, seq, frame, { captureStart, requestSent, responseReceived, serverMs: res.model_ms })
+      } catch (err) {
+        if (session !== sessionRef.current || isLate('detail', seq)) return
+        onFailure(err, session, 'detail')
+      } finally {
+        clearTimeout(slowTimer)
+        detailInFlightRef.current -= 1
+        if (detailInFlightRef.current === 0 && session === sessionRef.current) setSlow(false)
+      }
+    },
+    [isLate, onFailure, present],
+  )
+
+  /** SAM (fast): the nearest kept steps / kerb hit, if any. "Nothing found" changes nothing on screen. */
+  const runFast = useCallback(
+    async (session: number, seq: number, image: string, frame: Size, captureStart: number, requestSent: number) => {
+      try {
+        const res = await detect({ image_b64: image })
+        const responseReceived = performance.now()
+        if (session !== sessionRef.current || isLate('fast', seq)) return
+        setBackend('ok')
+        if (res.cost_usd !== null) setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
+        const answerMs = Math.round(responseReceived - captureStart)
+        const nearest = res.hits[0]
+        if (!nearest) {
+          setTimings((t) => ({
+            ...t,
+            lastSamMs: Math.round(res.sam_ms),
+            fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE),
+          }))
+          return
+        }
+        setTimings((t) => ({ ...t, lastSamMs: Math.round(res.sam_ms) }))
+        present('fast', hitAsShown(nearest), nearest.box, seq, frame, {
+          captureStart,
+          requestSent,
+          responseReceived,
+          serverMs: res.sam_ms,
+        })
+      } catch (err) {
+        if (session !== sessionRef.current || isLate('fast', seq)) return
+        onFailure(err, session, 'fast')
+      }
+    },
+    [isLate, onFailure, present],
+  )
+
+  /**
+   * One frame through the pipeline: face blur once, then the same frame to SAM (two speeds) and, every
+   * DETAIL_EVERY-th frame while Muse has room, to Muse. Several frames can be in flight; each channel handles its
+   * answers in capture order.
+   */
   const captureOnce = useCallback(
     async (session: number): Promise<void> => {
       const video = videoRef.current
@@ -256,109 +433,51 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       const captureStart = performance.now()
       const frame = { width: video.videoWidth, height: video.videoHeight }
       inFlightRef.current += 1 // counted from capture, so face blur time is inside the in-flight limit
-      let image: string
       try {
-        const sent = await captureGuarded(video)
-        image = sent.imageB64
-        setLastSent(sent)
-      } catch {
-        inFlightRef.current -= 1
-        setAnswer({ kind: 'failed', reason: 'answer' })
-        return
-      }
-      if (session !== sessionRef.current) {
-        inFlightRef.current -= 1
-        return
-      }
-      const requestSent = performance.now()
-      if (!LOOP_ENABLED) {
-        cancelSpeech()
-        setAnswer({ kind: 'waiting' })
-      } else {
-        setAnswer((a) => (a.kind === 'phrase' ? a : { kind: 'waiting' }))
-      }
-      const slowTimer = setTimeout(() => session === sessionRef.current && setSlow(true), MODEL_SLOW_MS)
-      // An answer older than one already handled is dropped: counted, not shown, not spoken.
-      const isLate = () => {
-        if (seq > handledSeqRef.current) {
-          handledSeqRef.current = seq
-          return false
+        let image: string
+        try {
+          const sent = await captureGuarded(video)
+          image = sent.imageB64
+          setLastSent(sent)
+        } catch {
+          setAnswer({ kind: 'failed', reason: 'answer' })
+          return
         }
-        setTimings((t) => ({ ...t, droppedCount: t.droppedCount + 1 }))
-        return true
-      }
-
-      try {
-        const res = await analyze({ image_b64: image })
-        const responseReceived = performance.now()
-        if (session !== sessionRef.current || isLate()) return
-        setSlow(false)
-        setBackend('ok')
-        setMode(res.source)
-        if (res.input_tokens !== null && res.output_tokens !== null && res.cost_usd !== null) {
-          setLastUsage({ inputTokens: res.input_tokens, outputTokens: res.output_tokens, costUsd: res.cost_usd })
-          setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
-        }
-
-        setHazardBox(
-          isWarning(res) && res.box ? { seq: ++boxSeqRef.current, hazard: res.hazard, box: res.box, frame } : null,
-        )
-        if (isWarning(res)) lastWarningRef.current = speechFor(res, 'en')
-        const text = phraseFor(res, langRef.current)
-        const speech = speechFor(res, langRef.current)
-        const noVoice = voiceStatus(voicesRef.current, SPEECH_LANGS[langRef.current]) === 'missing'
-        const decision = decideFor(res, announceRef.current, performance.now())
-        showAnswer(res, text, noVoice)
-        const answerMs = Math.round(responseReceived - captureStart)
-        // While waiting for the user's question, hazard speech stays quiet (and is not marked as spoken).
-        if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
-          say(res, text, speech, (speechStart) => {
-            const record = toRecord({ captureStart, requestSent, responseReceived, speechStart, modelMs: res.model_ms })
-            setTimings((t) => ({
-              ...t,
-              spoken: pushHistory(t.spoken, record, TIMING_HISTORY_SIZE),
-              answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE),
-              spokenCount: t.spokenCount + 1,
-            }))
-          })
+        if (session !== sessionRef.current) return
+        const requestSent = performance.now()
+        if (!LOOP_ENABLED) {
+          cancelSpeech()
+          setAnswer({ kind: 'waiting' })
         } else {
-          const roundTrip = Math.round(responseReceived - requestSent)
-          setTimings((t) => ({
-            ...t,
-            silentRoundTrips: pushHistory(t.silentRoundTrips, roundTrip, TIMING_HISTORY_SIZE),
-            answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE),
-            silentCount: t.silentCount + 1,
-          }))
+          setAnswer((a) => (a.kind === 'phrase' ? a : { kind: 'waiting' }))
         }
-      } catch (err) {
-        if (session !== sessionRef.current || isLate()) return
-        const reason = failureReason(err)
-        if (reason === 'unreachable') {
-          setBackend('unreachable')
-          setAnswer({ kind: 'none' })
-          return // keep retrying
+        if (!TWO_SPEED) {
+          await runDetail(session, seq, image, frame, captureStart, requestSent)
+          return
         }
-        setBackend('ok')
-        setAnswer({ kind: 'failed', reason })
-        void checkHealth() // refresh spend / budget for the message
-        if (reason === 'budget' || reason === 'key') haltedRef.current = session // these will not fix themselves
+        const toMuse = seq % DETAIL_EVERY === 0 && detailInFlightRef.current < MAX_IN_FLIGHT
+        if (toMuse) void runDetail(session, seq, image, frame, captureStart, requestSent)
+        await runFast(session, seq, image, frame, captureStart, requestSent)
       } finally {
-        clearTimeout(slowTimer)
         inFlightRef.current -= 1
-        if (inFlightRef.current === 0 && session === sessionRef.current) setSlow(false)
       }
     },
-    [checkHealth, say, showAnswer, suppressRef],
+    [runDetail, runFast],
   )
 
-  /** Starts a capture every LOOP_STAGGER_MS (after the previous one started), at most MAX_IN_FLIGHT at once. */
+  /**
+   * Starts a capture every LOOP_STAGGER_MS (two speeds: FAST_STAGGER_MS) after the previous one started, with at
+   * most MAX_IN_FLIGHT (two speeds: FAST_MAX_IN_FLIGHT SAM requests) at once.
+   */
   const runLoop = useCallback(
     async (session: number) => {
       const running = () => session === sessionRef.current && haltedRef.current !== session
+      const stagger = TWO_SPEED ? FAST_STAGGER_MS : LOOP_STAGGER_MS
+      const maxInFlight = TWO_SPEED ? FAST_MAX_IN_FLIGHT : MAX_IN_FLIGHT
       while (running()) {
         void captureOnce(session)
-        await sleep(LOOP_STAGGER_MS)
-        while (running() && inFlightRef.current >= MAX_IN_FLIGHT) await sleep(50)
+        await sleep(stagger)
+        while (running() && inFlightRef.current >= maxInFlight) await sleep(50)
       }
     },
     [captureOnce],
@@ -371,7 +490,8 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     lastWarningRef.current = null
     const session = ++sessionRef.current
     announceRef.current = INITIAL_ANNOUNCE
-    handledSeqRef.current = captureSeqRef.current
+    shownRef.current = NOTHING_SHOWN
+    handledSeqRef.current = { fast: captureSeqRef.current, detail: captureSeqRef.current }
     setCamera('starting')
     setAnswer({ kind: 'none' })
     setHazardBox(null)
@@ -412,6 +532,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   return {
     videoRef,
     loop: LOOP_ENABLED,
+    fast: TWO_SPEED,
     camera,
     backend,
     mode,

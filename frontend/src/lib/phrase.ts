@@ -1,16 +1,24 @@
 // The rules that turn a structured vision answer into the phrase on screen and the sentence that is spoken.
-import type { Hazard, VisionAnswer } from '../api/types'
+import type { Distance, ShownHazard, Side } from '../api/types'
 import type { Lang } from '../config'
 import { phrases } from '../strings'
 
-export type WarningHazard = Exclude<Hazard, 'clear' | 'unsure'>
+export type WarningHazard = Exclude<ShownHazard, 'clear' | 'unsure'>
+
+/** Anything that can be shown and spoken: a Muse answer, or a SAM hit as a "steps" / "curb" warning. */
+export interface Shown {
+  hazard: ShownHazard
+  side: Side | null
+  distance: Distance | null
+  distance_m: number | null
+}
 
 /**
  * clear / unsure -> their word alone.
  * With metres (distance_m set): the language's metres template, e.g. "Step down, 2 metres" / "前方2米，下台阶".
  * Without: the near/far template, e.g. "Curb ahead, right, close".
  */
-export function phraseFor(answer: Pick<VisionAnswer, 'hazard' | 'side' | 'distance' | 'distance_m'>, lang: Lang): string {
+export function phraseFor(answer: Shown, lang: Lang): string {
   const p = phrases[lang]
   const word = p.hazard[answer.hazard]
   if (!isWarning(answer)) return word
@@ -22,7 +30,7 @@ export function phraseFor(answer: Pick<VisionAnswer, 'hazard' | 'side' | 'distan
  * The plain-language sentence that is spoken (voice table): e.g. "Steps going down, about 2 metres ahead." /
  * "The path looks clear.". Null for unsure, which is never spoken.
  */
-export function speechFor(answer: Pick<VisionAnswer, 'hazard' | 'side' | 'distance' | 'distance_m'>, lang: Lang): string | null {
+export function speechFor(answer: Shown, lang: Lang): string | null {
   const v = phrases[lang].voice
   if (answer.hazard === 'unsure') return null
   if (!isWarning(answer)) return v.clear
@@ -32,6 +40,6 @@ export function speechFor(answer: Pick<VisionAnswer, 'hazard' | 'side' | 'distan
 }
 
 /** Hazards that are warnings (not clear, not unsure). */
-export function isWarning(answer: Pick<VisionAnswer, 'hazard'>): answer is { hazard: WarningHazard } {
+export function isWarning(answer: Pick<Shown, 'hazard'>): answer is { hazard: WarningHazard } {
   return answer.hazard !== 'clear' && answer.hazard !== 'unsure'
 }
