@@ -60,7 +60,8 @@ export function Home({ camera, backend, lang, onStart, onSettings }: HomeProps) 
         <Button
           label={failed ? strings.button.tryAgain : strings.button.start}
           onClick={onStart}
-          disabled={camera === 'starting'}
+          // Until /api/health answers, the page does not know whether this is the public demo (notice + slot first).
+          disabled={camera === 'starting' || backend === 'checking'}
         />
       </div>
     </div>

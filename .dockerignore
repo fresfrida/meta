@@ -1,0 +1,24 @@
+# Keep the build context small and free of secrets and private data.
+.git
+.claude
+admin
+docs
+plan
+**/node_modules
+**/dist
+**/dev-dist
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.data
+**/.env
+**/.env.*
+!**/.env.example
+**/*.pem
+**/*.key
+**/*.crt
+**/.cert
+**/.certs
+**/.DS_Store
+backend/tests
+backend/scripts
