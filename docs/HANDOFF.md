@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 4 Nov 2026, Brief 14 merged and live (wording v2, Start / Stop lines; prompt v7; $15.91 cap, $2.14 spent).
+Last updated: 4 Nov 2026, Briefs 15 / 16 / 16b merged and live (walking-path rule, path guide, distance at speaking time, side hysteresis; prompt v7; $15.91 cap, $5.19 spent).
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,12 +9,14 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
-- **Distance at speaking time (Brief 16, same branch, NOT merged):** metres said = metres at capture - 0.8 m/s x
+- **Distance at speaking time (Brief 16, live 4 Nov):** metres said = metres at capture - 0.8 m/s x
   time since capture while walking (DeviceMotion; no data = walking); <= 1 m -> "very close"; stale and walked past ->
   dropped. Debug line in the timing panel.
-- **In-path rule + path guide (Brief 15, branch `claude/second-eyes-v9`, NOT merged, NOT live):** SAM hits are kept
-  only when their box overlaps the walking path (+-0.75 m at the ground point; bottom-touching boxes: centre half of
-  the frame); others are counted as `beside` and stay quiet. A faint path guide is drawn under hazard boxes
+- **In-path rule + path guide (Briefs 15 / 16b, live 4 Nov):** SAM steps / kerbs are kept only when their box overlaps
+  the walking path (+-0.75 m at the ground point; bottom-touching: centre half of the frame); SAM doors only when the
+  box centre is in the centre half of the frame (grid 250..750); a tall hit centred there beyond the geometry is
+  kept as "far, no metres"; others are counted as `beside` and stay quiet. Side hysteresis 50 grid points; Muse
+  side vs box side logged per live answer. A faint path guide is drawn under hazard boxes
   (`PATH_GUIDE`, tentative).
 - **Wording v2 (Brief 14), merged and live 4 Nov (`e73bcb4`):** person-centred English (Owner
   approved) - "Nothing seen in your path.", "Something in your path", "A group of people", "The edge of a road",

@@ -17,9 +17,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Briefs 15 + 16 on `claude/second-eyes-v9`: in-path rule, path guide, distance at speaking time, walking detection; left / right investigated (no bug). Checks: pytest 206, vitest 343, build OK. Waiting: Brief 15 open points (corridor door inside 0.75 m; 22.11.17 glass door dropped by the >10 m rule), then the go to merge
+- (none)
 
 ## Done
+- Briefs 15 / 16 / 16b: in-path rule (doors by frame centre 250..750), big far hits, path guide, distance at speaking time, walking detection, side hysteresis, Muse side logging; pytest 211, vitest 350; merged and live (`b6a6465`, 4 Nov)
 - Brief 14: wording v2 (person-centred, 4 languages, Owner approved) + Start / Stop lines; pytest 198, vitest 330; merged and live (`e73bcb4`, 4 Nov)
 - Brief 13 / 13b / 13c: prompt v7 (roads never clear, kerb sentence, sure), hedges ("There might be ..."), Kerb, SAM door, heartbeat, connection lost / back, Talk more; pytest 198, vitest 324; merged into `claude/second-eyes` and live (4 Nov)
 - Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
