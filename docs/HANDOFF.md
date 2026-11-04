@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 5 Nov 2026 00:30 SGT. Briefs 25-29 merged into `claude/second-eyes` (code 7d1f250; docs commits on top, local). Cloud demo still serves Brief 27 and has spent $8.01 of its $10 total; cloud branch 780923b (Briefs 28-29) waits for the Owner's Deploy.
+Last updated: 5 Nov 2026 01:35 SGT. Briefs 30-31 merged into `claude/second-eyes` (3b8357c) and `claude/second-eyes-cloud` (9250538). Mac backend restarted 01:27 on 3b8357c (prompt v9), $5.19 of $15.91. Cloud demo serves Briefs 28-29 (prompt v8), $9.57 of its $100 total; Briefs 30-31 wait for the Owner's Deploy.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,23 +9,38 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Features to show in the video (keep in step with the code)
-Each item is in the code on `claude/second-eyes` (7d1f250) unless marked.
+Each item is in the code on `claude/second-eyes` (3b8357c) unless marked.
 1. Point the phone ahead and hear what is in your path: a fast warning (SAM 3.1: steps, kerbs, doors) about 1.5 s after a frame, with a short tone, then detail from Muse Spark 1.3 (about 4 s) with the kind, side and metres.
 2. Only what is in your walking path: doors and kerbs beside you stay quiet (in-path rule).
 3. Distance at speaking time: metres are counted down for walking time since the photo; close means "very close".
 4. Honest, never "safe": "No hazard seen", "There might be a kerb...", and roads are named ("The edge of a road"), never when to cross.
 5. Four languages, Singapore voices first: English, 中文, Bahasa Melayu, தமிழ் (screen and voice).
-6. Hands-free "Hey Eyes, what's in front of me?" in four languages (speech recognition plus Muse), and "Hey Eyes, where does the path go?": it describes the path ("The path bends to the left ahead"), never gives directions (Brief 29: 5 of 5 live answers described).
+6. Hands-free "Hey Eyes, what's in front of me?" in four languages (speech recognition plus Muse), and "Hey Eyes, where does the path go?": it describes the path ("The path bends to the left ahead"), never gives directions (Brief 29: 5 of 5 live answers described). Brief 30: after "Ready" the app says once "You can ask me anything. Just say "Hey Eyes", then your question." (English, hands-free on) and shows "Say "Hey Eyes", then ask" above Stop; the heartbeat tick no longer cuts the question (live wake replay: 0/2 woke before, 2/2 after).
 7. Privacy: faces are blurred on the phone before any frame leaves it.
 8. Calm start: "Getting ready..." card (Camera, Privacy, First look), "Second Eyes is getting ready. Please wait a moment before you walk.", then "Ready. I'll tell you what I see in your path."
 9. Stays honest about the connection: soft tick while answers arrive, "Connection lost. Warnings have stopped." / "Back online."
-10. Lifts, escalators, double and glass doors (prompt v8; "A lift, about 3 metres ahead.").
+10. Lifts, escalators, double and glass doors (prompt v9; "A lift, about 3 metres ahead."; the fast check may say "A door" first, then Muse says "A lift").
 11. Works in the browser, no install: Android, iPhone (sound confirmed by the Owner 4 Nov after Brief 27), iPad.
 12. Accessibility: Larger Text, Increase Contrast, light and dark.
 13. Public demo with 3-minute slots and daily caps, so anyone can try it safely.
 14. Fast car warning: built but OFF by default (`CAR_FAST`; try with `?car=1`). The near-car test warned on 2 of 4 close cars and kept quiet on 2 of 4 parked ones, so do not show it as a feature.
 
 ## Current state (true of the code today)
+- **Briefs 30-31 (5 Nov, `claude/second-eyes` 3b8357c / cloud 9250538):**
+  - Speech end safety net (`speech.ts`): a phrase that started but never sent onend / onerror is ended after
+    max(4 s, characters x 120 ms) + 2 s (`SPEECH_END_*`, TENTATIVE); the mic gate reopens and ticks resume; debug
+    "ends lost N". Sized for English: a long Chinese answer can end early (open item).
+  - The heartbeat tick no longer closes the mic (the warn cue and the earcon still do). With the old gate a tick
+    every 700 ms let through only 28% of mic frames; live wake replay 0/2 woke before, 2/2 after.
+  - Timing panel line "mic: sent N · gated M · listen none / connecting / open / closed / stopped · in <rate> Hz".
+  - Ask hint (Owner approved): welcome bullet 'Ask me anything. Say "Hey Eyes", then your question, like "What's in
+    front of me?" or "Where does the path go?"'; spoken once per Start after the ready line with hands-free on
+    (English only) "You can ask me anything. Just say "Hey Eyes", then your question."; screen line above Stop
+    'Say "Hey Eyes", then ask' while listening (`lib/askHint.ts`).
+  - Prompt **v9** = v8 + "If a door is a lift (elevator) door, for example with call buttons beside it, call it a
+    lift." (Owner approved). Live: lifts 10/12 (v8 6/9), plain doors 6/6 stay door, 0/20 timeouts. Briefs 30-31
+    direct live calls $0.1065 (not in spend.json).
+  - Not tested on a real iPhone yet.
 - **Brief 29 (5 Nov, 7d1f250 / cloud 780923b):** Ask prompt adds, verbatim, "Describe where the path goes; never
   tell the person which way to go." (live 5/5 described, 0 directions, $0.0091); welcome Ask bullet now lists both
   examples (Owner approved 5 Nov). SAM "car" mapped to the vehicle kind behind `CAR_FAST` (env, default off; phone `?car=0/1`);
@@ -49,11 +64,11 @@ Each item is in the code on `claude/second-eyes` (7d1f250) unless marked.
     door" and "A door can be a single door, double doors or a glass door."; kind `lift` with approved words (EN Lift
     / A lift; 电梯; Lif / lif; லிஃப்ட் / லிஃப்ட் உள்ளது). Live check 21 calls, $0.0473 (direct, not in spend.json): v8
     right 6/6; SAM "road" too broad (not used); SAM "car" precise but untested on near cars.
-  - Live state: cloud demo serves Brief 27 (confirmed 23:23); Brief 28 needs the Owner's Deploy. The Mac backend
-    still runs prompt v7 (not restarted); the Mac's Vite serves the newest frontend.
+  - Live state (5 Nov 01:35): the cloud demo serves Briefs 28-29 (bundle index-NrB8CYJw); the Mac backend runs
+    3b8357c (prompt v9) since 01:27.
 - **Cloud demo (Brief 17), LIVE since 4 Nov:** https://second-eyes.52.76.242.161.sslip.io (Coolify on AWS
   Lightsail, Singapore), deploys from `claude/second-eyes-cloud` when the Owner clicks Deploy (no auto-deploy).
-  `PUBLIC_DEMO=1`: 180 s slots, 10 per Singapore day, $8 per day, $10 total; $8.01 spent at 00:29 on 5 Nov (slots reset at Singapore midnight). Repo still
+  `PUBLIC_DEMO=1`: 180 s slots, 10 per Singapore day, $20 per day, $100 total (Owner, 5 Nov); $9.57 spent at 01:35 on 5 Nov (slots reset at Singapore midnight). Repo still
   private. How to deploy: `docs/DEPLOY.md`.
 - **Distance at speaking time (Brief 16, live 4 Nov):** metres said = metres at capture - 0.8 m/s x
   time since capture while walking (DeviceMotion; no data = walking); <= 1 m -> "very close"; stale and walked past ->
@@ -293,7 +308,9 @@ and open `http://localhost:5173` on the Mac.
 - Failure -> screen text rule: `frontend/src/lib/failure.ts`.
 
 ## Deployment
-None. Later host: not decided. See ARCHITECTURE "Things that make deploying later hard".
+Cloud demo on Coolify (AWS Lightsail Singapore), deployed from `claude/second-eyes-cloud` when the Owner clicks
+Deploy: see `docs/DEPLOY.md`. Caps: `BUDGET_USD` 100 (confirmed by /api/health), `DAILY_BUDGET_USD` 20 (Owner set;
+not shown by /api/health). The Mac version stays for filming (Tailscale / LAN links above).
 
 ## Known risks
 - One live call costs at most ~2000 output tokens (~$0.009) since Brief 10. Before that, a muse-spark-1.1 call in Brief 9 ran away to 147,757 tokens ($0.63).
@@ -318,8 +335,5 @@ None. Later host: not decided. See ARCHITECTURE "Things that make deploying late
   is logged (never the frame or key).
 
 ## How to resume
-Brief 7 done (see `007-meta-artifacts/reports/brief-07.md`). Next: the Owner runs
-the iPhone tests (mic test `/?mictest=1`, a real "Hey Eyes", face blur on the
-phone, Larger Text). README privacy paragraph is proposed in the report, waiting
-for the Owner's wording approval. Read
-`docs/KANBAN.md` and `plan/hackathon.md` first.
+Start with the CURRENT STATE section of `007-meta-artifacts/reports/advisor-handoff.md`, then `docs/KANBAN.md`
+and the newest `007-meta-artifacts/reports/brief-*.md` (Brief 31 at 01:35, 5 Nov).

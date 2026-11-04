@@ -1,6 +1,6 @@
 # Architecture - Second Eyes
 
-Status: Brief 7 (faces blurred on the phone before any frame leaves it; light/dark and text size on Home and Settings).
+Status: Brief 31 (5 Nov; cloud demo on Coolify, prompt v9). Sections below were written as each brief landed.
 First written before the app code, per the Owner's standing architecture rule.
 
 ## Where every piece runs
@@ -29,7 +29,7 @@ Later hosting target: **AWS Lightsail (Singapore) running Coolify** - see "Cloud
 
 Public demo limits (`PUBLIC_DEMO=1`, `backend/app/demo.py`): a signed slot per Start (`DEMO_SLOT_S`, 180 s), required on
 every `/api/analyze`, `/api/detect`, `/api/ask` and on `/api/listen` (as `?slot=`); `DEMO_SLOTS_PER_DAY` (10) new slots per
-Singapore day; `DAILY_BUDGET_USD` (8) per day on top of `BUDGET_USD`; one running slot per browser; 6 slot requests per IP
+Singapore day; `DAILY_BUDGET_USD` (default 8; the cloud demo uses 20) per day on top of `BUDGET_USD` (the cloud demo uses 100); one running slot per browser; 6 slot requests per IP
 per minute. Live cost is about $32 per hour of use, so $8 a day covers about 15 minutes of live use (about 5 full slots).
 
 What makes moving hosts easy: one image, every setting from env vars, state in one small volume, no host-specific code.

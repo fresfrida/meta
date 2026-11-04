@@ -2,9 +2,10 @@
 
 ## Backlog
 - Car warning: car-specific in-path rule (box centre within 0.75 m) and a re-test (~10 SAM calls, ~$0.025) before CAR_FAST can default on
-- Owner: in Coolify set DAILY_BUDGET_USD=20 and BUDGET_USD=100 (Owner approved), then Deploy (cloud demo at $8.01 of $10)
+- Speech end safety net sized for English: give Chinese (CJK) text a longer allowance (Brief 30 risk)
+- 中文 / Bahasa Melayu / தமிழ் for the Ask hint (Brief 30, English only for now)
+- iPhone re-test of Hey Eyes with the new mic debug line, and of the spoken / screen Ask hint
 - 中文 / Bahasa Melayu / தமிழ் for the Brief 27 getting-ready lines and card (English only for now)
-- Restart the Mac backend so the Mac link uses prompt v8 (stop any page loop first)
 - iPad and Android re-test after Briefs 25-28
 - Getting-ready polish: centre the Home card; bring back "Allow camera access if asked."; hold "Connection lost" until the first answer; screen-reader "done" (TENTATIVE)
 - Decide: 'playback' audio session pauses the user's own music on iPhone while running
@@ -26,9 +27,13 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Briefs 28 + 29 on the cloud demo: waiting for the Owner's Deploy (merged and verified, 7d1f250 / 780923b)
+- Briefs 30 + 31 on the cloud demo: waiting for the Owner's Deploy (merged and verified, 3b8357c / 9250538)
+- Filming the 3-minute video on the Mac link (Mac backend on prompt v9 since 01:27)
 
 ## Done
+- Brief 31 / 31b: prompt v9 lift sentence (Owner approved); lifts 10/12 vs v8 6/9, plain doors 6/6 stay door; live $0.0456; merged, Mac restarted 01:27 (5 Nov)
+- Brief 30: speech end safety net, tick no longer closes the mic (wake replay 0/2 -> 2/2), mic debug line, Ask hint (Owner approved, EN), lift investigation; vitest 491, pytest 239; live $0.0609; Mac restarted on v8 01:14 (5 Nov)
+- Briefs 28 + 29 deployed to the cloud demo by the Owner; cloud caps $100 total (confirmed), $20 a day (5 Nov)
 - Brief 29: "Where does the path go?" by Hey Eyes (prompt sentence approved; 5/5 describe); SAM car warning built behind CAR_FAST, off (near-car test failed); live 14 calls $0.0316; vitest 470, pytest 239 (5 Nov)
 - Brief 28: ready line after the start line, iPhone tick fix, prompt v8 (lift, double / glass doors), lift words in 4 languages (Owner approved); live check 21 calls $0.0473; vitest 465, pytest 228 (5 Nov)
 - Brief 27: iPhone sound (one session per run, AudioContext suspended between tones, resume + re-speak, route watcher, picture recovery, test flags) and the getting-ready phase; vitest 443, pytest 227; iPhone sound confirmed by the Owner; live on the cloud demo 23:23 (4 Nov)
@@ -66,7 +71,6 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
-- Filming (Mac link, own budget $5.19 of $15.91; restart the Mac backend first for prompt v8 and the path Ask)
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
 - iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`
 - iPhone "Hey Eyes" test (real voice, real room)
