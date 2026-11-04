@@ -102,6 +102,14 @@ export const WALK_ACCEL_VAR = 0.3
 /** An answer whose distance has already been walked is said as "very close" only if younger than this; else dropped. */
 export const STALE_MS = 6_000
 
+/**
+ * Side hysteresis (Brief 16b): once a side has been spoken for a kind of hazard, it changes only when the box centre
+ * is past the side line by SIDE_HYST grid points (0..1000). The lines match the backend's LEFT_MAX / RIGHT_MIN.
+ */
+export const SIDE_LEFT_MAX = 400
+export const SIDE_RIGHT_MIN = 600
+export const SIDE_HYST = 50
+
 /** Traffic light: a warning this close (metres) or nearer is red; further is amber. */
 export const RED_MAX_M = 2
 

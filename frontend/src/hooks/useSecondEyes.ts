@@ -11,6 +11,9 @@ import {
   CONNECTION_LOST_MS,
   CONNECTION_REPEAT_MS,
   HEARTBEAT_MIN_GAP_MS,
+  SIDE_HYST,
+  SIDE_LEFT_MAX,
+  SIDE_RIGHT_MIN,
   STALE_MS,
   WALK_ACCEL_VAR,
   WALK_SPEED_M_S,
@@ -52,6 +55,7 @@ import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
 import { museHedged } from '../lib/hedge'
+import { type SpokenSides, holdSide, rememberSide } from '../lib/sideHold'
 import { atSpeakingTime } from '../lib/distanceNow'
 import { WalkDetector } from '../lib/motion'
 import { SESSION_IDLE, type SessionVoice, greetingDone, holdForGreeting, onStart, onStop } from '../lib/sessionVoice'
@@ -165,6 +169,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 /** Two channels: every frame to SAM (fast), every DETAIL_EVERY-th to Muse. `?fast=0` or `?loop=0`: Muse only. */
 const TWO_SPEED = LOOP_ENABLED && FAST_ENABLED
+const SIDE_LINES = { leftMax: SIDE_LEFT_MAX, rightMin: SIDE_RIGHT_MIN, hyst: SIDE_HYST }
 
 /** Loop mode uses the no-repeat rule; single-capture mode speaks every answer (Brief 1 timing test). */
 function decideFor(res: Shown, state: AnnounceState, now: number, talkMore: boolean): Decision {
@@ -196,6 +201,8 @@ export function useSecondEyes(
   const shownRef = useRef<ShownState>(NOTHING_SHOWN)
   // When each kind was last spoken (either channel), so a fast hit does not re-say a kind Muse just interrupted.
   const spokenKindsRef = useRef<SpokenKinds>({})
+  // The side last spoken per kind (side hysteresis).
+  const spokenSidesRef = useRef<SpokenSides>({})
   // Talk more (Settings), read by the loop without restarting it.
   const talkMoreRef = useRef(talkMore)
   // Connection rule state (lost / back) and the last heartbeat tick.
@@ -232,6 +239,7 @@ export function useSecondEyes(
     if (langRef.current !== lang) {
       announceRef.current = INITIAL_ANNOUNCE
       spokenKindsRef.current = {}
+      spokenSidesRef.current = {}
     }
     langRef.current = lang
   }, [lang])
@@ -308,6 +316,7 @@ export function useSecondEyes(
     const speechId = ++speechIdRef.current
     announceRef.current = { ...INITIAL_ANNOUNCE, lastSpokenAt: performance.now(), speaking: true }
     spokenKindsRef.current = {}
+    spokenSidesRef.current = {}
     const speechLang = SPEECH_LANGS[langRef.current]
     const handle = speak(text, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
     const done = () => {
@@ -391,7 +400,8 @@ export function useSecondEyes(
         maybeTick()
         return // stale, and already walked past
       }
-      const shown = atNow.shown
+      // Brief 16b: the side changes only when the box is clearly past a side line (per kind, last spoken side).
+      const shown = holdSide(atNow.shown, box, spokenSidesRef.current, SIDE_LINES)
       if (isWarning(shown)) setTimings((t) => ({ ...t, lastDistance: { capturedM: atNow.capturedM, nowM: atNow.nowM } }))
       // Hazard speech waits while the start line plays (it is said on the next answer).
       let decision = holdForGreeting(decideFor(shown, announceRef.current, now, talkMoreRef.current), sessionVoiceRef.current)
@@ -420,6 +430,7 @@ export function useSecondEyes(
       if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
         if (fastCue(channel, decision)) playWarnCue()
         spokenKindsRef.current = rememberSpoken(spokenKindsRef.current, shown, now)
+        spokenSidesRef.current = rememberSide(spokenSidesRef.current, shown)
         say(shown, text, speech, (speechStart) => {
           const record = toRecord({ ...marks, speechStart, modelMs: marks.serverMs })
           setTimings((t) => ({
@@ -646,6 +657,7 @@ export function useSecondEyes(
     const session = ++sessionRef.current
     announceRef.current = INITIAL_ANNOUNCE
     spokenKindsRef.current = {}
+    spokenSidesRef.current = {}
     shownRef.current = NOTHING_SHOWN
     const [voice, greet] = onStart(sessionVoiceRef.current)
     sessionVoiceRef.current = voice
@@ -686,6 +698,7 @@ export function useSecondEyes(
     speechIdRef.current += 1
     announceRef.current = INITIAL_ANNOUNCE
     spokenKindsRef.current = {}
+    spokenSidesRef.current = {}
     cancelSpeech()
     const [voice, bye] = onStop(sessionVoiceRef.current)
     sessionVoiceRef.current = voice
