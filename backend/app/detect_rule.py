@@ -23,9 +23,9 @@ from .config import (
     DISTANCE_M_MAX,
     BIG_HIT_FRAC,
     DISTANCE_M_MIN,
-    LEFT_MAX,
+    DOOR_CENTRE_MAX,
+    DOOR_CENTRE_MIN,
     PATH_HALF_WIDTH_M,
-    RIGHT_MIN,
     SAM_MIN_CONF,
     VFOV_LANDSCAPE_DEG,
     VFOV_PORTRAIT_DEG,
@@ -109,22 +109,23 @@ def in_path(raw: RawHit, forward_m: float | None) -> bool:
     Steps and kerbs are wide and cross the path: any overlap counts. A door (Brief 16b) counts only when its box
     centre is in the path, so a door on a side wall stays quiet.
     """
+    if raw.kind == "door":
+        return centred(raw)
     if forward_m is None:
-        if raw.kind == "door":
-            centre = (raw.x1 + raw.x2 + 1) / 2
-            return raw.w / 4 < centre < raw.w * 3 / 4  # centre in the centre half of the frame
         return raw.x1 < raw.w * 3 / 4 and raw.x2 + 1 > raw.w / 4  # overlaps the centre half of the frame
     left, right = lateral_span_m(raw, forward_m)
-    if raw.kind == "door":
-        return abs((left + right) / 2) <= PATH_HALF_WIDTH_M
     return left < PATH_HALF_WIDTH_M and right > -PATH_HALF_WIDTH_M
 
 
-def big_far_ahead(raw: RawHit, box: list[int]) -> bool:
-    """Brief 16b: a tall hit centred ahead, which the level-camera geometry cannot place (a tilted phone)."""
-    centre = (box[0] + box[2]) / 2
-    tall = (raw.y2 + 1 - raw.y1) / raw.h >= BIG_HIT_FRAC
-    return LEFT_MAX <= centre <= RIGHT_MIN and tall
+def centred(raw: RawHit) -> bool:
+    """Box centre in the centre half of the frame (grid x DOOR_CENTRE_MIN .. DOOR_CENTRE_MAX)."""
+    centre = (raw.x1 + raw.x2 + 1) / 2 * BOX_GRID_MAX / raw.w
+    return DOOR_CENTRE_MIN <= centre <= DOOR_CENTRE_MAX
+
+
+def big_far_ahead(raw: RawHit) -> bool:
+    """Brief 16b: a tall hit centred in the frame, which the level-camera geometry cannot place (a tilted phone)."""
+    return centred(raw) and (raw.y2 + 1 - raw.y1) / raw.h >= BIG_HIT_FRAC
 
 
 BESIDE = "beside"  # keep()'s answer for a hit dropped only because it is beside the walking path
@@ -137,10 +138,10 @@ def keep(raw: RawHit) -> DetectHit | str | None:
     bottom = raw.y2 + 1
     metres = ground_distance_m(bottom, raw.h, portrait=raw.h > raw.w)
     box = to_grid(raw)
-    far_ahead = DetectHit(kind=raw.kind, box=box, confidence=raw.confidence, side="ahead", distance="far")
+    far_ahead = DetectHit(kind=raw.kind, box=box, confidence=raw.confidence, side=side_of_box(box), distance="far")
     if metres is None:
         # At or above the horizon: not on the ground ahead, unless it is a big hit straight ahead (tilted phone).
-        return far_ahead if big_far_ahead(raw, box) else None
+        return far_ahead if big_far_ahead(raw) else None
     touching = bottom >= raw.h * (1 - BOTTOM_TOUCH_FRAC)
     if touching:
         if not in_path(raw, None):
@@ -148,7 +149,7 @@ def keep(raw: RawHit) -> DetectHit | str | None:
         return DetectHit(kind=raw.kind, box=box, confidence=raw.confidence, side=side_of_box(box), distance="near")
     whole = max(DISTANCE_M_MIN, round(metres))
     if whole > DISTANCE_M_MAX:
-        return far_ahead if big_far_ahead(raw, box) else None
+        return far_ahead if big_far_ahead(raw) else None
     if not in_path(raw, metres):
         return BESIDE
     return DetectHit(

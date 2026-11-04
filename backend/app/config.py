@@ -98,8 +98,12 @@ BOTTOM_TOUCH_FRAC = 0.01  # a box ending within this fraction of the frame botto
 # either side of straight ahead, measured at the box's ground point. A box touching the frame bottom is in the path
 # when it overlaps the centre half of the frame.
 PATH_HALF_WIDTH_M = 0.75
-# Brief 16b: a hit the geometry puts beyond 10 m (or at / above the horizon), centred in the ahead band (LEFT_MAX ..
-# RIGHT_MIN) and at least this tall (fraction of the frame), is kept as "far, no metres" (a tilted phone's door ahead).
+# Brief 16b (Advisor decision): a SAM door is in the path when its box centre is in the centre half of the frame
+# (grid x DOOR_CENTRE_MIN .. DOOR_CENTRE_MAX). The same band is used for big far hits: a hit the geometry puts beyond
+# 10 m (or at / above the horizon), centred in that band and at least BIG_HIT_FRAC of the frame tall, is kept as
+# "far, no metres" (a tilted phone's door ahead).
+DOOR_CENTRE_MIN = 250
+DOOR_CENTRE_MAX = 750
 BIG_HIT_FRAC = 0.35
 
 

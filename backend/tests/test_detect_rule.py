@@ -137,31 +137,27 @@ def test_a_box_touching_the_bottom_is_in_the_path_when_it_overlaps_the_centre_ha
 
 
 # ---- Brief 16b: door centre rule, big far hits ahead (measured boxes from Briefs 15 / 16 as fixtures) ---------------
-def test_door_counts_only_when_its_centre_is_in_the_path():
-    # A wide door box that overlaps the path but is centred beside it: dropped; a door centred ahead: kept.
-    # ~4.9 m ahead: x 220..359 spans +0.41 .. +1.83 m (overlaps the path, centre +1.12 m).
+def test_door_counts_only_when_its_box_centre_is_in_the_centre_half():
+    # A wide door box that overlaps the path but is centred at grid x 805: dropped; a door centred at 500: kept.
     assert keep(RawHit("door", 220, 150, 359, 447, 360, 640, 0.85)) == BESIDE
     assert keep(RawHit("door", 150, 150, 210, 447, 360, 640, 0.85)) != BESIDE
-    # The same wide box as a kerb (overlap rule) is kept.
+    # The same wide box as a kerb keeps the metres overlap rule: kept.
     assert keep(RawHit("curb", 220, 150, 359, 447, 360, 640, 0.85)) != BESIDE
 
 
-def test_measured_doors():
-    door_ahead_12 = RawHit("door", 167, 69, 352, 435, 640, 640, 0.81)
-    cabinet_1 = RawHit("door", 63, 207, 116, 418, 640, 640, 0.55)
-    cabinet_2 = RawHit("door", 106, 201, 139, 407, 640, 640, 0.53)
+def test_the_five_measured_door_fixtures():
+    # Measured SAM door boxes (Briefs 15 / 16), as in brief-16.md (Brief 16b).
+    side_door_08 = RawHit("door", 201, 0, 294, 553, 296, 640, 0.82)  # grid centre 838
+    door_ahead_12 = RawHit("door", 167, 69, 352, 435, 640, 640, 0.81)  # 406
+    door_ahead_12_flipped = RawHit("door", 286, 70, 472, 435, 640, 640, 0.83)  # 593
+    glass_door_17 = RawHit("door", 152, 64, 292, 344, 640, 640, 0.85)  # 348, 44% tall, 33 m by geometry
+    cabinets_17 = [RawHit("door", 63, 207, 116, 418, 640, 640, 0.55), RawHit("door", 106, 201, 139, 407, 640, 640, 0.53)]
+    assert keep(side_door_08) == BESIDE
     assert keep(door_ahead_12).distance_m == 7
-    assert keep(cabinet_1) == BESIDE and keep(cabinet_2) == BESIDE
-
-
-def test_measured_doors_the_spec_does_not_separate():
-    # Recorded as measured (see brief-16.md, Brief 16b): with the rules as specified these two do NOT get the
-    # wanted result. The 22.11.08 side door's centre is +0.56 m (inside 0.75 m); the 22.11.17 glass door's centre is
-    # 348 on the grid (outside the 400..600 ahead band).
-    side_door_08 = RawHit("door", 201, 0, 294, 553, 296, 640, 0.82)
-    glass_door_17 = RawHit("door", 152, 64, 292, 344, 640, 640, 0.85)
-    assert keep(side_door_08) != BESIDE  # wanted: beside
-    assert keep(glass_door_17) is None  # wanted: kept as far
+    assert keep(door_ahead_12_flipped).distance_m == 7
+    glass = keep(glass_door_17)
+    assert (glass.distance, glass.distance_m, glass.side) == ("far", None, "left")  # "A door ahead, on your left."
+    assert [keep(c) for c in cabinets_17] == [BESIDE, BESIDE]
 
 
 def test_big_hit_ahead_beyond_the_geometry_is_kept_as_far_without_metres():
