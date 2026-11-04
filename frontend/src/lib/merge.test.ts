@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest'
 import type { DetectHit } from '../api/types'
 import { type AnnounceState, INITIAL_ANNOUNCE, decide, spoke } from './announce'
 import { lampFor } from './light'
-import { NOTHING_SHOWN, type ShownState, fastCue, hitAsShown, mergedLamp, replaces } from './merge'
+import {
+  NOTHING_SHOWN,
+  type ShownState,
+  fastCue,
+  fastRecentlySaid,
+  hitAsShown,
+  mergedLamp,
+  rememberSpoken,
+  replaces,
+} from './merge'
 import { type Shown, phraseFor, speechFor } from './phrase'
 
 const GAP = 1500
@@ -107,7 +116,12 @@ describe('replaces: a silent fast hit does not overwrite Muse detail of the same
   })
   it('a fast hit that is spoken (closer, or another kind) always shows', () => {
     expect(replaces('fast', hitAsShown(hit('steps', 1)), museDown, 11_000, HOLD, true)).toBe(true)
-    expect(replaces('fast', hitAsShown(hit('curb', 6)), museDown, 11_000, HOLD, false)).toBe(true)
+    expect(replaces('fast', hitAsShown(hit('curb', 6)), museDown, 11_000, HOLD, true)).toBe(true)
+  })
+  it('a silent fast hit of another kind does not flip the screen away from a young Muse answer', () => {
+    const museObstacle: ShownState = { channel: 'detail', hazard: 'obstacle', seq: 6, lamp: 'amber', at: 10_000 }
+    expect(replaces('fast', hitAsShown(hit('curb', 3)), museObstacle, 11_000, HOLD, false)).toBe(false)
+    expect(replaces('fast', hitAsShown(hit('curb', 3)), museObstacle, 13_500, HOLD, false)).toBe(true)
   })
 })
 
@@ -142,5 +156,34 @@ describe('fast phrase per language (TENTATIVE words)', () => {
   it('screen phrase', () => {
     expect(phraseFor(hitAsShown(hit('steps', 3)), 'en')).toBe('Steps, 3 metres')
     expect(phraseFor(hitAsShown(hit('steps', 3)), 'ta')).toBe('படிகள், 3 மீட்டர்')
+  })
+})
+
+describe('fastRecentlySaid: no "kerb, obstacle, kerb, obstacle" ping-pong (Brief 11 live run)', () => {
+  const WINDOW = 10_000
+  const kerbNear = hitAsShown(hit('curb', null, 'left'))
+  // Spoken: SAM kerb (near) at 1 s, then Muse obstacle at 6 s.
+  const kinds = rememberSpoken(rememberSpoken({}, kerbNear, 1_000), muse('obstacle', 3, 'right'), 6_000)
+
+  it('the repeat rule alone would re-say the kerb after the obstacle', () => {
+    const state = after(muse('obstacle', 3, 'right'), 6_000)
+    expect(run(kerbNear, state, 8_000).speak).toBe(true)
+  })
+  it('the per-kind memory keeps the fast kerb silent within the window', () => {
+    expect(fastRecentlySaid(kerbNear, kinds, 7_000, WINDOW, CLOSER)).toBe(true)
+  })
+  it('after the window, or when closer, the fast hit speaks again', () => {
+    expect(fastRecentlySaid(kerbNear, kinds, 11_000, WINDOW, CLOSER)).toBe(false)
+    const far = rememberSpoken({}, hitAsShown(hit('curb', 6)), 1_000)
+    expect(fastRecentlySaid(hitAsShown(hit('curb', 4)), far, 3_000, WINDOW, CLOSER)).toBe(false)
+    expect(fastRecentlySaid(hitAsShown(hit('curb', 5)), far, 3_000, WINDOW, CLOSER)).toBe(true)
+    expect(fastRecentlySaid(hitAsShown(hit('curb', null)), rememberSpoken({}, muse('curb', null), 1_000), 3_000, WINDOW, CLOSER)).toBe(true)
+  })
+  it('steps spoken by Muse ("going down") count for the fast "steps"', () => {
+    const down = rememberSpoken({}, muse('step_down', 4), 1_000)
+    expect(fastRecentlySaid(hitAsShown(hit('steps', 4)), down, 3_000, WINDOW, CLOSER)).toBe(true)
+  })
+  it('a kind never spoken is not held back', () => {
+    expect(fastRecentlySaid(hitAsShown(hit('steps', 4)), kinds, 7_000, WINDOW, CLOSER)).toBe(false)
   })
 })

@@ -6,6 +6,7 @@ import {
   DETAIL_EVERY,
   FAST_ENABLED,
   FAST_MAX_IN_FLIGHT,
+  FAST_REPEAT_MS,
   FAST_STAGGER_MS,
   LOOP_ENABLED,
   LOOP_STAGGER_MS,
@@ -24,7 +25,18 @@ import { CameraError, type CameraFailure, type SentFrame, captureGuarded, openRe
 import { warmUpFaceDetector } from '../lib/faceGuard'
 import { type FailureReason, failureReason } from '../lib/failure'
 import { type Lamp, lampFor } from '../lib/light'
-import { type Channel, NOTHING_SHOWN, type ShownState, fastCue, hitAsShown, mergedLamp, replaces } from '../lib/merge'
+import {
+  type Channel,
+  NOTHING_SHOWN,
+  type ShownState,
+  type SpokenKinds,
+  fastCue,
+  fastRecentlySaid,
+  hitAsShown,
+  mergedLamp,
+  rememberSpoken,
+  replaces,
+} from '../lib/merge'
 import { type Shown, type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
 import { unlockAudio } from '../lib/audio'
 import { playWarnCue } from '../lib/earcon'
@@ -156,6 +168,8 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   const handledSeqRef = useRef<Record<Channel, number>>({ fast: 0, detail: 0 })
   // What is on screen (channel, frame, lamp, when), for the merge rule.
   const shownRef = useRef<ShownState>(NOTHING_SHOWN)
+  // When each kind was last spoken (either channel), so a fast hit does not re-say a kind Muse just interrupted.
+  const spokenKindsRef = useRef<SpokenKinds>({})
   // Bumped on Start and Stop so the loop and late responses from an old session stop.
   const sessionRef = useRef(0)
   // Set to the session when the loop must stop itself (budget reached, no key).
@@ -178,7 +192,10 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
 
   useEffect(() => {
     // Changing language resets the last spoken phrase, so the next answer is spoken in the new language.
-    if (langRef.current !== lang) announceRef.current = INITIAL_ANNOUNCE
+    if (langRef.current !== lang) {
+      announceRef.current = INITIAL_ANNOUNCE
+      spokenKindsRef.current = {}
+    }
     langRef.current = lang
   }, [lang])
 
@@ -290,7 +307,10 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
         channel === 'fast'
           ? { ...t, fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE) }
           : { ...t, answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE) }
-      const decision = decideFor(shown, announceRef.current, now)
+      let decision = decideFor(shown, announceRef.current, now)
+      if (channel === 'fast' && decision.speak && fastRecentlySaid(shown, spokenKindsRef.current, now, FAST_REPEAT_MS, REPEAT_CLOSER_M)) {
+        decision = { speak: false, why: 'repeat' }
+      }
       if (!replaces(channel, shown, shownRef.current, now, SAM_HOLD_MS, decision.speak)) {
         setTimings((t) => ({ ...countAnswer(t), silentCount: t.silentCount + 1 }))
         return // see merge.ts: kept off screen and not spoken
@@ -308,6 +328,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       // While waiting for the user's question, hazard speech stays quiet (and is not marked as spoken).
       if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
         if (fastCue(channel, decision)) playWarnCue()
+        spokenKindsRef.current = rememberSpoken(spokenKindsRef.current, shown, now)
         say(shown, text, speech, (speechStart) => {
           const record = toRecord({ ...marks, speechStart, modelMs: marks.serverMs })
           setTimings((t) => ({
@@ -490,6 +511,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     lastWarningRef.current = null
     const session = ++sessionRef.current
     announceRef.current = INITIAL_ANNOUNCE
+    spokenKindsRef.current = {}
     shownRef.current = NOTHING_SHOWN
     handledSeqRef.current = { fast: captureSeqRef.current, detail: captureSeqRef.current }
     setCamera('starting')
@@ -515,6 +537,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     sessionRef.current += 1
     speechIdRef.current += 1
     announceRef.current = INITIAL_ANNOUNCE
+    spokenKindsRef.current = {}
     cancelSpeech()
     stopStream(streamRef.current)
     streamRef.current = null

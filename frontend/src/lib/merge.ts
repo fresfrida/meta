@@ -28,8 +28,8 @@ export function hitAsShown(hit: DetectHit): Shown {
 /**
  * Does this answer replace what is on screen (and may it be spoken)? `speaks`: the repeat rule would speak it.
  * - A fast hit that would be spoken always does (SAM sends only hits; "nothing found" changes nothing).
- * - A silent fast hit does not replace a Muse answer of the same kind younger than `holdMs`: Muse's detail
- *   ("going down", its metres) stays on screen instead of flipping back to "steps" every frame.
+ * - A silent fast hit does not replace a Muse answer younger than `holdMs`: Muse's detail ("going down", its
+ *   metres, an obstacle) stays on screen instead of flipping back to the fast phrase every frame.
  * - A Muse "clear" or "not sure" does not cancel a fast warning younger than `holdMs`: not shown, not spoken.
  * - Every other Muse answer does, as today (obstacles, up / down, metres).
  */
@@ -42,13 +42,29 @@ export function replaces(
   speaks: boolean,
 ): boolean {
   const young = now - shown.at < holdMs
-  if (channel === 'fast') {
-    if (speaks) return true
-    const sameKind = shown.hazard !== null && kindOf(shown.hazard) === kindOf(answer.hazard)
-    return !(shown.channel === 'detail' && sameKind && young)
-  }
+  if (channel === 'fast') return speaks || !(shown.channel === 'detail' && young)
   const quiet = answer.hazard === 'clear' || answer.hazard === 'unsure'
   return !(quiet && shown.channel === 'fast' && young)
+}
+
+/** When each kind (kindOf) was last spoken, by either channel, and how close it was. */
+export type SpokenKinds = Partial<Record<ShownHazard, { at: number; distance_m: number | null; near: boolean }>>
+
+/** Records a spoken answer in the per-kind memory. */
+export function rememberSpoken(kinds: SpokenKinds, answer: Shown, now: number): SpokenKinds {
+  return { ...kinds, [kindOf(answer.hazard)]: { at: now, distance_m: answer.distance_m, near: answer.distance === 'near' } }
+}
+
+/**
+ * A fast hit whose kind was spoken (by either channel) less than `windowMs` ago stays silent unless it is closer
+ * (`closerM` metres, or far -> near). Without this, a scene with a kerb (SAM, every frame) and an
+ * obstacle (Muse) is spoken "kerb, obstacle, kerb, obstacle..." (Brief 11 live run). Muse answers are not affected.
+ */
+export function fastRecentlySaid(hit: Shown, kinds: SpokenKinds, now: number, windowMs: number, closerM: number): boolean {
+  const last = kinds[kindOf(hit.hazard)]
+  if (!last || now - last.at >= windowMs) return false
+  if (hit.distance_m !== null && last.distance_m !== null) return hit.distance_m > last.distance_m - closerM
+  return !(hit.distance === 'near' && !last.near)
 }
 
 const SEVERITY: Record<Lamp, number> = { off: 0, green: 1, amber: 2, red: 3 }
