@@ -17,8 +17,8 @@
 
 ## Doing
 - Brief 13 on `claude/second-eyes-v6`: done and checked (pytest 192, vitest 232, build OK; v6 live 10 calls; mock
-  screenshots EN connection lost, ZH road). Owner accepted the Steps3 "road" / Curb1 "step up" changes (4 Nov). Waiting: the
-  Advisor's go to merge
+  screenshots EN connection lost, ZH road). Owner accepted the Steps3 "road" / Curb1 "step up" changes (4 Nov). Brief 13b (v7, hedges,
+  Kerb) built and checked on the same branch; v7 live results need review (Down -> step_up). Waiting: the Advisor's go to merge
 
 ## Done
 - Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
