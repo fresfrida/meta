@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 5 Nov 2026 01:35 SGT. Briefs 30-31 merged into `claude/second-eyes` (3b8357c) and `claude/second-eyes-cloud` (9250538). Mac backend restarted 01:27 on 3b8357c (prompt v9), $5.19 of $15.91. Cloud demo serves Briefs 28-29 (prompt v8), $9.57 of its $100 total; Briefs 30-31 wait for the Owner's Deploy.
+Last updated: 5 Nov 2026 01:35 SGT. Briefs 30-31 merged into `claude/second-eyes` (3b8357c) and `claude/second-eyes-cloud` (9250538). Mac backend restarted 01:27 on 3b8357c (prompt v9), $5.19 of $15.91. Cloud demo serves Briefs 30-31 (prompt v9, bundle index-BTSWlPiJ), $9.57 of its $100 total.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->

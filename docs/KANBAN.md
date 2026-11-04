@@ -27,13 +27,13 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Briefs 30 + 31 on the cloud demo: waiting for the Owner's Deploy (merged and verified, 3b8357c / 9250538)
+- (none waiting for Deploy)
 - Filming the 3-minute video on the Mac link (Mac backend on prompt v9 since 01:27)
 
 ## Done
 - Brief 31 / 31b: prompt v9 lift sentence (Owner approved); lifts 10/12 vs v8 6/9, plain doors 6/6 stay door; live $0.0456; merged, Mac restarted 01:27 (5 Nov)
 - Brief 30: speech end safety net, tick no longer closes the mic (wake replay 0/2 -> 2/2), mic debug line, Ask hint (Owner approved, EN), lift investigation; vitest 491, pytest 239; live $0.0609; Mac restarted on v8 01:14 (5 Nov)
-- Briefs 28 + 29 deployed to the cloud demo by the Owner; cloud caps $100 total (confirmed), $20 a day (5 Nov)
+- Briefs 30 + 31 deployed to the cloud demo by the Owner (bundle index-BTSWlPiJ, 01:40); Briefs 28 + 29 deployed earlier; cloud caps $100 total (confirmed), $20 a day (5 Nov)
 - Brief 29: "Where does the path go?" by Hey Eyes (prompt sentence approved; 5/5 describe); SAM car warning built behind CAR_FAST, off (near-car test failed); live 14 calls $0.0316; vitest 470, pytest 239 (5 Nov)
 - Brief 28: ready line after the start line, iPhone tick fix, prompt v8 (lift, double / glass doors), lift words in 4 languages (Owner approved); live check 21 calls $0.0473; vitest 465, pytest 228 (5 Nov)
 - Brief 27: iPhone sound (one session per run, AudioContext suspended between tones, resume + re-speak, route watcher, picture recovery, test flags) and the getting-ready phase; vitest 443, pytest 227; iPhone sound confirmed by the Owner; live on the cloud demo 23:23 (4 Nov)
