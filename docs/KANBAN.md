@@ -1,6 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Backend access log has no timestamps: gaps and per-request times of a walk cannot be measured (use a uvicorn log config with times when restarting live)
+- Two-speed mode: "Model is slow…" shows whenever Muse > 6 s, and a Muse timeout shows "Model failed / Tap Capture" while SAM still answers; proposed fix in brief-13.md (start the slow timer only without SAM; treat Muse failures like SAM's)
 - Native-speaker check of the v5 words (ZH / MS / TA)
 - Polish pass: head-height boxes sit under the phrase card (top of the screen), so their outline and tag are hidden
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
@@ -9,7 +11,6 @@
 - Native-speaker check of the ZH / MS / TA Ask texts (Brief 8)
 - Translations of the Ask chip, "Listening stopped", "Microphone not available" (EN only for now)
 - Native-speaker check of the ZH / MS / TA fast phrase words (Owner approved 4 Nov)
-- `strings.ts`: drop the 8 "TENTATIVE (Brief 11)" comments on the steps words (approved) - edit after the live test, so Vite does not reload the phone mid-test
 - Set `VISION_MODE=mock` again after the Owner's filming
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
@@ -18,6 +19,7 @@
 - (none)
 
 ## Done
+- Brief 13 / 13b / 13c: prompt v7 (roads never clear, kerb sentence, sure), hedges ("There might be ..."), Kerb, SAM door, heartbeat, connection lost / back, Talk more; pytest 198, vitest 324; merged into `claude/second-eyes` and live (4 Nov)
 - Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
 - Brief 11: two-speed fast warning - `/api/detect` (SAM 3.1 stairs + curb, parallel, bounded), geometry distance rule, merge rule (kind key, up/down adds, 3 s holds, 10 s per-kind memory), tone + vibrate cue, fast/detail pill, `?fast=0`; pytest x173, vitest x122; live desktop first speech 1.2-1.7 s vs 5.2 s; live for the Owner with a $15 cap (4 Nov)
 - Brief 10: backend back to mock; `MAX_OUTPUT_TOKENS` 2000 on every live vision / Ask call, cut reply = billed failure; pytest x151; SAM 3.1 timed (3 calls, $0.0075) (4 Nov)

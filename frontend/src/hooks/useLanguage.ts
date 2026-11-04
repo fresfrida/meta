@@ -1,6 +1,14 @@
 // The chosen speech language (remembered in localStorage) and the browser's installed voices.
 import { useCallback, useEffect, useState } from 'react'
-import { HANDS_FREE_DEFAULT, HANDS_FREE_STORAGE_KEY, LANGS, LANG_STORAGE_KEY, type Lang } from '../config'
+import {
+  HANDS_FREE_DEFAULT,
+  HANDS_FREE_STORAGE_KEY,
+  LANGS,
+  LANG_STORAGE_KEY,
+  type Lang,
+  TALK_MORE_DEFAULT,
+  TALK_MORE_STORAGE_KEY,
+} from '../config'
 import { speechSupported } from '../lib/speech'
 
 function readLang(): Lang {
@@ -41,6 +49,29 @@ export function useHandsFree(): [boolean, (on: boolean) => void] {
     setOnState(next)
     try {
       window.localStorage.setItem(HANDS_FREE_STORAGE_KEY, next ? '1' : '0')
+    } catch {
+      // not remembered; applies for this visit
+    }
+  }, [])
+  return [on, setOn]
+}
+
+function readTalkMore(): boolean {
+  try {
+    const saved = window.localStorage.getItem(TALK_MORE_STORAGE_KEY)
+    return saved === null ? TALK_MORE_DEFAULT : saved === '1'
+  } catch {
+    return TALK_MORE_DEFAULT
+  }
+}
+
+/** Talk more on/off (Settings, off by default), remembered in localStorage. */
+export function useTalkMore(): [boolean, (on: boolean) => void] {
+  const [on, setOnState] = useState<boolean>(readTalkMore)
+  const setOn = useCallback((next: boolean) => {
+    setOnState(next)
+    try {
+      window.localStorage.setItem(TALK_MORE_STORAGE_KEY, next ? '1' : '0')
     } catch {
       // not remembered; applies for this visit
     }

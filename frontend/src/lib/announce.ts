@@ -9,6 +9,8 @@ export interface AnnounceState {
   lastDistanceM: number | null
   /** The last spoken answer was "near" (near/far fallback). */
   lastNear: boolean
+  /** The last spoken answer was hedged ("There might be ..."). */
+  lastHedged: boolean
   /** When that speech was started (ms, same clock as `now`). */
   lastSpokenAt: number
   /** Speech is playing right now. */
@@ -16,15 +18,17 @@ export interface AnnounceState {
 }
 
 export type Decision =
-  | { speak: true; interrupt: boolean }
+  /** again: a Talk more repeat of what was last said (no fast cue). */
+  | { speak: true; interrupt: boolean; again?: boolean }
   | { speak: false; why: 'unsure' | 'repeat' | 'too_soon' | 'busy' }
 
-type Answer = Pick<Shown, 'hazard' | 'distance' | 'distance_m'>
+type Answer = Pick<Shown, 'hazard' | 'distance' | 'distance_m' | 'hedged'>
 
 export const INITIAL_ANNOUNCE: AnnounceState = {
   lastHazard: null,
   lastDistanceM: null,
   lastNear: false,
+  lastHedged: false,
   lastSpokenAt: -Infinity,
   speaking: false,
 }
@@ -56,6 +60,8 @@ function isRepeat(answer: Answer, state: AnnounceState, closerM: number): boolea
   if (state.lastHazard === null || kindOf(answer.hazard) !== kindOf(state.lastHazard)) return false
   const detail = variant(answer.hazard)
   if (detail !== null && detail !== variant(state.lastHazard)) return false
+  // A sure answer after a hedged one ("There might be ...") adds something: said once without the hedge.
+  if (state.lastHedged && !answer.hedged) return false
   if (answer.distance_m !== null && state.lastDistanceM !== null) {
     return answer.distance_m > state.lastDistanceM - closerM
   }
@@ -67,10 +73,24 @@ function isRepeat(answer: Answer, state: AnnounceState, closerM: number): boolea
  * - A repeat (see isRepeat) stays silent.
  * - Speech starts only if at least `minGapMs` has passed since the last speech.
  * - A new warning cuts off speech in progress; a non-warning ("clear") waits for it to finish.
+ * - Talk more (`talkMoreMs` set): a repeat is said again once `talkMoreMs` has passed since the last speech, never
+ *   over speech in progress.
  */
-export function decide(answer: Answer, state: AnnounceState, now: number, minGapMs: number, closerM: number): Decision {
+export function decide(
+  answer: Answer,
+  state: AnnounceState,
+  now: number,
+  minGapMs: number,
+  closerM: number,
+  talkMoreMs: number | null = null,
+): Decision {
   if (answer.hazard === 'unsure') return { speak: false, why: 'unsure' }
-  if (isRepeat(answer, state, closerM)) return { speak: false, why: 'repeat' }
+  if (isRepeat(answer, state, closerM)) {
+    if (talkMoreMs !== null && !state.speaking && now - state.lastSpokenAt >= talkMoreMs) {
+      return { speak: true, interrupt: false, again: true }
+    }
+    return { speak: false, why: 'repeat' }
+  }
   if (now - state.lastSpokenAt < minGapMs) return { speak: false, why: 'too_soon' }
   if (state.speaking && !isWarning(answer)) return { speak: false, why: 'busy' }
   return { speak: true, interrupt: state.speaking }
@@ -82,6 +102,7 @@ export function spoke(answer: Answer, now: number): AnnounceState {
     lastHazard: answer.hazard,
     lastDistanceM: answer.distance_m,
     lastNear: answer.distance === 'near',
+    lastHedged: answer.hedged === true,
     lastSpokenAt: now,
     speaking: true,
   }

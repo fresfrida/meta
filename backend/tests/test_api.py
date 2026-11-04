@@ -42,7 +42,7 @@ def test_mock_holds_each_answer_four_calls_by_default(client):
     n = len(MOCK_ANSWERS)
     bodies = mock_sequence(client, 4 * n + 1)
     expected = [a.model_dump() for a in MOCK_ANSWERS for _ in range(4)]
-    got = [{k: b[k] for k in ("hazard", "side", "distance", "box", "distance_m")} for b in bodies]
+    got = [{k: b[k] for k in ("hazard", "side", "distance", "box", "distance_m", "sure")} for b in bodies]
     assert got == expected + expected[:1]
     assert {"clear", "unsure"} <= {b["hazard"] for b in bodies}
 

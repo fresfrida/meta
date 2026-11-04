@@ -29,24 +29,29 @@ RIGHT_MIN = 600
 DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
-# Prompt sent with every live frame. Owner approved v5 on 4 Nov 2026 ("For now ok"), verbatim: 11 named hazards
-# plus a clearer catch-all ("something else the person could walk into"). v4 (3 Nov) is in git history.
-VISION_PROMPT_VERSION = "v5"
+# Prompt sent with every live frame. v7 (Brief 13b, Owner approved 4 Nov 2026) = v6 + "Also say whether you are sure
+# what the hazard is." (after the metres sentence) + "A single raised edge between a footpath and a road is a curb,
+# not a step." (at the end). v6 (roads, never clear onto a road) and earlier are in git history.
+VISION_PROMPT_VERSION = "v7"
 VISION_PROMPT = (
     'You are checking a photo for a research prototype that warns about hazards on a walking path. The '
     'photo is taken from chest height, facing forward. Find the single most important hazard on the path '
     'within about 5 metres. Name it as one of: a step down, a step up, a curb, an open drain, something '
     'at head height (such as a low branch or sign), a person, a group of people (three or more), a '
     'bicycle or scooter, a vehicle, a pole or post, a barrier or cone, a ramp, a door (including glass '
-    'doors), a wall (including glass walls), or something else the person could walk into if none of '
-    'these fit. Prefer drops and things at head height over things the person can walk around. Give its '
-    'side (left, ahead or right) and distance (near means within about 2 metres, otherwise far). If the '
-    'path is clear, answer clear. If the photo is too dark, blurred or unclear to judge, answer unsure. '
-    'Do not identify or describe people beyond naming them as a person or a group of people. Also give '
-    "the hazard's bounding box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path "
-    'is clear or you are unsure. Also estimate how far the hazard is from the camera in metres, as a '
-    'whole number from 1 to 10, or no distance if the path is clear or you are unsure. Flat things lying '
-    'on the ground, such as mats, rugs or painted lines, are not hazards.'
+    'doors), a wall (including glass walls), a road for cars (including an intersection), a road '
+    'crossing, a cycle path, an escalator, uneven or broken ground, or something else the person could '
+    'walk into if none of these fit. Prefer roads, drops and things at head height over things the person '
+    'can walk around. Never answer clear if the path leads onto a road for cars, a road crossing or a '
+    'cycle path; name it instead. Give its side (left, ahead or right) and distance (near means within '
+    'about 2 metres, otherwise far). If the path is clear, answer clear. If the photo is too dark, '
+    'blurred or unclear to judge, answer unsure. Do not identify or describe people beyond naming them as '
+    "a person or a group of people. Also give the hazard's bounding box as [x_min, y_min, x_max, y_max] "
+    'on a 0 to 1000 grid, or no box if the path is clear or you are unsure. Also estimate how far the '
+    'hazard is from the camera in metres, as a whole number from 1 to 10, or no distance if the path is '
+    'clear or you are unsure. Also say whether you are sure what the hazard is. Flat things lying on the '
+    'ground, such as mats, rugs or painted lines, are not hazards. A single raised edge between a '
+    'footpath and a road is a curb, not a step.'
 )
 
 # Ask (Brief 6): the Owner-approved prompt, verbatim. The three {...} placeholders are filled by replace().
@@ -79,7 +84,7 @@ ASR_END_DRAIN_S = 3.0  # after endStream, wait this long for the last events
 # Fast warning (Brief 11): SAM 3.1 finds steps and kerbs in ~1-2 s and the phone speaks first; Muse adds the detail.
 SAM_MODEL = "sam-3.1"
 # Hit kind the phone shows -> SAM concept prompt (docs: one short noun phrase per request).
-SAM_CONCEPTS = {"steps": "stairs", "curb": "curb"}
+SAM_CONCEPTS = {"steps": "stairs", "curb": "curb", "door": "door"}  # door: Brief 13 test, found both glass doors
 SAM_PRICE_PER_IMAGE = 2.50 / 1000  # USD per image per concept (docs: $2.50 per 1,000 images)
 DETECT_TIMEOUT_S = 4.0  # per SAM request, wall clock
 DETECT_MAX_BYTES = 2 * 1024 * 1024  # per SAM response; masks are streamed too, then ignored

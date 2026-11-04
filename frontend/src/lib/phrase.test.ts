@@ -14,7 +14,7 @@ describe('phraseFor with metres', () => {
   it('English: "<Hazard>, N metres[, left|right]", 1 -> metre', () => {
     expect(phraseFor(a('step_down', 'ahead', 'near', 2), 'en')).toBe('Step down, 2 metres')
     expect(phraseFor(a('obstacle', 'left', 'far', 5), 'en')).toBe('In the way, 5 metres, left')
-    expect(phraseFor(a('curb', 'right', 'near', 1), 'en')).toBe('Curb, 1 metre, right')
+    expect(phraseFor(a('curb', 'right', 'near', 1), 'en')).toBe('Kerb, 1 metre, right')
   })
   it('Chinese: "[左前方|右前方|前方]N米，<hazard>"', () => {
     expect(phraseFor(a('step_down', 'ahead', 'near', 2), 'zh')).toBe('前方2米，下台阶')
@@ -38,7 +38,7 @@ describe('phraseFor without metres', () => {
   it('English', () => {
     expect(phraseFor(a('step_down', 'left', null, null), 'en')).toBe('Step down ahead, left')
     expect(phraseFor(a('obstacle', 'ahead', 'far', null), 'en')).toBe('In the way ahead')
-    expect(phraseFor(a('curb', 'right', 'near', null), 'en')).toBe('Curb ahead, right, close')
+    expect(phraseFor(a('curb', 'right', 'near', null), 'en')).toBe('Kerb ahead, right, close')
   })
   it('Chinese', () => {
     expect(phraseFor(a('curb', 'right', 'near', null), 'zh')).toBe('右前方路缘，很近')
@@ -56,10 +56,10 @@ describe('phraseFor without metres', () => {
 
 describe('clear and unsure', () => {
   it('are their word alone in every language', () => {
-    expect(phraseFor(a('clear', 'left', 'near', 3), 'en')).toBe('Clear')
-    expect(phraseFor(a('clear', null, null, null), 'zh')).toBe('畅通')
-    expect(phraseFor(a('clear', null, null, null), 'ms')).toBe('Tiada halangan')
-    expect(phraseFor(a('clear', null, null, null), 'ta')).toBe('தடை இல்லை')
+    expect(phraseFor(a('clear', 'left', 'near', 3), 'en')).toBe('No hazard seen')
+    expect(phraseFor(a('clear', null, null, null), 'zh')).toBe('未见障碍')
+    expect(phraseFor(a('clear', null, null, null), 'ms')).toBe('Tiada halangan dilihat')
+    expect(phraseFor(a('clear', null, null, null), 'ta')).toBe('தடை தெரியவில்லை')
     expect(phraseFor(a('unsure', null, null, null), 'en')).toBe('Not sure')
     expect(phraseFor(a('unsure', null, null, null), 'zh')).toBe('不确定')
     expect(phraseFor(a('unsure', null, null, null), 'ms')).toBe('Tidak pasti')
@@ -105,10 +105,10 @@ describe('speechFor (plain-language voice, Brief 5b)', () => {
     expect(speechFor(a('step_up', 'ahead', 'far', null), 'ta')).toBe('முன்னால், மேலே ஏறும் படிகள் உள்ளன.')
   })
   it('clear has its own sentence; unsure is never spoken', () => {
-    expect(speechFor(a('clear', null, null, null), 'en')).toBe('The path looks clear.')
-    expect(speechFor(a('clear', null, null, null), 'zh')).toBe('前面的路看起来没有障碍。')
-    expect(speechFor(a('clear', null, null, null), 'ms')).toBe('Laluan di hadapan nampak lapang.')
-    expect(speechFor(a('clear', null, null, null), 'ta')).toBe('முன்னால் உள்ள பாதை தெளிவாகத் தெரிகிறது.')
+    expect(speechFor(a('clear', null, null, null), 'en')).toBe('No hazard seen.')
+    expect(speechFor(a('clear', null, null, null), 'zh')).toBe('没有看到障碍。')
+    expect(speechFor(a('clear', null, null, null), 'ms')).toBe('Tiada halangan dilihat.')
+    expect(speechFor(a('clear', null, null, null), 'ta')).toBe('தடை எதுவும் தெரியவில்லை.')
     for (const lang of ['en', 'zh', 'ms', 'ta'] as const) expect(speechFor(a('unsure', null, null, null), lang)).toBeNull()
   })
   it('the screen phrase is unchanged by the voice table', () => {

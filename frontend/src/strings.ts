@@ -9,6 +9,7 @@ import type { WarningHazard } from './lib/phrase'
  * - voice: the plain-language sentence that is spoken (Owner approved 3 Nov, Brief 5b, "yes to all").
  * EN is approved; ZH / MS / TA are approved pending a native-speaker check.
  * The prompt v5 kinds (drain ... wall) and the new catch-all words (obstacle) were Owner approved 4 Nov (Brief 12).
+ * Brief 13: escalator, uneven, road, crossing, cycle_path and the clear words Owner approved 4 Nov.
  */
 export interface PhraseLanguage {
   /** Screen hazard words. `unsure` is shown on screen only, never spoken. `steps` is the fast warning (SAM). */
@@ -26,18 +27,28 @@ export interface PhraseLanguage {
     metres: (what: string, metres: number, side: Side | null) => string
     /** Without metres: near / far (unknown distance counts as far). */
     plain: (what: string, side: Side | null, near: boolean) => string
+    /** Hedged (Brief 13b, "There might be ..."): with metres, and near / far. Same voice word. */
+    maybeMetres: (what: string, metres: number, side: Side | null) => string
+    maybePlain: (what: string, side: Side | null, near: boolean) => string
   }
 }
 
 const pick = (side: Side | null, left: string, right: string, ahead = '') =>
   side === 'left' ? left : side === 'right' ? right : ahead
 
+/** English voice words start with a capital ("A kerb"); inside "There might be ..." they are lower case. */
+const lower = (w: string) => w.charAt(0).toLowerCase() + w.slice(1)
+
+/** Tamil voice words end in a verb (உள்ளது / உள்ளன / இருக்கிறார் / இருக்கிறார்கள்); hedged, it becomes இருக்கலாம். */
+export const TA_VERB = / (உள்ளது|உள்ளன|இருக்கிறார்கள்|இருக்கிறார்)$/
+const taMaybe = (w: string) => w.replace(TA_VERB, ' இருக்கலாம்')
+
 export const phrases: Record<Lang, PhraseLanguage> = {
   en: {
     hazard: {
       step_down: 'Step down',
       step_up: 'Step up',
-      curb: 'Curb',
+      curb: 'Kerb', // British spelling (Brief 13b), like the voice
       drain: 'Drain',
       head_height: 'Head height',
       person: 'Person',
@@ -49,8 +60,13 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: 'Ramp',
       door: 'Door',
       wall: 'Wall',
+      road: 'Road',
+      crossing: 'Crossing',
+      cycle_path: 'Cycle path',
+      escalator: 'Escalator',
+      uneven: 'Uneven ground',
       obstacle: 'In the way',
-      clear: 'Clear',
+      clear: 'No hazard seen',
       unsure: 'Not sure',
       steps: 'Steps', // fast warning (SAM), direction unknown; Owner approved 4 Nov (Brief 11)
     },
@@ -72,13 +88,22 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: 'A ramp',
         door: 'A door',
         wall: 'A wall',
+        road: 'A road for cars',
+        crossing: 'A road crossing',
+        cycle_path: 'A cycle path',
+        escalator: 'An escalator',
+        uneven: 'Uneven ground',
         obstacle: 'Something you could walk into',
         steps: 'Steps',
       },
-      clear: 'The path looks clear.',
+      clear: 'No hazard seen.',
       metres: (w, n, side) =>
         `${w}, about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
       plain: (w, side, near) => `${w} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
+      maybeMetres: (w, n, side) =>
+        `There might be ${lower(w)} about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
+      maybePlain: (w, side, near) =>
+        `There might be ${lower(w)} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
     },
   },
   zh: {
@@ -97,8 +122,13 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: '坡道',
       door: '门',
       wall: '墙',
+      road: '车行道',
+      crossing: '人行横道',
+      cycle_path: '自行车道',
+      escalator: '扶梯',
+      uneven: '地面不平',
       obstacle: '障碍物',
-      clear: '畅通',
+      clear: '未见障碍',
       unsure: '不确定',
       steps: '台阶',
     },
@@ -120,12 +150,19 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: '坡道',
         door: '门',
         wall: '墙',
+        road: '车行道',
+        crossing: '人行横道',
+        cycle_path: '自行车道',
+        escalator: '自动扶梯',
+        uneven: '不平的地面',
         obstacle: '可能会撞到的东西',
         steps: '台阶',
       },
-      clear: '前面的路看起来没有障碍。',
+      clear: '没有看到障碍。',
       metres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，有${w}。`,
       plain: (w, side, near) => `${pick(side, '左前方', '右前方', '前面')}${near ? '很近的地方有' : '有'}${w}。`,
+      maybeMetres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，可能有${w}。`,
+      maybePlain: (w, side, near) => `${pick(side, '左前方', '右前方', '前面')}${near ? '很近的地方可能有' : '可能有'}${w}。`,
     },
   },
   ms: {
@@ -144,8 +181,13 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: 'Landaian',
       door: 'Pintu',
       wall: 'Dinding',
+      road: 'Jalan raya',
+      crossing: 'Lintasan',
+      cycle_path: 'Laluan basikal',
+      escalator: 'Eskalator',
+      uneven: 'Tidak rata',
       obstacle: 'Halangan',
-      clear: 'Tiada halangan',
+      clear: 'Tiada halangan dilihat',
       unsure: 'Tidak pasti',
       steps: 'Tangga',
     },
@@ -167,14 +209,23 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: 'landaian',
         door: 'pintu',
         wall: 'dinding',
+        road: 'jalan raya',
+        crossing: 'lintasan pejalan kaki',
+        cycle_path: 'laluan basikal',
+        escalator: 'eskalator',
+        uneven: 'permukaan tidak rata',
         obstacle: 'sesuatu yang boleh dilanggar',
         steps: 'tangga',
       },
-      clear: 'Laluan di hadapan nampak lapang.',
+      clear: 'Tiada halangan dilihat.',
       metres: (w, n, side) =>
         `Ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
       plain: (w, side, near) =>
         `Ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+      maybeMetres: (w, n, side) =>
+        `Mungkin ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+      maybePlain: (w, side, near) =>
+        `Mungkin ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
     },
   },
   ta: {
@@ -193,8 +244,13 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: 'சாய்வுப் பாதை',
       door: 'கதவு',
       wall: 'சுவர்',
+      road: 'வாகனச் சாலை',
+      crossing: 'பாதசாரி கடவை',
+      cycle_path: 'மிதிவண்டிப் பாதை',
+      escalator: 'நகரும் படிக்கட்டு',
+      uneven: 'சீரற்ற தரை',
       obstacle: 'தடை',
-      clear: 'தடை இல்லை',
+      clear: 'தடை தெரியவில்லை',
       unsure: 'உறுதியில்லை',
       steps: 'படிகள்',
     },
@@ -216,14 +272,23 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: 'சாய்வுப் பாதை உள்ளது',
         door: 'கதவு உள்ளது',
         wall: 'சுவர் உள்ளது',
+        road: 'வாகனச் சாலை உள்ளது',
+        crossing: 'பாதசாரி கடவை உள்ளது',
+        cycle_path: 'மிதிவண்டிப் பாதை உள்ளது',
+        escalator: 'நகரும் படிக்கட்டு உள்ளது',
+        uneven: 'சீரற்ற தரை உள்ளது',
         obstacle: 'மோதக்கூடிய ஒன்று உள்ளது',
         steps: 'படிகள் உள்ளன',
       },
-      clear: 'முன்னால் உள்ள பாதை தெளிவாகத் தெரிகிறது.',
+      clear: 'தடை எதுவும் தெரியவில்லை.',
       metres: (w, n, side) =>
         `சுமார் ${n} மீட்டர் முன்னால்${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
       plain: (w, side, near) =>
         `${near ? 'மிக அருகில் முன்னால்' : 'முன்னால்'}${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
+      maybeMetres: (w, n, side) =>
+        `சுமார் ${n} மீட்டர் முன்னால்${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${taMaybe(w)}.`,
+      maybePlain: (w, side, near) =>
+        `${near ? 'மிக அருகில் முன்னால்' : 'முன்னால்'}${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${taMaybe(w)}.`,
     },
   },
 }
@@ -266,6 +331,14 @@ export const askText: Record<Lang, AskText> = {
     youAsked: (q) => `நீங்கள் கேட்டது: ${q}`,
     sorry: 'மன்னிக்கவும், என்னால் பதில் சொல்ல முடியவில்லை.',
   },
+}
+
+/** Connection alerts (Brief 13), spoken and shown in the chosen language. Owner approved 4 Nov, verbatim. */
+export const connectionText: Record<Lang, { lost: string; back: string }> = {
+  en: { lost: 'Connection lost. Warnings have stopped.', back: 'Back online.' },
+  zh: { lost: '连接中断，警告已停止。', back: '已重新连接。' },
+  ms: { lost: 'Sambungan terputus. Amaran telah berhenti.', back: 'Sambungan pulih.' },
+  ta: { lost: 'இணைப்பு துண்டிக்கப்பட்டது. எச்சரிக்கைகள் நின்றுவிட்டன.', back: 'மீண்டும் இணைக்கப்பட்டது.' },
 }
 
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */
@@ -316,6 +389,9 @@ export const strings = {
     // TENTATIVE (Brief 6)
     handsFree: 'Hands-free listening',
     handsFreeLine: 'While running, microphone audio is sent to Meta to hear your questions.',
+    // TENTATIVE (Brief 13)
+    talkMore: 'Talk more',
+    talkMoreLine: 'Repeats the current warning every few seconds.',
   },
 
   // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.

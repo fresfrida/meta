@@ -7,6 +7,11 @@ import {
   FAST_ENABLED,
   FAST_MAX_IN_FLIGHT,
   FAST_REPEAT_MS,
+  CONNECTION_CHECK_MS,
+  CONNECTION_LOST_MS,
+  CONNECTION_REPEAT_MS,
+  HEARTBEAT_MIN_GAP_MS,
+  TALK_MORE_MS,
   FAST_STAGGER_MS,
   LOOP_ENABLED,
   LOOP_STAGGER_MS,
@@ -39,7 +44,11 @@ import {
 } from '../lib/merge'
 import { type Shown, type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
 import { unlockAudio } from '../lib/audio'
-import { playWarnCue } from '../lib/earcon'
+import { playTick, playWarnCue } from '../lib/earcon'
+import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
+import { shouldTick } from '../lib/heartbeat'
+import { museHedged } from '../lib/hedge'
+import { connectionText } from '../strings'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus } from '../lib/voices'
@@ -64,6 +73,8 @@ export type Answer =
       noVoice: boolean
     }
   | { kind: 'failed'; reason: Exclude<FailureReason, 'unreachable'> }
+  /** No answer on any channel for CONNECTION_LOST_MS while running (lamp dark, "Connection lost"). */
+  | { kind: 'lost' }
 
 /** The latest warning's box, with the size of the frame it was found on. */
 export interface HazardBox {
@@ -146,12 +157,17 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 const TWO_SPEED = LOOP_ENABLED && FAST_ENABLED
 
 /** Loop mode uses the no-repeat rule; single-capture mode speaks every answer (Brief 1 timing test). */
-function decideFor(res: Shown, state: AnnounceState, now: number): Decision {
+function decideFor(res: Shown, state: AnnounceState, now: number, talkMore: boolean): Decision {
   if (!LOOP_ENABLED) return { speak: true, interrupt: state.speaking }
-  return decide(res, state, now, MIN_GAP_MS, REPEAT_CLOSER_M)
+  return decide(res, state, now, MIN_GAP_MS, REPEAT_CLOSER_M, talkMore ? TALK_MORE_MS : null)
 }
 
-export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsFree: boolean): SecondEyes {
+export function useSecondEyes(
+  lang: Lang,
+  voices: SpeechSynthesisVoice[],
+  handsFree: boolean,
+  talkMore = false,
+): SecondEyes {
   const videoRef = useRef<HTMLVideoElement | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const answerIdRef = useRef(0)
@@ -170,6 +186,13 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   const shownRef = useRef<ShownState>(NOTHING_SHOWN)
   // When each kind was last spoken (either channel), so a fast hit does not re-say a kind Muse just interrupted.
   const spokenKindsRef = useRef<SpokenKinds>({})
+  // Talk more (Settings), read by the loop without restarting it.
+  const talkMoreRef = useRef(talkMore)
+  // Connection rule state (lost / back) and the last heartbeat tick.
+  const linkRef = useRef<LinkState>(startLink(0))
+  const lastTickAtRef = useRef(-Infinity)
+  // A question is being asked or answered (no tick, no connection alert over it).
+  const askActiveRef = useRef(false)
   // Bumped on Start and Stop so the loop and late responses from an old session stop.
   const sessionRef = useRef(0)
   // Set to the session when the loop must stop itself (budget reached, no key).
@@ -202,6 +225,10 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
   useEffect(() => {
     voicesRef.current = voices
   }, [voices])
+
+  useEffect(() => {
+    talkMoreRef.current = talkMore
+  }, [talkMore])
 
   const checkHealth = useCallback(
     () =>
@@ -247,6 +274,42 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     pauseHazardSpeech,
     isHazardSpeaking,
   })
+
+  useEffect(() => {
+    askActiveRef.current = askView !== null
+  }, [askView])
+
+  /** Heartbeat: a soft tick for a fresh answer that is not spoken (never over speech or during Ask). */
+  const maybeTick = useCallback(() => {
+    const now = performance.now()
+    const asking = askActiveRef.current || suppressRef.current
+    const input = { speaking: announceRef.current.speaking, asking, now, lastTickAt: lastTickAtRef.current }
+    if (!shouldTick({ ...input, minGapMs: HEARTBEAT_MIN_GAP_MS })) return
+    lastTickAtRef.current = now
+    playTick()
+  }, [suppressRef])
+
+  /** Speaks a connection alert. What was said before is forgotten, so the current warning is said again after it. */
+  const sayAlert = useCallback((text: string) => {
+    const speechId = ++speechIdRef.current
+    announceRef.current = { ...INITIAL_ANNOUNCE, lastSpokenAt: performance.now(), speaking: true }
+    spokenKindsRef.current = {}
+    const speechLang = SPEECH_LANGS[langRef.current]
+    const handle = speak(text, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+    const done = () => {
+      if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
+    }
+    handle.started.then(() => void handle.ended.then(done), done)
+  }, [])
+
+  /** A fresh answer arrived on either channel: the connection rule may say "Back online". */
+  const noteAnswer = useCallback(() => {
+    const [next, said] = onAnswer(linkRef.current, performance.now(), !askActiveRef.current)
+    const wasLost = linkRef.current.lost
+    linkRef.current = next
+    if (wasLost) setAnswer((a) => (a.kind === 'lost' ? { kind: 'none' } : a))
+    if (said === 'back') sayAlert(connectionText[langRef.current].back)
+  }, [sayAlert])
 
   /** Shows the answer; keeps the same id (no crossfade) while the phrase is unchanged. */
   const showAnswer = useCallback((res: Shown, text: string, noVoice: boolean, lamp: Lamp) => {
@@ -307,12 +370,16 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
         channel === 'fast'
           ? { ...t, fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE) }
           : { ...t, answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE) }
-      let decision = decideFor(shown, announceRef.current, now)
-      if (channel === 'fast' && decision.speak && fastRecentlySaid(shown, spokenKindsRef.current, now, FAST_REPEAT_MS, REPEAT_CLOSER_M)) {
+      let decision = decideFor(shown, announceRef.current, now, talkMoreRef.current)
+      const recent = () => fastRecentlySaid(shown, spokenKindsRef.current, now, FAST_REPEAT_MS, REPEAT_CLOSER_M)
+      // A Talk more repeat of a fast hit waits for Muse when Muse's detail of it is on screen (Muse repeats that).
+      const museShown = shownRef.current.channel === 'detail' && now - shownRef.current.at < SAM_HOLD_MS
+      if (channel === 'fast' && decision.speak && (decision.again ? museShown : recent())) {
         decision = { speak: false, why: 'repeat' }
       }
       if (!replaces(channel, shown, shownRef.current, now, SAM_HOLD_MS, decision.speak)) {
         setTimings((t) => ({ ...countAnswer(t), silentCount: t.silentCount + 1 }))
+        maybeTick()
         return // see merge.ts: kept off screen and not spoken
       }
       const lamp = mergedLamp(lampFor(shown), seq, shownRef.current)
@@ -344,9 +411,10 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
           silentRoundTrips: pushHistory(t.silentRoundTrips, roundTrip, TIMING_HISTORY_SIZE),
           silentCount: t.silentCount + 1,
         }))
+        maybeTick()
       }
     },
-    [say, showAnswer, suppressRef],
+    [maybeTick, say, showAnswer, suppressRef],
   )
 
   /** An answer older than one already handled on its channel is dropped: counted, not shown, not spoken. */
@@ -365,7 +433,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       const reason = failureReason(err)
       if (reason === 'unreachable') {
         setBackend('unreachable')
-        setAnswer({ kind: 'none' })
+        setAnswer((a) => (a.kind === 'lost' ? a : { kind: 'none' }))
         return // keep retrying
       }
       setBackend('ok')
@@ -385,7 +453,9 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       try {
         const res = await analyze({ image_b64: image })
         const responseReceived = performance.now()
-        if (session !== sessionRef.current || isLate('detail', seq)) return
+        if (session !== sessionRef.current) return
+        noteAnswer() // even a late answer shows the connection is alive
+        if (isLate('detail', seq)) return
         setSlow(false)
         setBackend('ok')
         setMode(res.source)
@@ -394,7 +464,8 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
           setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
         }
         setTimings((t) => ({ ...t, lastModelMs: Math.round(res.model_ms) }))
-        present('detail', res, res.box, seq, frame, { captureStart, requestSent, responseReceived, serverMs: res.model_ms })
+        const shown = { ...res, hedged: museHedged(res) }
+        present('detail', shown, res.box, seq, frame, { captureStart, requestSent, responseReceived, serverMs: res.model_ms })
       } catch (err) {
         if (session !== sessionRef.current || isLate('detail', seq)) return
         onFailure(err, session, 'detail')
@@ -404,7 +475,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
         if (detailInFlightRef.current === 0 && session === sessionRef.current) setSlow(false)
       }
     },
-    [isLate, onFailure, present],
+    [isLate, noteAnswer, onFailure, present],
   )
 
   /** SAM (fast): the nearest kept steps / kerb hit, if any. "Nothing found" changes nothing on screen. */
@@ -413,7 +484,9 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       try {
         const res = await detect({ image_b64: image })
         const responseReceived = performance.now()
-        if (session !== sessionRef.current || isLate('fast', seq)) return
+        if (session !== sessionRef.current) return
+        noteAnswer()
+        if (isLate('fast', seq)) return
         setBackend('ok')
         if (res.cost_usd !== null) setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
         const answerMs = Math.round(responseReceived - captureStart)
@@ -424,6 +497,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
             lastSamMs: Math.round(res.sam_ms),
             fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE),
           }))
+          maybeTick()
           return
         }
         setTimings((t) => ({ ...t, lastSamMs: Math.round(res.sam_ms) }))
@@ -438,7 +512,7 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
         onFailure(err, session, 'fast')
       }
     },
-    [isLate, onFailure, present],
+    [isLate, maybeTick, noteAnswer, onFailure, present],
   )
 
   /**
@@ -485,6 +559,25 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
     },
     [runDetail, runFast],
   )
+
+  /** Connection rule: while running, no answer for CONNECTION_LOST_MS -> lamp dark, "Connection lost" said and shown. */
+  useEffect(() => {
+    if (camera !== 'on' || !LOOP_ENABLED) return
+    linkRef.current = startLink(performance.now())
+    const timer = setInterval(() => {
+      const before = linkRef.current
+      const now = performance.now()
+      const [next, said] = onCheck(before, now, CONNECTION_LOST_MS, CONNECTION_REPEAT_MS, !askActiveRef.current)
+      linkRef.current = next
+      if (next.lost && !before.lost) {
+        shownRef.current = NOTHING_SHOWN
+        setHazardBox(null)
+        setAnswer((a) => (a.kind === 'failed' ? a : { kind: 'lost' })) // budget / model failures keep their state
+      }
+      if (said === 'lost') sayAlert(connectionText[langRef.current].lost)
+    }, CONNECTION_CHECK_MS)
+    return () => clearInterval(timer)
+  }, [camera, sayAlert])
 
   /**
    * Starts a capture every LOOP_STAGGER_MS (two speeds: FAST_STAGGER_MS) after the previous one started, with at
