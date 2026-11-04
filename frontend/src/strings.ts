@@ -397,6 +397,9 @@ export const strings = {
     done: 'Done',
     language: 'Language',
     testVoice: 'Test voice',
+    // Brief 20: the existing "Voice" label, and "Recommended" on the default voice (wording from the brief)
+    voice: 'Voice',
+    recommended: 'Recommended',
     about: 'About',
     aboutText: 'Beta · research prototype. Not a mobility aid.',
     voiceLine: (english: string | null, status: VoiceStatus) => {

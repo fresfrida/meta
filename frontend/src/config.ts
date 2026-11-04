@@ -13,7 +13,10 @@ export const REQUEST_TIMEOUT_MS = 12_000
 export const MODEL_SLOW_MS = 6_000
 /** If speech has not started this long after speak(), count it as failed. */
 export const SPEECH_START_TIMEOUT_MS = 3_000
-export const SPEECH_RATE = 1.0
+/** Calm, steady pace like station announcements (Brief 20). */
+export const SPEECH_RATE = 0.95
+/** Before the first speech of a session, wait this long at most for the phone's voices to load (Brief 20). */
+export const VOICE_WAIT_MS = 1500
 /** Spoken languages and the speech lang each uses. The first is the default. */
 export const LANGS = ['en', 'zh', 'ms', 'ta'] as const
 export type Lang = (typeof LANGS)[number]

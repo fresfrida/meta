@@ -22,6 +22,7 @@
 - Brief 17 on `claude/second-eyes-cloud`: one container + public demo limits built and verified locally (Docker, mock). Waiting: Owner's server (Coolify), the copy, and the go to deploy / make public
 
 ## Done
+- Brief 20: steadier voice - default-voice rule, Settings voice list ("Recommended", remembered per language), wait for voices before the first speech, rate 0.95; vitest 362, pytest 226; on `claude/second-eyes-cloud` and merged into `claude/second-eyes` (4 Nov)
 - Briefs 15 / 16 / 16b: in-path rule (doors by frame centre 250..750), big far hits, path guide, distance at speaking time, walking detection, side hysteresis, Muse side logging; pytest 211, vitest 350; merged and live (`b6a6465`, 4 Nov)
 - Brief 14: wording v2 (person-centred, 4 languages, Owner approved) + Start / Stop lines; pytest 198, vitest 330; merged and live (`e73bcb4`, 4 Nov)
 - Brief 13 / 13b / 13c: prompt v7 (roads never clear, kerb sentence, sure), hedges ("There might be ..."), Kerb, SAM door, heartbeat, connection lost / back, Talk more; pytest 198, vitest 324; merged into `claude/second-eyes` and live (4 Nov)

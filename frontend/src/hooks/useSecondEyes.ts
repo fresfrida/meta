@@ -30,6 +30,7 @@ import {
   SAM_HOLD_MS,
   SPEECH_LANGS,
   TIMING_HISTORY_SIZE,
+  VOICE_WAIT_MS,
 } from '../config'
 import { type AnnounceState, type Decision, INITIAL_ANNOUNCE, decide, spoke } from '../lib/announce'
 import type { Size } from '../lib/boxMap'
@@ -61,9 +62,9 @@ import { atSpeakingTime } from '../lib/distanceNow'
 import { WalkDetector } from '../lib/motion'
 import { SESSION_IDLE, type SessionVoice, greetingDone, holdForGreeting, onStart, onStop } from '../lib/sessionVoice'
 import { connectionText, sessionText, strings } from '../strings'
-import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
+import { cancelSpeech, speak, speechSupported, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
-import { pickVoice, voiceStatus } from '../lib/voices'
+import { pickVoice, voiceStatus, waitForVoices } from '../lib/voices'
 import { type AskTiming, type AskView, type ListenState, useAsk } from './useAsk'
 
 export type CameraState = 'off' | 'starting' | 'on' | CameraFailure
@@ -703,12 +704,19 @@ export function useSecondEyes(
         const speechId = ++speechIdRef.current
         announceRef.current = { ...INITIAL_ANNOUNCE, speaking: true }
         const speechLang = SPEECH_LANGS[langRef.current]
-        const handle = speak(sessionText[langRef.current].start, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
         const done = () => {
           sessionVoiceRef.current = greetingDone(sessionVoiceRef.current)
           if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
         }
-        handle.started.then(() => void handle.ended.then(done), done)
+        const greetNow = (voices: readonly SpeechSynthesisVoice[]) => {
+          if (speechId !== speechIdRef.current) return done() // stopped while waiting
+          const handle = speak(sessionText[langRef.current].start, { lang: speechLang, voice: pickVoice(voices, speechLang) })
+          handle.started.then(() => void handle.ended.then(done), done)
+        }
+        // The first speech waits (at most VOICE_WAIT_MS) for the phone's voices, so it never gets a random fallback
+        // voice (Brief 20). Already loaded: said at once, still inside the tap.
+        if (voicesRef.current.length || !speechSupported()) greetNow(voicesRef.current)
+        else void waitForVoices(window.speechSynthesis, VOICE_WAIT_MS).then(greetNow)
       }
       openRearCamera()
         .then(async (stream) => {

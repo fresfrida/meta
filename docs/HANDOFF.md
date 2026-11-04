@@ -166,13 +166,19 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   waiting / stopped / error). Errors are white text with an icon.
 - Screens: Home (stopped: title, help, "Voice <language> ›", Start, gear) ->
   Settings (language list in its own script with voice installed / missing,
-  Test voice, About). Camera screen: chips, phrase card (light + phrase, steps
+  Voice list for the chosen language with "Recommended" on the default, Test
+  voice, About). Camera screen: chips, phrase card (light + phrase, steps
   down 28 -> 20 px past 2 lines), clear middle for the box, timing pill
   ("Last 3.4 s · median 3.6 s", capture to answer; tap to expand), Stop.
 - Languages: English, 中文, Bahasa Melayu, தமிழ் - one template per language in
   `strings.ts` (Owner approved, pending a native check). Speech lang en-GB /
   zh-CN / ms-MY / ta-IN with a matching installed voice; no voice -> phrase shown
   with a notice, not spoken. Choice remembered in localStorage.
+- Voice (Brief 20, `lib/voices.ts`): default = on-device voice named Google /
+  Enhanced / Premium / Natural / Neural, else any on-device, else first by name
+  (exact lang first, then base language). The Settings choice is kept per
+  language (`second-eyes.voice.<lang>`); gone -> the default. The first speech
+  of a session waits up to `VOICE_WAIT_MS` (1.5 s) for voices. `SPEECH_RATE` 0.95.
 - Mic test page `?mictest=1`: mic on (echo cancellation requested), level meter,
   sample rate, a test sentence every 3 s, mic on/off toggle. No backend calls.
 - Mock holds each answer 4 calls (boxes and distance_m set for each warning).

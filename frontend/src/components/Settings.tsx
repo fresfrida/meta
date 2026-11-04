@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { LANGS, type Lang, SPEECH_LANGS } from '../config'
 import { speechFor } from '../lib/phrase'
 import { speak } from '../lib/speech'
-import { pickVoice, voiceStatus } from '../lib/voices'
+import { chooseVoice, recommendedVoice, setVoicePref, voicePref, voiceStatus, voicesFor } from '../lib/voices'
 import { languages, strings } from '../strings'
 import { Notice } from './Notice'
 
@@ -24,14 +24,28 @@ interface SettingsProps {
 export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMore, onTalkMore, onDone }: SettingsProps) {
   const [testFailed, setTestFailed] = useState(false)
   const status = (l: Lang) => voiceStatus(voices, SPEECH_LANGS[l])
+  const speechLang = SPEECH_LANGS[lang]
+  // The chosen voice per language lives in storage (read on every speech); this state only re-renders the list.
+  const [pref, setPref] = useState(() => voicePref(speechLang))
+  const [prefLang, setPrefLang] = useState(speechLang)
+  if (prefLang !== speechLang) {
+    setPrefLang(speechLang)
+    setPref(voicePref(speechLang))
+  }
+  const own = voicesFor(voices, speechLang)
+  const recommended = recommendedVoice(voices, speechLang)
+  const selected = chooseVoice(voices, speechLang, pref)
 
-  const testVoice = () => {
-    const speechLang = SPEECH_LANGS[lang]
+  const testVoice = (voice = selected) => {
     if (status(lang) === 'missing') return setTestFailed(true)
     setTestFailed(false)
-    speak(speechFor(SAMPLE, lang) ?? '', { lang: speechLang, voice: pickVoice(voices, speechLang) }).started.catch(() =>
-      setTestFailed(true),
-    )
+    speak(speechFor(SAMPLE, lang) ?? '', { lang: speechLang, voice }).started.catch(() => setTestFailed(true))
+  }
+
+  const chooseOne = (voice: SpeechSynthesisVoice) => {
+    setVoicePref(speechLang, voice.name)
+    setPref(voice.name)
+    testVoice(voice) // hear it straight away
   }
 
   return (
@@ -70,7 +84,33 @@ export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMor
         ))}
       </div>
 
-      <button type="button" className="button button--outline" onClick={testVoice}>
+      {own.length > 0 && (
+        <>
+          <h2 className="label" id="voice-label">
+            {t.voice}
+          </h2>
+          <div className="list" role="radiogroup" aria-labelledby="voice-label">
+            {own.map((v) => (
+              <button
+                key={v.voiceURI || v.name}
+                type="button"
+                role="radio"
+                aria-checked={v === selected}
+                className="list__item"
+                onClick={() => chooseOne(v)}
+              >
+                <span className="list__text">
+                  <span className="list__title">{v.name}</span>
+                  {v === recommended && <span className="list__subtitle">{t.recommended}</span>}
+                </span>
+                <i className={v === selected ? 'radio radio--on' : 'radio'} aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+
+      <button type="button" className="button button--outline" onClick={() => testVoice()}>
         {t.testVoice}
       </button>
       {testFailed && <Notice title={t.noVoice} />}
