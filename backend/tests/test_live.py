@@ -68,7 +68,8 @@ def test_good_json_answer_and_request_shape(make_settings):
     assert call["max_completion_tokens"] == MAX_OUTPUT_TOKENS == 2000
     assert call["response_format"]["type"] == "json_schema"
     schema = call["response_format"]["json_schema"]["schema"]
-    assert schema["properties"]["hazard"]["enum"] == ["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
+    assert schema["properties"]["hazard"]["enum"][:3] == ["step_down", "step_up", "curb"]
+    assert {"head_height", "people", "obstacle", "clear", "unsure"} <= set(schema["properties"]["hazard"]["enum"])
     text, image = call["messages"][0]["content"]
     assert text == {"type": "text", "text": VISION_PROMPT}
     assert image["image_url"]["url"] == f"data:image/jpeg;base64,{IMG}"

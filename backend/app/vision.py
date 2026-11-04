@@ -17,11 +17,23 @@ log = logging.getLogger(__name__)
 
 MOCK_ANSWERS: tuple[VisionAnswer, ...] = (
     # Boxes sit between the phrase card and the bottom controls, as a real hazard on the path would.
+    # Every named kind appears once (prompt v5); the first three are the ones a demo sees first.
     VisionAnswer(hazard="step_down", side="ahead", distance="near", box=[80, 600, 920, 720], distance_m=2),
+    VisionAnswer(hazard="head_height", side="ahead", distance="near", box=[250, 120, 750, 330], distance_m=2),
+    VisionAnswer(hazard="people", side="left", distance="far", box=[40, 330, 420, 700], distance_m=4),
     VisionAnswer(hazard="clear"),
     VisionAnswer(hazard="obstacle", side="left", distance="far", box=[60, 380, 300, 640], distance_m=5),
     VisionAnswer(hazard="curb", side="right", distance="near", box=[620, 600, 980, 770], distance_m=1),
+    VisionAnswer(hazard="person", side="right", distance="far", box=[640, 300, 820, 700], distance_m=3),
     VisionAnswer(hazard="step_up", side="ahead", distance="far", box=[300, 440, 700, 560], distance_m=6),
+    VisionAnswer(hazard="pole", side="right", distance="far", box=[700, 150, 760, 720], distance_m=3),
+    VisionAnswer(hazard="drain", side="ahead", distance="near", box=[300, 650, 700, 760], distance_m=2),
+    VisionAnswer(hazard="bike", side="left", distance="far", box=[60, 420, 380, 700], distance_m=4),
+    VisionAnswer(hazard="vehicle", side="right", distance="far", box=[600, 380, 1000, 700], distance_m=6),
+    VisionAnswer(hazard="barrier", side="ahead", distance="far", box=[300, 480, 700, 680], distance_m=4),
+    VisionAnswer(hazard="ramp", side="ahead", distance="far", box=[250, 560, 750, 760], distance_m=3),
+    VisionAnswer(hazard="door", side="ahead", distance="near", box=[300, 150, 700, 780], distance_m=2),
+    VisionAnswer(hazard="wall", side="left", distance="near", box=[0, 100, 380, 800], distance_m=1),
     VisionAnswer(hazard="unsure"),
 )
 

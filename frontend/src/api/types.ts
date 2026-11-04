@@ -1,6 +1,24 @@
 // API shapes. Keep in sync with backend/app/schemas.py.
 
-export type Hazard = 'step_down' | 'step_up' | 'curb' | 'obstacle' | 'clear' | 'unsure'
+/** Prompt v5 (Brief 12): 14 named kinds; "obstacle" is the catch-all ("something else the person could walk into"). */
+export type Hazard =
+  | 'step_down'
+  | 'step_up'
+  | 'curb'
+  | 'drain'
+  | 'head_height'
+  | 'person'
+  | 'people'
+  | 'bike'
+  | 'vehicle'
+  | 'pole'
+  | 'barrier'
+  | 'ramp'
+  | 'door'
+  | 'wall'
+  | 'obstacle'
+  | 'clear'
+  | 'unsure'
 /** What the phone can show: Muse's hazards, plus SAM's "steps" (direction unknown). */
 export type ShownHazard = Hazard | 'steps'
 export type Side = 'left' | 'ahead' | 'right'

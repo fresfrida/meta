@@ -15,7 +15,26 @@ from .config import (
     RIGHT_MIN,
 )
 
-Hazard = Literal["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
+# Prompt v5 (Brief 12): 14 named kinds, "obstacle" = the catch-all ("something else the person could walk into").
+Hazard = Literal[
+    "step_down",
+    "step_up",
+    "curb",
+    "drain",
+    "head_height",
+    "person",
+    "people",
+    "bike",
+    "vehicle",
+    "pole",
+    "barrier",
+    "ramp",
+    "door",
+    "wall",
+    "obstacle",
+    "clear",
+    "unsure",
+]
 Side = Literal["left", "ahead", "right"]
 Distance = Literal["near", "far"]
 Source = Literal["mock", "live"]

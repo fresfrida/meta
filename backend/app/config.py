@@ -29,20 +29,24 @@ RIGHT_MIN = 600
 DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
-# Prompt sent with every live frame. Owner approved v2 (box), the v3 metres sentence and the v4 flat-things
-# sentence on 3 Nov 2026, verbatim.
-VISION_PROMPT_VERSION = "v4"
+# Prompt sent with every live frame. Owner approved v5 on 4 Nov 2026 ("For now ok"), verbatim: 11 named hazards
+# plus a clearer catch-all ("something else the person could walk into"). v4 (3 Nov) is in git history.
+VISION_PROMPT_VERSION = "v5"
 VISION_PROMPT = (
-    "You are checking a photo for a research prototype that warns about hazards on a walking path. "
-    "The photo is taken from chest height, facing forward. Find the single most important hazard on "
-    "the path within about 5 metres: a step down, a step up, a curb, or another obstacle. Give its "
-    "side (left, ahead or right) and distance (near means within about 2 metres, otherwise far). If "
-    "the path is clear, answer clear. If the photo is too dark, blurred or unclear to judge, answer "
-    "unsure. Do not describe people beyond calling them an obstacle. Also give the hazard's bounding "
-    "box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is clear or you "
-    "are unsure. Also estimate how far the hazard is from the camera in metres, as a whole number from 1 "
-    "to 10, or no distance if the path is clear or you are unsure. Flat things lying on the ground, such as "
-    "mats, rugs or painted lines, are not hazards."
+    'You are checking a photo for a research prototype that warns about hazards on a walking path. The '
+    'photo is taken from chest height, facing forward. Find the single most important hazard on the path '
+    'within about 5 metres. Name it as one of: a step down, a step up, a curb, an open drain, something '
+    'at head height (such as a low branch or sign), a person, a group of people (three or more), a '
+    'bicycle or scooter, a vehicle, a pole or post, a barrier or cone, a ramp, a door (including glass '
+    'doors), a wall (including glass walls), or something else the person could walk into if none of '
+    'these fit. Prefer drops and things at head height over things the person can walk around. Give its '
+    'side (left, ahead or right) and distance (near means within about 2 metres, otherwise far). If the '
+    'path is clear, answer clear. If the photo is too dark, blurred or unclear to judge, answer unsure. '
+    'Do not identify or describe people beyond naming them as a person or a group of people. Also give '
+    "the hazard's bounding box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path "
+    'is clear or you are unsure. Also estimate how far the hazard is from the camera in metres, as a '
+    'whole number from 1 to 10, or no distance if the path is clear or you are unsure. Flat things lying '
+    'on the ground, such as mats, rugs or painted lines, are not hazards.'
 )
 
 # Ask (Brief 6): the Owner-approved prompt, verbatim. The three {...} placeholders are filled by replace().

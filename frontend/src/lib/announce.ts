@@ -29,25 +29,33 @@ export const INITIAL_ANNOUNCE: AnnounceState = {
   speaking: false,
 }
 
-/** Steps of any direction (SAM's "steps", Muse's up / down) are one kind; every other hazard is its own. */
+/**
+ * Steps of any direction (SAM's "steps", Muse's up / down) are one kind; a person and a group of people are one
+ * kind; every other hazard is its own.
+ */
 export function kindOf(hazard: ShownHazard): ShownHazard {
-  return hazard === 'step_down' || hazard === 'step_up' ? 'steps' : hazard
+  if (hazard === 'step_down' || hazard === 'step_up') return 'steps'
+  if (hazard === 'people') return 'person'
+  return hazard
 }
 
-const direction = (hazard: ShownHazard) => (hazard === 'step_down' ? 'down' : hazard === 'step_up' ? 'up' : null)
+/** The detail inside a kind that is news when it changes: up / down for steps, one / several for people. */
+const VARIANT: Partial<Record<ShownHazard, string>> = { step_down: 'down', step_up: 'up', person: 'one', people: 'several' }
+const variant = (hazard: ShownHazard) => VARIANT[hazard] ?? null
 
 /**
  * Repeat test. A side change alone never re-speaks (the side is read from the box and flaps near its lines).
  * - The key is the kind (kindOf). Up or down is new when it was not said yet or it changed: Muse's "steps going
- *   down" after SAM's "steps" speaks; SAM's "steps" after "steps going down" does not.
+ *   down" after SAM's "steps" speaks; SAM's "steps" after "steps going down" does not. Likewise a person ->
+ *   several people (or back) speaks.
  * - With metres (this answer and the last spoken one): the same kind stays silent unless it is at least `closerM`
  *   metres closer than when last spoken.
  * - Otherwise: the key is kind + near/far; the same kind speaks again only when it goes far -> near.
  */
 function isRepeat(answer: Answer, state: AnnounceState, closerM: number): boolean {
   if (state.lastHazard === null || kindOf(answer.hazard) !== kindOf(state.lastHazard)) return false
-  const dir = direction(answer.hazard)
-  if (dir !== null && dir !== direction(state.lastHazard)) return false
+  const detail = variant(answer.hazard)
+  if (detail !== null && detail !== variant(state.lastHazard)) return false
   if (answer.distance_m !== null && state.lastDistanceM !== null) {
     return answer.distance_m > state.lastDistanceM - closerM
   }
