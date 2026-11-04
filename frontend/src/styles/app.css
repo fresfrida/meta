@@ -738,3 +738,8 @@ p {
     animation: none;
   }
 }
+
+/* Public demo notice (Brief 17): the warning reads as body text, a little stronger than the help line. */
+.demo__notice {
+  color: var(--color-text);
+}

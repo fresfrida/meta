@@ -421,6 +421,19 @@ export const strings = {
       `ask: question to answer ${totalS} s (speech recognition ${asrS} s, model ${modelS} s)`,
   },
 
+  // TENTATIVE (Brief 17): public demo copy, English only for now
+  demo: {
+    notice:
+      "Demo only. Second Eyes is a research prototype, not a mobility aid. Please don't rely on it to walk, especially near roads.",
+    understand: 'I understand',
+    left: (time: string) => `${time} left`,
+    timeUp: 'Your demo time is up. Thank you for trying Second Eyes.',
+    full: "Today's demo slots are full. Please watch the video instead.",
+    watchVideo: 'Watch the video',
+    tryLater: 'Please try again in a minute.',
+    back: 'Back',
+  },
+
   button: {
     start: 'Start',
     stop: 'Stop',

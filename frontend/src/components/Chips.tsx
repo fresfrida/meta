@@ -13,9 +13,11 @@ interface ChipsProps {
   backend: BackendState
   listening: boolean
   faceBlur: FaceBlurStatus
+  /** Public demo: "2:41 left" (TENTATIVE), or null. */
+  timeLeft?: string | null
 }
 
-export function Chips({ mode, backend, listening, faceBlur }: ChipsProps) {
+export function Chips({ mode, backend, listening, faceBlur, timeLeft = null }: ChipsProps) {
   const modeLabel = mode !== null ? strings.mode[mode] : backend === 'checking' ? strings.mode.checking : null
   return (
     <div className="chips">
@@ -27,6 +29,11 @@ export function Chips({ mode, backend, listening, faceBlur }: ChipsProps) {
       </span>
       {/* Says the microphone is streaming to Meta. */}
       {listening && <Chip label={strings.ask.micChip} />}
+      {timeLeft && (
+        <span className="chip" role="timer" aria-live="off">
+          {timeLeft}
+        </span>
+      )}
     </div>
   )
 }

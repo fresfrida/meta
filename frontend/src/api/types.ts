@@ -40,6 +40,10 @@ export type ErrorCode =
   | 'model_billing'
   | 'model_error'
   | 'empty_answer'
+  | 'slot_ended'
+  | 'slots_full'
+  | 'daily_budget'
+  | 'rate_limited'
 
 /** [x_min, y_min, x_max, y_max] on a 0..1000 grid. */
 export type Box = [number, number, number, number]
@@ -75,6 +79,15 @@ export interface HealthResponse {
   key_present: boolean
   spent_usd: number
   budget_usd: number
+  /** Public demo (Brief 17): show the notice and ask for a slot before Start. */
+  public_demo: boolean
+  demo_slot_s: number | null
+  video_url: string | null
+}
+
+export interface SlotResponse {
+  token: string
+  expires_in_s: number
 }
 
 export interface ErrorDetail {
@@ -108,7 +121,7 @@ export type ListenEvent =
   | { type: 'wake' }
   | { type: 'question'; text: string; asr_ms?: number }
   | { type: 'stopped' }
-  | { type: 'error'; code: 'bad_language' | 'key_missing' | 'budget_reached' }
+  | { type: 'error'; code: 'bad_language' | 'key_missing' | 'budget_reached' | 'slot_ended' }
 
 /** Fast warning (SAM 3.1). Hits are already filtered on the backend (detect_rule.py), nearest first. */
 export type DetectKind = 'steps' | 'curb' | 'door'

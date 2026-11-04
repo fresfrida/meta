@@ -1,6 +1,6 @@
 // Orchestrates camera -> frame -> backend -> phrase -> speech, and the visible states.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { analyze, detect, getHealth } from '../api/client'
+import { ApiError, analyze, detect, getHealth } from '../api/client'
 import type { Box, HealthResponse, Source } from '../api/types'
 import {
   DETAIL_EVERY,
@@ -55,11 +55,12 @@ import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
 import { museHedged } from '../lib/hedge'
+import { setSlotToken } from '../lib/demoSlot'
 import { type SpokenSides, holdSide, rememberSide } from '../lib/sideHold'
 import { atSpeakingTime } from '../lib/distanceNow'
 import { WalkDetector } from '../lib/motion'
 import { SESSION_IDLE, type SessionVoice, greetingDone, holdForGreeting, onStart, onStop } from '../lib/sessionVoice'
-import { connectionText, sessionText } from '../strings'
+import { connectionText, sessionText, strings } from '../strings'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus } from '../lib/voices'
@@ -104,6 +105,11 @@ export interface Usage {
 
 export type Budget = Pick<HealthResponse, 'spent_usd' | 'budget_usd'>
 
+export interface DemoInfo {
+  public: boolean
+  videoUrl: string | null
+}
+
 export interface Timings {
   /** Spoken frames: capture-to-speech records, newest first. */
   spoken: TimingRecord[]
@@ -142,8 +148,10 @@ export interface SecondEyes {
   slow: boolean
   timings: Timings
   lastUsage: Usage | null
-  start: () => void
-  stop: () => void
+  start: (prepare?: () => Promise<boolean>) => void
+  stop: (say?: unknown) => void
+  /** Public demo (from /api/health). */
+  demo: DemoInfo
   capture: () => void
   /** Asking: listening state, the current question / answer, and the touch-and-hold fallback. */
   listen: ListenState
@@ -227,6 +235,10 @@ export function useSecondEyes(
   const [backend, setBackend] = useState<BackendState>('checking')
   const [mode, setMode] = useState<Source | null>(null)
   const [budget, setBudget] = useState<Budget | null>(null)
+  // Public demo (Brief 17): from /api/health.
+  const [demo, setDemo] = useState<DemoInfo>({ public: false, videoUrl: null })
+  // The stop function, for the server ending a public-demo slot from inside a request (defined below).
+  const stopRef = useRef<(say?: unknown) => void>(() => undefined)
   const [answer, setAnswer] = useState<Answer>({ kind: 'none' })
   const [hazardBox, setHazardBox] = useState<HazardBox | null>(null)
   const [lastSent, setLastSent] = useState<SentFrame | null>(null)
@@ -258,6 +270,7 @@ export function useSecondEyes(
         (h) => {
           setMode(h.vision_mode)
           setBudget({ spent_usd: h.spent_usd, budget_usd: h.budget_usd })
+          setDemo({ public: h.public_demo === true, videoUrl: h.video_url ?? null })
           setBackend('ok')
         },
         () => setBackend('unreachable'),
@@ -465,6 +478,13 @@ export function useSecondEyes(
   /** A failed request on either channel. Returns true when the loop must stop (budget, no key). */
   const onFailure = useCallback(
     (err: unknown, session: number, channel: Channel) => {
+      if (err instanceof ApiError && err.code === 'slot_ended') {
+        // Public demo: the server says this visitor's time is up.
+        haltedRef.current = session
+        setSlotToken(null)
+        stopRef.current(strings.demo.timeUp)
+        return
+      }
       const reason = failureReason(err)
       if (reason === 'unreachable') {
         setBackend('unreachable')
@@ -645,7 +665,11 @@ export function useSecondEyes(
     [captureOnce],
   )
 
-  const start = useCallback(() => {
+  /**
+   * Start. `prepare` (public demo): runs after the unlocks inside the tap and must succeed (a slot) before the camera
+   * opens and the start line is said; false leaves everything off.
+   */
+  const start = useCallback((prepare?: () => Promise<boolean>) => {
     unlockSpeech() // must run synchronously inside the tap
     // iOS asks for motion access inside a tap; refused or unsupported -> the distance rule assumes walking.
     const motion = (window as unknown as { DeviceMotionEvent?: { requestPermission?: () => Promise<string> } })
@@ -659,41 +683,51 @@ export function useSecondEyes(
     spokenKindsRef.current = {}
     spokenSidesRef.current = {}
     shownRef.current = NOTHING_SHOWN
-    const [voice, greet] = onStart(sessionVoiceRef.current)
-    sessionVoiceRef.current = voice
-    if (greet) {
-      // Said inside the tap (iOS allows speech then); no tick and no hazard speech over it.
-      const speechId = ++speechIdRef.current
-      announceRef.current = { ...INITIAL_ANNOUNCE, speaking: true }
-      const speechLang = SPEECH_LANGS[langRef.current]
-      const handle = speak(sessionText[langRef.current].start, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
-      const done = () => {
-        sessionVoiceRef.current = greetingDone(sessionVoiceRef.current)
-        if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
-      }
-      handle.started.then(() => void handle.ended.then(done), done)
-    }
     handledSeqRef.current = { fast: captureSeqRef.current, detail: captureSeqRef.current }
     setCamera('starting')
     setAnswer({ kind: 'none' })
     setHazardBox(null)
     void checkHealth()
-    openRearCamera()
-      .then(async (stream) => {
-        if (session !== sessionRef.current) return stopStream(stream)
-        streamRef.current = stream
-        const video = videoRef.current
-        if (video) {
-          video.srcObject = stream
-          await video.play().catch(() => undefined)
+    const go = () => {
+      const [voice, greet] = onStart(sessionVoiceRef.current)
+      sessionVoiceRef.current = voice
+      if (greet) {
+        // Said inside the tap (iOS allows speech then; unlockSpeech above keeps it allowed for a public-demo start
+        // that waits for its slot); no tick and no hazard speech over it.
+        const speechId = ++speechIdRef.current
+        announceRef.current = { ...INITIAL_ANNOUNCE, speaking: true }
+        const speechLang = SPEECH_LANGS[langRef.current]
+        const handle = speak(sessionText[langRef.current].start, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+        const done = () => {
+          sessionVoiceRef.current = greetingDone(sessionVoiceRef.current)
+          if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
         }
-        setCamera('on')
-        if (LOOP_ENABLED) void runLoop(session)
-      })
-      .catch((err) => setCamera(err instanceof CameraError ? err.failure : 'unavailable'))
+        handle.started.then(() => void handle.ended.then(done), done)
+      }
+      openRearCamera()
+        .then(async (stream) => {
+          if (session !== sessionRef.current) return stopStream(stream)
+          streamRef.current = stream
+          const video = videoRef.current
+          if (video) {
+            video.srcObject = stream
+            await video.play().catch(() => undefined)
+          }
+          setCamera('on')
+          if (LOOP_ENABLED) void runLoop(session)
+        })
+        .catch((err) => setCamera(err instanceof CameraError ? err.failure : 'unavailable'))
+    }
+    if (!prepare) return go()
+    void prepare().then((ok) => {
+      if (session !== sessionRef.current) return
+      if (ok) go()
+      else setCamera('off')
+    })
   }, [checkHealth, runLoop])
 
-  const stop = useCallback(() => {
+  /** Stop. `say` replaces the stop line (public demo: the time-up line). Button clicks pass an event: ignored. */
+  const stop = useCallback((say?: unknown) => {
     sessionRef.current += 1
     speechIdRef.current += 1
     announceRef.current = INITIAL_ANNOUNCE
@@ -704,7 +738,8 @@ export function useSecondEyes(
     sessionVoiceRef.current = voice
     if (bye) {
       const speechLang = SPEECH_LANGS[langRef.current]
-      speak(sessionText[langRef.current].stop, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+      const line = typeof say === 'string' ? say : sessionText[langRef.current].stop
+      speak(line, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
     }
     stopStream(streamRef.current)
     streamRef.current = null
@@ -714,6 +749,10 @@ export function useSecondEyes(
     setAnswer({ kind: 'none' })
     setHazardBox(null)
   }, [])
+
+  useEffect(() => {
+    stopRef.current = stop
+  }, [stop])
 
   const capture = useCallback(() => {
     if (camera === 'on' && inFlightRef.current === 0) void captureOnce(sessionRef.current)
@@ -736,6 +775,7 @@ export function useSecondEyes(
     start,
     stop,
     capture,
+    demo,
     listen,
     ask: askView,
     askTimings,

@@ -1,5 +1,6 @@
 // The only module that talks to the backend.
 import { API_BASE, DETECT_REQUEST_TIMEOUT_MS, REQUEST_TIMEOUT_MS } from '../config'
+import { slotToken } from '../lib/demoSlot'
 import type {
   AnalyzeRequest,
   AnalyzeResponse,
@@ -10,6 +11,7 @@ import type {
   ErrorCode,
   ErrorDetail,
   HealthResponse,
+  SlotResponse,
 } from './types'
 
 export type ApiErrorKind = 'unreachable' | 'failed'
@@ -34,7 +36,10 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = REQUEST_
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   let res: Response
   try {
-    res = await fetch(`${API_BASE}${path}`, { ...init, signal: controller.signal })
+    // Public demo: every call carries the visitor's slot token (the server refuses calls without a running slot).
+    const slot = slotToken()
+    const headers = slot ? { ...(init?.headers as Record<string, string> | undefined), 'X-Demo-Slot': slot } : init?.headers
+    res = await fetch(`${API_BASE}${path}`, { ...init, headers, signal: controller.signal })
   } catch (err) {
     const timedOut = err instanceof DOMException && err.name === 'AbortError'
     throw new ApiError(timedOut ? 'failed' : 'unreachable', timedOut ? 'timeout' : String(err))
@@ -87,6 +92,15 @@ export async function analyze(body: AnalyzeRequest): Promise<AnalyzeResponse> {
   }
 }
 
+/** Public demo: a slot for this browser (the same running one if it already has one). */
+export function requestSlot(deviceId: string): Promise<SlotResponse> {
+  return request<SlotResponse>('/slot', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ device_id: deviceId }),
+  })
+}
+
 /** Fast warning: SAM steps and kerb hits for one frame. */
 export function detect(body: DetectRequest): Promise<DetectResponse> {
   return request<DetectResponse>(
@@ -108,5 +122,7 @@ export function ask(body: AskRequest, timeoutMs: number): Promise<AskResponse> {
 /** The /api/listen WebSocket URL on this page's host (the Vite proxy forwards it to the backend). */
 export function listenUrl(language: string): string {
   const scheme = window.location.protocol === 'https:' ? 'wss' : 'ws'
-  return `${scheme}://${window.location.host}${API_BASE}/listen?lang=${encodeURIComponent(language)}`
+  const slot = slotToken()
+  const slotParam = slot ? `&slot=${encodeURIComponent(slot)}` : '' // browsers cannot set WebSocket headers
+  return `${scheme}://${window.location.host}${API_BASE}/listen?lang=${encodeURIComponent(language)}${slotParam}`
 }
