@@ -211,3 +211,12 @@ def test_reply_cut_by_the_output_cap_is_a_model_failure_but_billed(make_settings
     assert "output cap" in r.json()["detail"]["message"]
     spent = client.get("/api/health").json()["spent_usd"]
     assert spent == pytest.approx((600 * 1.25 + MAX_OUTPUT_TOKENS * 4.25) / 1e6, abs=1e-6)
+
+
+def test_each_live_answer_logs_model_side_and_box_side(make_settings, caplog):
+    caplog.set_level(logging.INFO)
+    answer = {"hazard": "pole", "side": "ahead", "distance": "far", "box": [330, 0, 392, 712], "distance_m": 2}
+    client, _, _ = live_app(make_settings, completion(json.dumps(answer)))
+    client.post("/api/analyze", json={"image_b64": IMG})
+    assert "muse answer: hazard=pole model_side=ahead box_side=left distance_m=2" in caplog.text
+    assert IMG not in caplog.text

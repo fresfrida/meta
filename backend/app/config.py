@@ -98,6 +98,9 @@ BOTTOM_TOUCH_FRAC = 0.01  # a box ending within this fraction of the frame botto
 # either side of straight ahead, measured at the box's ground point. A box touching the frame bottom is in the path
 # when it overlaps the centre half of the frame.
 PATH_HALF_WIDTH_M = 0.75
+# Brief 16b: a hit the geometry puts beyond 10 m (or at / above the horizon), centred in the ahead band (LEFT_MAX ..
+# RIGHT_MIN) and at least this tall (fraction of the frame), is kept as "far, no metres" (a tilted phone's door ahead).
+BIG_HIT_FRAC = 0.35
 
 
 @dataclass(frozen=True)

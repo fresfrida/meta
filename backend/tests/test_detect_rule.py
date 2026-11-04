@@ -126,11 +126,50 @@ def test_path_edge_is_path_half_width():
     bottom = 320 + round(CAMERA_HEIGHT_M * f / 4.0)
     forward = ground_distance_m(bottom, 640, portrait=True)
     edge_px = 180 + PATH_HALF_WIDTH_M * f / forward
-    assert keep(side_box(int(edge_px) - 2, 359, bottom)) != BESIDE
-    assert keep(side_box(int(edge_px) + 2, 359, bottom)) == BESIDE
+    assert keep(side_box(int(edge_px) - 2, 359, bottom, kind="curb")) != BESIDE  # overlap rule (steps / kerb)
+    assert keep(side_box(int(edge_px) + 2, 359, bottom, kind="curb")) == BESIDE
 
 
 def test_a_box_touching_the_bottom_is_in_the_path_when_it_overlaps_the_centre_half():
     assert keep(side_box(100, 200, 640)).distance == "near"  # overlaps 90..270
     assert keep(side_box(0, 80, 640)) == BESIDE  # left quarter only
     assert keep(side_box(280, 359, 640)) == BESIDE  # right quarter only
+
+
+# ---- Brief 16b: door centre rule, big far hits ahead (measured boxes from Briefs 15 / 16 as fixtures) ---------------
+def test_door_counts_only_when_its_centre_is_in_the_path():
+    # A wide door box that overlaps the path but is centred beside it: dropped; a door centred ahead: kept.
+    # ~4.9 m ahead: x 220..359 spans +0.41 .. +1.83 m (overlaps the path, centre +1.12 m).
+    assert keep(RawHit("door", 220, 150, 359, 447, 360, 640, 0.85)) == BESIDE
+    assert keep(RawHit("door", 150, 150, 210, 447, 360, 640, 0.85)) != BESIDE
+    # The same wide box as a kerb (overlap rule) is kept.
+    assert keep(RawHit("curb", 220, 150, 359, 447, 360, 640, 0.85)) != BESIDE
+
+
+def test_measured_doors():
+    door_ahead_12 = RawHit("door", 167, 69, 352, 435, 640, 640, 0.81)
+    cabinet_1 = RawHit("door", 63, 207, 116, 418, 640, 640, 0.55)
+    cabinet_2 = RawHit("door", 106, 201, 139, 407, 640, 640, 0.53)
+    assert keep(door_ahead_12).distance_m == 7
+    assert keep(cabinet_1) == BESIDE and keep(cabinet_2) == BESIDE
+
+
+def test_measured_doors_the_spec_does_not_separate():
+    # Recorded as measured (see brief-16.md, Brief 16b): with the rules as specified these two do NOT get the
+    # wanted result. The 22.11.08 side door's centre is +0.56 m (inside 0.75 m); the 22.11.17 glass door's centre is
+    # 348 on the grid (outside the 400..600 ahead band).
+    side_door_08 = RawHit("door", 201, 0, 294, 553, 296, 640, 0.82)
+    glass_door_17 = RawHit("door", 152, 64, 292, 344, 640, 640, 0.85)
+    assert keep(side_door_08) != BESIDE  # wanted: beside
+    assert keep(glass_door_17) is None  # wanted: kept as far
+
+
+def test_big_hit_ahead_beyond_the_geometry_is_kept_as_far_without_metres():
+    # Box bottom just under the horizon (> 10 m by geometry), centred ahead, 50% of the frame tall.
+    hit = keep(RawHit("door", 300, 20, 340, 339, 640, 640, 0.85))
+    assert (hit.distance, hit.distance_m, hit.side) == ("far", None, "ahead")
+    # Too short, or off-centre: still dropped.
+    assert keep(RawHit("door", 300, 250, 340, 339, 640, 640, 0.85)) is None
+    assert keep(RawHit("door", 20, 20, 60, 339, 640, 640, 0.85)) is None
+    # At / above the horizon too.
+    assert keep(RawHit("steps", 290, 0, 350, 300, 640, 640, 0.85)).distance == "far"

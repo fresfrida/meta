@@ -23,6 +23,7 @@ from .schemas import (
     ErrorDetail,
     HealthResponse,
     resolve_side,
+    side_of_box,
 )
 from .vision import LiveVision, MockVision, Vision, VisionError, default_client_factory
 
@@ -100,6 +101,17 @@ def create_app(
             budget.add(cost)
 
         side, side_source = resolve_side(result.answer)
+        if live:
+            # Brief 16b, for the next walk: Muse's own side next to the side its box gives (fields only; no image or
+            # text). The app speaks the box side.
+            a = result.answer
+            log.info(
+                "muse answer: hazard=%s model_side=%s box_side=%s distance_m=%s",
+                a.hazard,
+                a.side,
+                side_of_box(a.box) if a.box else None,
+                a.distance_m,
+            )
         return AnalyzeResponse(
             **{**result.answer.model_dump(), "side": side},
             side_source=side_source,
