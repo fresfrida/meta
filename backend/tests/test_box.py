@@ -26,9 +26,17 @@ PROMPT_V7 = (
 )
 
 
-def test_prompt_v7_verbatim():
-    assert VISION_PROMPT == PROMPT_V7
-    assert VISION_PROMPT_VERSION == "v7"
+# Brief 28 (4 Nov 2026): v8 = v7 + the lift door in the list (after the escalator) + the double-door sentence at the end.
+PROMPT_V8 = PROMPT_V7.replace(
+    "an escalator, uneven or broken ground", "an escalator, a lift (elevator) door, uneven or broken ground"
+) + " A door can be a single door, double doors or a glass door."
+
+
+def test_prompt_v8_verbatim():
+    assert VISION_PROMPT == PROMPT_V8
+    assert VISION_PROMPT_VERSION == "v8"
+    assert "a lift (elevator) door" in VISION_PROMPT
+    assert VISION_PROMPT.endswith("A single raised edge between a footpath and a road is a curb, not a step. A door can be a single door, double doors or a glass door.")
 
 
 def test_schema_asks_for_sure_as_a_required_boolean():
@@ -52,14 +60,14 @@ def test_schema_names_every_v6_kind_and_the_catch_all():
     hazards = vision_answer_json_schema()["properties"]["hazard"]["enum"]
     assert hazards == [
         "step_down", "step_up", "curb", "drain", "head_height", "person", "people", "bike", "vehicle",
-        "pole", "barrier", "ramp", "door", "wall", "road", "crossing", "cycle_path", "escalator", "uneven",
-        "obstacle", "clear", "unsure",
+        "pole", "barrier", "ramp", "door", "wall", "road", "crossing", "cycle_path", "escalator", "lift",
+        "uneven", "obstacle", "clear", "unsure",
     ]  # fmt: skip
 
 
 NEW_KINDS = [
     "drain", "head_height", "person", "people", "bike", "vehicle", "pole", "barrier", "ramp", "door", "wall",
-    "road", "crossing", "cycle_path", "escalator", "uneven",
+    "road", "crossing", "cycle_path", "escalator", "lift", "uneven",
 ]  # fmt: skip
 
 

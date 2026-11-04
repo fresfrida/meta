@@ -64,6 +64,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'Crossing',
       cycle_path: 'Cycle path',
       escalator: 'Escalator',
+      lift: 'Lift', // Brief 28, Owner approved 5 Nov ("Approve all")
       uneven: 'Uneven ground',
       obstacle: 'In your path',
       clear: 'Nothing seen',
@@ -92,6 +93,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'A pedestrian crossing',
         cycle_path: 'A cycle path',
         escalator: 'An escalator',
+        lift: 'A lift', // Brief 28, Owner approved 5 Nov
         uneven: 'Uneven ground',
         obstacle: 'Something in your path',
         steps: 'Steps',
@@ -126,6 +128,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: '人行横道',
       cycle_path: '自行车道',
       escalator: '扶梯',
+      lift: '电梯', // Brief 28, Owner approved 5 Nov
       uneven: '地面不平',
       obstacle: '挡路物',
       clear: '未见障碍',
@@ -154,6 +157,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: '人行横道',
         cycle_path: '自行车道',
         escalator: '自动扶梯',
+        lift: '电梯', // Brief 28, Owner approved 5 Nov
         uneven: '不平的地面',
         obstacle: '挡路的东西',
         steps: '台阶',
@@ -185,6 +189,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'Lintasan',
       cycle_path: 'Laluan basikal',
       escalator: 'Eskalator',
+      lift: 'Lif', // Brief 28, Owner approved 5 Nov
       uneven: 'Tidak rata',
       obstacle: 'Di laluan anda',
       clear: 'Tiada apa-apa',
@@ -213,6 +218,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'lintasan pejalan kaki',
         cycle_path: 'laluan basikal',
         escalator: 'eskalator',
+        lift: 'lif', // Brief 28, Owner approved 5 Nov
         uneven: 'permukaan tidak rata',
         obstacle: 'sesuatu di laluan anda',
         steps: 'tangga',
@@ -248,6 +254,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'பாதசாரி கடவை',
       cycle_path: 'மிதிவண்டிப் பாதை',
       escalator: 'நகரும் படிக்கட்டு',
+      lift: 'லிஃப்ட்', // Brief 28, Owner approved 5 Nov
       uneven: 'சீரற்ற தரை',
       obstacle: 'பாதையில் தடை',
       clear: 'எதுவும் தெரியவில்லை',
@@ -276,6 +283,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'பாதசாரி கடவை உள்ளது',
         cycle_path: 'மிதிவண்டிப் பாதை உள்ளது',
         escalator: 'நகரும் படிக்கட்டு உள்ளது',
+        lift: 'லிஃப்ட் உள்ளது', // Brief 28, Owner approved 5 Nov
         uneven: 'சீரற்ற தரை உள்ளது',
         obstacle: 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது',
         steps: 'படிகள் உள்ளன',
@@ -560,6 +568,8 @@ export const strings = {
     // Debug (Brief 27), English only: audio route changes, picture pauses, stuck phrases spoken again
     recovery: (changes: number, last: string | null, paused: number, recovered: number, respoken: number, failures: number) =>
       `route changes ${changes}${last ? ` (last: ${last})` : ''} · video paused ${paused} · recovered ${recovered} · re-spoken ${respoken} · not started in a row ${failures}`,
+    // Debug (Brief 28), English only: heartbeat ticks
+    ticks: (played: number, skipped: number) => `ticks played ${played} · skipped ${skipped}`,
     // Debug (Brief 26), English only: what the camera gives, and the vertical field of view the distances use
     camera: (c: {
       size: string

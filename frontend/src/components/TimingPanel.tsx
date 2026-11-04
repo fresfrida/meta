@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react'
 import { audioSessionType, audioState } from '../lib/audio'
 import { type CameraInfo, type SentFrame, cameraInfo, onCameraInfo } from '../lib/camera'
 import { onRouteDebug, routeDebug } from '../lib/audioRoute'
+import { onToneDebug, toneDebug } from '../lib/earcon'
 import { onSpeechDebug, speechDebug } from '../lib/speech'
 import { onVideoDebug, videoDebug } from '../lib/videoGuard'
 import { vfovDeg } from '../lib/pathGuide'
@@ -53,6 +54,7 @@ export function TimingPanel({
   const camera = useSyncExternalStore(onCameraInfo, cameraInfo)
   const route = useSyncExternalStore(onRouteDebug, routeDebug)
   const video = useSyncExternalStore(onVideoDebug, videoDebug)
+  const tones = useSyncExternalStore(onToneDebug, toneDebug)
 
   return (
     <section className="timing" aria-label={t.heading}>
@@ -107,6 +109,7 @@ export function TimingPanel({
       {camera && <div className="timing__breakdown">{cameraLine(camera)}</div>}
       <div className="timing__breakdown">
         {t.recovery(route.changes, route.last, video.paused, video.recovered, speech.respoken, speech.failures)}
+        {` · ${t.ticks(tones.ticksPlayed, tones.ticksSkipped)}`}
       </div>
       {timings.lastStages && <div className="timing__breakdown">{t.stages(timings.lastStages)}</div>}
       {timings.spokenCount + timings.silentCount > 0 && (

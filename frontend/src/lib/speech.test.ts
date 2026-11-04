@@ -319,3 +319,24 @@ describe('Brief 27: after a route change', () => {
     expect(engine.calls).toEqual([])
   })
 })
+
+describe('Brief 28: a re-spoken start line ends only when the second one ends', () => {
+  it('the stuck one being cancelled does not end the phrase', async () => {
+    const { speak } = await load(IPHONE_UA)
+    const h = speak('Second Eyes is getting ready.', opts)
+    let ended = false
+    void h.ended.then(() => (ended = true))
+    engine.synth.speaking = true
+    vi.advanceTimersByTime(SPEECH_STUCK_MS)
+    engine.spoken[0].onend?.() // the stuck utterance ends because it was cancelled
+    engine.spoken[0].onerror?.({ error: 'canceled' })
+    vi.advanceTimersByTime(SPEECH_CANCEL_GAP_MS)
+    engine.spoken[1].onstart?.()
+    await h.started
+    await Promise.resolve()
+    expect(ended).toBe(false)
+    engine.spoken[1].onend?.()
+    await Promise.resolve()
+    expect(ended).toBe(true)
+  })
+})

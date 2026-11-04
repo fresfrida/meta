@@ -20,6 +20,7 @@ export type Hazard =
   | 'crossing'
   | 'cycle_path'
   | 'escalator'
+  | 'lift'
   | 'uneven'
   | 'obstacle'
   | 'clear'

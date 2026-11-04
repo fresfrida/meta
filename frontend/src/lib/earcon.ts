@@ -10,6 +10,8 @@ import {
   WARN_TONE_MS,
   WARN_VIBRATE_MS,
   TONES_ENABLED,
+  TONE_RESUME_WAIT_MS,
+  TONE_TAIL_MS,
 } from '../config'
 import { holdAudio, releaseAudio } from './audio'
 import { webKitSpeech } from './speech'
@@ -20,34 +22,94 @@ function tonesOff(): boolean {
   return !TONES_ENABLED && webKitSpeech()
 }
 
-/** Plays the earcon; resolves when it has finished. The microphone is closed while it plays. */
+// ----- Debug (Brief 28): heartbeat ticks played vs skipped -----
 
+export interface ToneDebug {
+  ticksPlayed: number
+  ticksSkipped: number
+}
+
+let debug: ToneDebug = { ticksPlayed: 0, ticksSkipped: 0 }
+const listeners = new Set<() => void>()
+
+function count(kind: 'tick' | 'other', played: boolean): void {
+  if (kind !== 'tick') return
+  debug = played ? { ...debug, ticksPlayed: debug.ticksPlayed + 1 } : { ...debug, ticksSkipped: debug.ticksSkipped + 1 }
+  listeners.forEach((l) => l())
+}
+
+export function toneDebug(): ToneDebug {
+  return debug
+}
+
+export function onToneDebug(listener: () => void): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
+}
+
+/**
+ * Runs `play(ctx)` once the context is running, keeping it held until `ms` after that (+ TONE_TAIL_MS on WebKit).
+ * Brief 28: on the iPhone the context is suspended between tones; scheduling on it and suspending again 45 ms later
+ * lost the tick. Android's context is running already, so it plays at once, exactly as before.
+ * Resolves true when the tone played, false when it was skipped.
+ */
+function withRunningContext(ms: number, play: (ctx: AudioContext) => void): Promise<boolean> {
+  const ctx = holdAudio()
+  if (!ctx) return Promise.resolve(false)
+  const tail = webKitSpeech() ? TONE_TAIL_MS : 0
+  const start = (): Promise<boolean> => {
+    try {
+      play(ctx)
+    } catch (err) {
+      releaseAudio()
+      return Promise.reject(err)
+    }
+    selfSound.start()
+    return new Promise((resolve) =>
+      setTimeout(() => {
+        selfSound.end(performance.now())
+        releaseAudio()
+        resolve(true)
+      }, ms + tail),
+    )
+  }
+  if (ctx.state === 'running') return start()
+  const running = ctx.resume().then(
+    () => (ctx.state as string) === 'running',
+    () => false,
+  )
+  const late = new Promise<boolean>((resolve) => setTimeout(() => resolve(false), TONE_RESUME_WAIT_MS))
+  return Promise.race([running, late]).then((ok) => {
+    if (ok && ctx.state === 'running') return start()
+    releaseAudio()
+    return false
+  })
+}
+
+/** Plays the earcon; resolves when it has finished. The microphone is closed while it plays. */
 export function playEarcon(): Promise<void> {
   if (tonesOff()) return Promise.resolve()
-  const ctx = holdAudio()
-  if (!ctx) return Promise.resolve()
   const toneS = EARCON_TONE_MS / 1000
-  const t0 = ctx.currentTime + 0.02
-  EARCON_TONES_HZ.forEach((hz, i) => {
-    const osc = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.frequency.value = hz
-    const start = t0 + i * toneS
-    gain.gain.setValueAtTime(0, start)
-    gain.gain.linearRampToValueAtTime(EARCON_GAIN, start + 0.01)
-    gain.gain.linearRampToValueAtTime(0, start + toneS)
-    osc.connect(gain).connect(ctx.destination)
-    osc.start(start)
-    osc.stop(start + toneS)
-  })
-  selfSound.start()
   const totalMs = EARCON_TONES_HZ.length * EARCON_TONE_MS + 20
-  return new Promise((resolve) =>
-    setTimeout(() => {
-      selfSound.end(performance.now())
-      releaseAudio()
-      resolve()
-    }, totalMs),
+  return withRunningContext(totalMs, (ctx) => {
+    const t0 = ctx.currentTime + 0.02
+    EARCON_TONES_HZ.forEach((hz, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.frequency.value = hz
+      const start = t0 + i * toneS
+      gain.gain.setValueAtTime(0, start)
+      gain.gain.linearRampToValueAtTime(EARCON_GAIN, start + 0.01)
+      gain.gain.linearRampToValueAtTime(0, start + toneS)
+      osc.connect(gain).connect(ctx.destination)
+      osc.start(start)
+      osc.stop(start + toneS)
+    })
+  }).then(
+    () => undefined,
+    () => undefined,
   )
 }
 
@@ -69,19 +131,14 @@ export function playWarnCue(): void {
 
 /** Heartbeat: a soft, short, low tick (TICK_*), quieter and lower than the fast cue. Does not wait. */
 export function playTick(): void {
-  try {
-    tone(TICK_HZ, TICK_MS, TICK_GAIN, 0.005)
-  } catch (err) {
-    console.warn('[earcon] tick failed', err)
-  }
+  if (tonesOff()) return count('tick', false)
+  tone(TICK_HZ, TICK_MS, TICK_GAIN, 0.005, 'tick')
 }
 
-/** One short tone; the microphone is closed while it plays. */
-function tone(hz: number, ms: number, peak: number, rampS: number): void {
+/** One short tone; the microphone is closed while it plays. Never throws (a failed tone never blocks speech). */
+function tone(hz: number, ms: number, peak: number, rampS: number, kind: 'tick' | 'other' = 'other'): void {
   if (tonesOff()) return
-  const ctx = holdAudio()
-  if (!ctx) return
-  try {
+  withRunningContext(ms + 10, (ctx) => {
     const toneS = ms / 1000
     const start = ctx.currentTime + 0.01
     const osc = ctx.createOscillator()
@@ -93,13 +150,11 @@ function tone(hz: number, ms: number, peak: number, rampS: number): void {
     osc.connect(gain).connect(ctx.destination)
     osc.start(start)
     osc.stop(start + toneS)
-  } catch (err) {
-    releaseAudio()
-    throw err
-  }
-  selfSound.start()
-  setTimeout(() => {
-    selfSound.end(performance.now())
-    releaseAudio()
-  }, ms + 10)
+  }).then(
+    (played) => count(kind, played),
+    (err) => {
+      count(kind, false)
+      console.warn('[earcon] tone failed', err)
+    },
+  )
 }

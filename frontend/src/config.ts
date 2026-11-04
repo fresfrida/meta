@@ -36,6 +36,13 @@ export const SPEECH_STUCK_MS = 1_000
 export const SPEECH_BLOCKED_AFTER = 2
 /** The camera track muted this long while running -> reopen the camera (WebKit). */
 export const VIDEO_MUTE_WAIT_MS = 2_000
+/**
+ * Brief 28, iPhone tick: WebKit suspends the AudioContext between tones (Brief 27), so a tone waits until the context
+ * really runs (at most TONE_RESUME_WAIT_MS, else it is skipped and counted), and the context is suspended again only
+ * TONE_TAIL_MS after the tone ends (the iPhone's output latency). Android: unchanged (its context always runs).
+ */
+export const TONE_RESUME_WAIT_MS = 500
+export const TONE_TAIL_MS = 150
 /** Getting ready (Brief 27): still preparing this long after Start -> say the still-preparing line once. */
 export const GETTING_READY_STILL_MS = 8_000
 /** Brief 27: the loop starts when the camera has its first frame, waiting at most this long (then it starts anyway). */

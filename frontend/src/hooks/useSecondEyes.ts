@@ -93,6 +93,7 @@ import {
 } from '../lib/sessionVoice'
 import { connectionText, sessionText, strings } from '../strings'
 import { cancelSpeech, nudgeSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
+import { sayStartLine } from '../lib/startLine'
 import { type StageTimes, type TimingRecord, pushHistory, stageTimes, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus, waitForVoices } from '../lib/voices'
 import { type AskTiming, type AskView, type ListenState, useAsk } from './useAsk'
@@ -844,8 +845,15 @@ export function useSecondEyes(
         }
         const greetNow = (voices: readonly SpeechSynthesisVoice[]) => {
           if (speechId !== speechIdRef.current) return done() // stopped while waiting
-          const handle = speak(sessionText[langRef.current].start, { lang: speechLang, voice: pickVoice(voices, speechLang) })
-          handle.started.then(() => void handle.ended.then(done), done)
+          // Brief 28: done only after the line really ended; a start line that never started is said once more.
+          sayStartLine(
+            sessionText[langRef.current].start,
+            {
+              speak: (text) => speak(text, { lang: speechLang, voice: pickVoice(voices, speechLang) }),
+              isCurrent: () => speechId === speechIdRef.current,
+            },
+            () => done(),
+          )
         }
         // The first speech waits (at most VOICE_WAIT_MS) for the phone's voices, so it never gets a random fallback
         // voice (Brief 20). Already loaded, or WebKit (iPhone: said inside the tap, Brief 25): said at once.
