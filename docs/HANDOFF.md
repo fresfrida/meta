@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 5 Nov 2026 ~00:30 SGT, Briefs 25-28 merged into `claude/second-eyes` (404812d); Brief 28 waiting for the Owner to Deploy on the cloud demo. Brief 29 drafted, not sent.
+Last updated: 5 Nov 2026 ~01:00 SGT, Briefs 25-29 merged into `claude/second-eyes` (7d1f250, pushed); cloud branch 780923b waiting for the Owner to Deploy.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,13 +9,13 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Features to show in the video (keep in step with the code)
-Each item is in the code on `claude/second-eyes` (404812d) unless marked.
+Each item is in the code on `claude/second-eyes` (7d1f250) unless marked.
 1. Point the phone ahead and hear what is in your path: a fast warning (SAM 3.1: steps, kerbs, doors) about 1.5 s after a frame, with a short tone, then detail from Muse Spark 1.3 (about 4 s) with the kind, side and metres.
 2. Only what is in your walking path: doors and kerbs beside you stay quiet (in-path rule).
 3. Distance at speaking time: metres are counted down for walking time since the photo; close means "very close".
 4. Honest, never "safe": "No hazard seen", "There might be a kerb...", and roads are named ("The edge of a road"), never when to cross.
 5. Four languages, Singapore voices first: English, 中文, Bahasa Melayu, தமிழ் (screen and voice).
-6. Hands-free "Hey Eyes, what's in front of me?" in four languages (speech recognition plus Muse).
+6. Hands-free "Hey Eyes, what's in front of me?" in four languages (speech recognition plus Muse), and "Hey Eyes, where does the path go?": it describes the path ("The path bends to the left ahead"), never gives directions (Brief 29: 5 of 5 live answers described).
 7. Privacy: faces are blurred on the phone before any frame leaves it.
 8. Calm start: "Getting ready..." card (Camera, Privacy, First look), "Second Eyes is getting ready. Please wait a moment before you walk.", then "Ready. I'll tell you what I see in your path."
 9. Stays honest about the connection: soft tick while answers arrive, "Connection lost. Warnings have stopped." / "Back online."
@@ -23,9 +23,14 @@ Each item is in the code on `claude/second-eyes` (404812d) unless marked.
 11. Works in the browser, no install: Android, iPhone (sound confirmed by the Owner 4 Nov after Brief 27), iPad.
 12. Accessibility: Larger Text, Increase Contrast, light and dark.
 13. Public demo with 3-minute slots and daily caps, so anyone can try it safely.
-14. Not built yet: "Hey Eyes, where does the path go?" (Brief 29 item 1) and the fast car warning (Brief 29 item 2).
+14. Fast car warning: built but OFF by default (`CAR_FAST`; try with `?car=1`). The near-car test warned on 2 of 4 close cars and kept quiet on 2 of 4 parked ones, so do not show it as a feature.
 
 ## Current state (true of the code today)
+- **Brief 29 (5 Nov, 7d1f250 / cloud 780923b):** Ask prompt adds, verbatim, "Describe where the path goes; never
+  tell the person which way to go." (live 5/5 described, 0 directions, $0.0091); welcome Ask bullet now lists both
+  examples (TENTATIVE). SAM "car" mapped to the vehicle kind behind `CAR_FAST` (env, default off; phone `?car=0/1`);
+  near-car test 9 calls $0.0225 failed the rule (close cars in the path 2/4, parked beside 2/4 quiet), so it stays
+  off. With cars about $42/h; $1.65 -> $2.15 per 3-minute slot.
 - **Briefs 25-28 (4-5 Nov night, `claude/second-eyes` 404812d; cloud branch 1531d0b):**
   - Brief 25: WebKit speech. Cancel-then-speak drops the phrase on WebKit (reproduced in the iOS Simulator; WebKit
     bug 238189), so `speak()` cancels only when busy and waits `SPEECH_CANCEL_GAP_MS` 100 ms; a phrase ended without

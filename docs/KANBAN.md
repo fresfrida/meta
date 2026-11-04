@@ -1,7 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
-- Brief 29 (sent 5 Nov ~00:35, Coder building): "Where does the path go?" by Hey Eyes (Ask prompt sentence approved); fast SAM "car" warning behind a switch, after a near-car test
+- Car warning: car-specific in-path rule (box centre within 0.75 m) and a re-test (~10 SAM calls, ~$0.025) before CAR_FAST can default on
+- Owner to approve the welcome Ask bullet with both examples (TENTATIVE)
 - 中文 / Bahasa Melayu / தமிழ் for the Brief 27 getting-ready lines and card (English only for now)
 - Restart the Mac backend so the Mac link uses prompt v8 (stop any page loop first)
 - iPad and Android re-test after Briefs 25-28
@@ -25,9 +26,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 28 on the cloud demo: waiting for the Owner's Deploy (merged and verified, 404812d / 1531d0b)
+- Briefs 28 + 29 on the cloud demo: waiting for the Owner's Deploy (merged and verified, 7d1f250 / 780923b)
 
 ## Done
+- Brief 29: "Where does the path go?" by Hey Eyes (prompt sentence approved; 5/5 describe); SAM car warning built behind CAR_FAST, off (near-car test failed); live 14 calls $0.0316; vitest 470, pytest 239 (5 Nov)
 - Brief 28: ready line after the start line, iPhone tick fix, prompt v8 (lift, double / glass doors), lift words in 4 languages (Owner approved); live check 21 calls $0.0473; vitest 465, pytest 228 (5 Nov)
 - Brief 27: iPhone sound (one session per run, AudioContext suspended between tones, resume + re-speak, route watcher, picture recovery, test flags) and the getting-ready phase; vitest 443, pytest 227; iPhone sound confirmed by the Owner; live on the cloud demo 23:23 (4 Nov)
 - Brief 26: audio session, 16:9 ideal camera, main-lens rule, field of view from the real aspect, debug lines; vitest 412, pytest 227; live 22:41 (4 Nov)
