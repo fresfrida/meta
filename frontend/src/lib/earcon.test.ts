@@ -1,7 +1,7 @@
 // Brief 28: the iPhone heartbeat tick. WebKit suspends the AudioContext between tones (Brief 27); a tone now waits
 // until the context really runs and the context is suspended only after the tone and a tail. Android is unchanged.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { TICK_MS, TONE_RESUME_WAIT_MS, TONE_TAIL_MS } from '../config'
+import { HEARTBEAT_MIN_GAP_MS, TICK_MS, TONE_RESUME_WAIT_MS, TONE_TAIL_MS, WARN_TONE_MS } from '../config'
 
 const IPHONE_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.3 Mobile/15E148 Safari/604.1'
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
@@ -101,4 +101,41 @@ describe('Android tick: unchanged', () => {
     expect(log).not.toContain('suspend')
     expect(earcon.toneDebug()).toEqual({ ticksPlayed: 1, ticksSkipped: 0 })
   })
+})
+
+describe('Brief 30: the tick leaves the microphone open; the warn cue and the earcon still close it', () => {
+  for (const [name, ua] of [
+    ['iPhone', IPHONE_UA],
+    ['Android', ANDROID_UA],
+  ] as const) {
+    it(`${name}: ticks every ${HEARTBEAT_MIN_GAP_MS} ms for 7 s, the gate is open at every 10 ms step`, async () => {
+      const { audio, earcon } = await load(ua, 20)
+      const { selfSound } = await import('./micGate')
+      audio.unlockAudio()
+      await vi.advanceTimersByTimeAsync(30)
+      let closed = 0
+      for (let t = 0; t < 7_000; t += 10) {
+        if (t % HEARTBEAT_MIN_GAP_MS === 0) earcon.playTick()
+        await vi.advanceTimersByTimeAsync(10)
+        if (!selfSound.canSend(performance.now())) closed += 1
+      }
+      expect(earcon.toneDebug().ticksPlayed).toBe(10)
+      expect(closed).toBe(0)
+    })
+
+    it(`${name}: the warn cue and the earcon close the gate while they play`, async () => {
+      const { audio, earcon } = await load(ua, 0)
+      const { selfSound } = await import('./micGate')
+      audio.unlockAudio()
+      await vi.advanceTimersByTimeAsync(5)
+      earcon.playWarnCue()
+      await vi.advanceTimersByTimeAsync(WARN_TONE_MS / 2)
+      expect(selfSound.canSend(performance.now())).toBe(false)
+      await vi.advanceTimersByTimeAsync(2_000)
+      expect(selfSound.canSend(performance.now())).toBe(true)
+      void earcon.playEarcon()
+      await vi.advanceTimersByTimeAsync(50)
+      expect(selfSound.canSend(performance.now())).toBe(false)
+    })
+  }
 })

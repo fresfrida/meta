@@ -54,8 +54,9 @@ export function onToneDebug(listener: () => void): () => void {
  * Brief 28: on the iPhone the context is suspended between tones; scheduling on it and suspending again 45 ms later
  * lost the tick. Android's context is running already, so it plays at once, exactly as before.
  * Resolves true when the tone played, false when it was skipped.
+ * `gate`: the microphone is closed while it plays (earcon, warn cue). The heartbeat tick does not close it (Brief 30).
  */
-function withRunningContext(ms: number, play: (ctx: AudioContext) => void): Promise<boolean> {
+function withRunningContext(ms: number, play: (ctx: AudioContext) => void, gate = true): Promise<boolean> {
   const ctx = holdAudio()
   if (!ctx) return Promise.resolve(false)
   const tail = webKitSpeech() ? TONE_TAIL_MS : 0
@@ -66,10 +67,10 @@ function withRunningContext(ms: number, play: (ctx: AudioContext) => void): Prom
       releaseAudio()
       return Promise.reject(err)
     }
-    selfSound.start()
+    if (gate) selfSound.start()
     return new Promise((resolve) =>
       setTimeout(() => {
-        selfSound.end(performance.now())
+        if (gate) selfSound.end(performance.now())
         releaseAudio()
         resolve(true)
       }, ms + tail),
@@ -129,13 +130,18 @@ export function playWarnCue(): void {
   }
 }
 
-/** Heartbeat: a soft, short, low tick (TICK_*), quieter and lower than the fast cue. Does not wait. */
+/**
+ * Heartbeat: a soft, short, low tick (TICK_*), quieter and lower than the fast cue. Does not wait.
+ * Brief 30: the tick leaves the microphone open. A 35 ms tone at gain 0.05 is not speech and echo cancellation is on;
+ * closing the mic for every tick (about 500 ms on the iPhone, a tick up to every 700 ms) cut "Hey Eyes" into pieces.
+ */
 export function playTick(): void {
   if (tonesOff()) return count('tick', false)
   tone(TICK_HZ, TICK_MS, TICK_GAIN, 0.005, 'tick')
 }
 
-/** One short tone; the microphone is closed while it plays. Never throws (a failed tone never blocks speech). */
+/** One short tone; the microphone is closed while it plays, except for the tick. Never throws (a failed tone never
+ *  blocks speech). */
 function tone(hz: number, ms: number, peak: number, rampS: number, kind: 'tick' | 'other' = 'other'): void {
   if (tonesOff()) return
   withRunningContext(ms + 10, (ctx) => {
@@ -150,7 +156,7 @@ function tone(hz: number, ms: number, peak: number, rampS: number, kind: 'tick' 
     osc.connect(gain).connect(ctx.destination)
     osc.start(start)
     osc.stop(start + toneS)
-  }).then(
+  }, kind !== 'tick').then(
     (played) => count(kind, played),
     (err) => {
       count(kind, false)

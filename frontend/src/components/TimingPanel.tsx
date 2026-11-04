@@ -5,6 +5,7 @@ import { audioSessionType, audioState } from '../lib/audio'
 import { type CameraInfo, type SentFrame, cameraInfo, onCameraInfo } from '../lib/camera'
 import { onRouteDebug, routeDebug } from '../lib/audioRoute'
 import { onToneDebug, toneDebug } from '../lib/earcon'
+import { micDebug, onMicDebug } from '../lib/micDebug'
 import { onSpeechDebug, speechDebug } from '../lib/speech'
 import { onVideoDebug, videoDebug } from '../lib/videoGuard'
 import { vfovDeg } from '../lib/pathGuide'
@@ -55,6 +56,7 @@ export function TimingPanel({
   const route = useSyncExternalStore(onRouteDebug, routeDebug)
   const video = useSyncExternalStore(onVideoDebug, videoDebug)
   const tones = useSyncExternalStore(onToneDebug, toneDebug)
+  const mic = useSyncExternalStore(onMicDebug, micDebug)
 
   return (
     <section className="timing" aria-label={t.heading}>
@@ -111,6 +113,7 @@ export function TimingPanel({
         {t.recovery(route.changes, route.last, video.paused, video.recovered, speech.respoken, speech.failures)}
         {` · ${t.endsLost(speech.endsLost)} · ${t.ticks(tones.ticksPlayed, tones.ticksSkipped)}`}
       </div>
+      <div className="timing__breakdown">{t.mic(mic.sent, mic.gated, mic.socket, mic.inputRate)}</div>
       {timings.lastStages && <div className="timing__breakdown">{t.stages(timings.lastStages)}</div>}
       {timings.spokenCount + timings.silentCount > 0 && (
         <div className="timing__row timing__breakdown">

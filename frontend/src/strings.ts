@@ -572,6 +572,9 @@ export const strings = {
       `route changes ${changes}${last ? ` (last: ${last})` : ''} · video paused ${paused} · recovered ${recovered} · re-spoken ${respoken} · not started in a row ${failures}`,
     // Debug (Brief 30), English only: phrases whose end never came (the safety net ended them)
     endsLost: (n: number) => `ends lost ${n}`,
+    // Debug (Brief 30), English only: mic frames sent / dropped by the self-sound gate, the listen socket, capture rate
+    mic: (sent: number, gated: number, socket: string, rateHz: number | null) =>
+      `mic: sent ${sent} · gated ${gated} · listen ${socket}${rateHz ? ` · in ${rateHz} Hz -> 16000` : ''}`,
     // Debug (Brief 28), English only: heartbeat ticks
     ticks: (played: number, skipped: number) => `ticks played ${played} · skipped ${skipped}`,
     // Debug (Brief 26), English only: what the camera gives, and the vertical field of view the distances use
