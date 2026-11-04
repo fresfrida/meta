@@ -30,8 +30,8 @@ DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
 # Prompt sent with every live frame. v6 (Brief 13, 4 Nov 2026) = v5 + road / crossing / cycle path / escalator /
-# uneven ground in the list, and roads first plus "never answer clear" onto a road. Owner approved the escalator /
-# uneven ground part; the road part is PENDING the Owner (no live v6 calls until approved). v5 is in git history.
+# uneven ground in the list, and roads first plus "never answer clear" onto a road. Owner approved all of v6 on
+# 4 Nov 2026 (road part: "Ok."). v5 is in git history.
 VISION_PROMPT_VERSION = "v6"
 VISION_PROMPT = (
     'You are checking a photo for a research prototype that warns about hazards on a walking path. The '

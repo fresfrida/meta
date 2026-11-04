@@ -1,5 +1,5 @@
 // Prompt v5 / v6 kinds (Briefs 12, 13): every kind's screen and voice words in 4 languages, verbatim as the Owner
-// approved them (road, crossing, cycle_path pending), through the existing templates; and the repeat rule for person / people.
+// approved them through the existing templates; and the repeat rule for person / people.
 import { describe, expect, it } from 'vitest'
 import type { Hazard } from '../api/types'
 import type { Lang } from '../config'

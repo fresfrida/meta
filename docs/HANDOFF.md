@@ -13,7 +13,7 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   browser. Merge only when the Advisor says.
   - Prompt **v6** = v5 + road for cars / road crossing / cycle path / escalator / uneven ground, "Prefer roads,
     drops and things at head height", and "Never answer clear if the path leads onto a road for cars, a road
-    crossing or a cycle path". Road part and road words PENDING the Owner: **no live v6 calls until approved**.
+    crossing or a cycle path". Owner approved all of v6, road part included (4 Nov).
   - Schema + words for road, crossing, cycle_path, escalator, uneven (4 languages). Clear is now "No hazard seen"
     / "No hazard seen." (and translations). Road kinds are warnings, so never green (amber; red when near / <= 2 m).
   - SAM "door" added as a third concept (`SAM_CONCEPTS`); measured: found the glass door in both doorway photos

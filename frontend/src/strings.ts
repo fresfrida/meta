@@ -9,7 +9,7 @@ import type { WarningHazard } from './lib/phrase'
  * - voice: the plain-language sentence that is spoken (Owner approved 3 Nov, Brief 5b, "yes to all").
  * EN is approved; ZH / MS / TA are approved pending a native-speaker check.
  * The prompt v5 kinds (drain ... wall) and the new catch-all words (obstacle) were Owner approved 4 Nov (Brief 12).
- * Brief 13: escalator, uneven and the clear words Owner approved 4 Nov; road, crossing, cycle_path PENDING the Owner.
+ * Brief 13: escalator, uneven, road, crossing, cycle_path and the clear words Owner approved 4 Nov.
  */
 export interface PhraseLanguage {
   /** Screen hazard words. `unsure` is shown on screen only, never spoken. `steps` is the fast warning (SAM). */
