@@ -2,7 +2,28 @@
 
 Nothing is public until the Owner says yes. The image holds no secrets; everything below is set as env vars in Coolify.
 
-## Environment variables
+## Server (Brief 18)
+| Fact | Value |
+|---|---|
+| Host | AWS Lightsail instance "apps-1", Singapore |
+| OS | Ubuntu 24.04.4 LTS, x86_64 |
+| Size | 2 vCPU, 3.7 GB RAM, 77 GB disk (75 GB free before Coolify) |
+| Address | static IP 52.76.242.161 |
+| SSH | user `ubuntu`, key-only (the key stays on the Owner's Mac; never in a repo) |
+| Shared | for all the Owner's projects (~30 later), not only Second Eyes |
+
+Lightsail firewall (set by the Owner): 80 / 443 open to all; 22 key-only; **8000 and 6001-6002 only from the Owner's
+home IP** (138.75.4.94/32), so the Coolify registration page and dashboard are reachable only from home until the
+dashboard is moved behind a domain.
+
+Coolify install (official, from coolify.io/docs; run as root or with sudo on the server):
+```bash
+curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash
+```
+It installs Docker Engine and Coolify under `/data/coolify` (secrets in `/data/coolify/source/.env` - back it up, never
+commit it). Right after it finishes, the Owner opens `http://52.76.242.161:8000` from home and creates the admin account
+(the docs warn that whoever registers first becomes admin with root on the server).
+
 | Variable | Example / default | What it does |
 |---|---|---|
 | `MODEL_API_KEY` | (secret) | Meta Model API key. Set as a **secret** in Coolify. Never in the repo or image. |
