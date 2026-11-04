@@ -9,6 +9,9 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **Distance at speaking time (Brief 16, same branch, NOT merged):** metres said = metres at capture - 0.8 m/s x
+  time since capture while walking (DeviceMotion; no data = walking); <= 1 m -> "very close"; stale and walked past ->
+  dropped. Debug line in the timing panel.
 - **In-path rule + path guide (Brief 15, branch `claude/second-eyes-v9`, NOT merged, NOT live):** SAM hits are kept
   only when their box overlaps the walking path (+-0.75 m at the ground point; bottom-touching boxes: centre half of
   the frame); others are counted as `beside` and stay quiet. A faint path guide is drawn under hazard boxes

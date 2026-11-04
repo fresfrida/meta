@@ -1,6 +1,7 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Side lines: hysteresis (or a wider ahead band) so a box near 400 / 600 does not flip side between answers; log Muse's own side vs box side live
 - Backend access log has no timestamps: gaps and per-request times of a walk cannot be measured (use a uvicorn log config with times when restarting live)
 - Two-speed mode: "Model is slow…" shows whenever Muse > 6 s, and a Muse timeout shows "Model failed / Tap Capture" while SAM still answers; proposed fix in brief-13.md (start the slow timer only without SAM; treat Muse failures like SAM's)
 - Native-speaker check of the v5 words (ZH / MS / TA)
@@ -16,7 +17,7 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 15 on `claude/second-eyes-v9`: in-path rule + path guide built and checked (pytest 206, vitest 333, build OK). Waiting: Owner / Advisor on the two open points in brief-15.md (glass door at 22.11.17 dropped by the >10 m rule; corridor door at 22.11.08 still inside the path), then the go to merge
+- Briefs 15 + 16 on `claude/second-eyes-v9`: in-path rule, path guide, distance at speaking time, walking detection; left / right investigated (no bug). Checks: pytest 206, vitest 343, build OK. Waiting: Brief 15 open points (corridor door inside 0.75 m; 22.11.17 glass door dropped by the >10 m rule), then the go to merge
 
 ## Done
 - Brief 14: wording v2 (person-centred, 4 languages, Owner approved) + Start / Stop lines; pytest 198, vitest 330; merged and live (`e73bcb4`, 4 Nov)
