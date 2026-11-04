@@ -79,6 +79,17 @@ export const TALK_MORE_DEFAULT = false
 export const TALK_MORE_STORAGE_KEY = 'second-eyes.talkmore'
 export const TALK_MORE_MS = 4_000
 
+/**
+ * Path guide (Brief 15, TENTATIVE design): two faint static hairlines from the bottom corners of the walking path
+ * to the horizon, under the phrase card and under any hazard box. The geometry matches the backend's path rule
+ * (backend/app/config.py: PATH_HALF_WIDTH_M, CAMERA_HEIGHT_M, VFOV_*): keep the numbers in step.
+ */
+export const PATH_GUIDE = true
+export const PATH_HALF_WIDTH_M = 0.75
+export const CAMERA_HEIGHT_M = 1.3
+export const VFOV_PORTRAIT_DEG = 67
+export const VFOV_LANDSCAPE_DEG = 53
+
 /** Traffic light: a warning this close (metres) or nearer is red; further is amber. */
 export const RED_MAX_M = 2
 

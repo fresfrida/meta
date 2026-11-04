@@ -1,6 +1,8 @@
 /* Design tokens: monochrome design v2 (Owner approved 3 Nov). Components use only these.
    Colour exists only in the traffic light. Errors are white text with an icon. */
 :root {
+  /* Path guide on the camera screen (Brief 15, TENTATIVE): faint, so it never competes with a hazard box. */
+  --path-guide: rgba(255, 255, 255, 0.22);
   /* Colour */
   --color-bg: #000;
   --color-surface: #121212;
@@ -119,6 +121,7 @@
 /* Increase Contrast (iOS) / prefers-contrast: more - stronger hairlines and muted text. */
 @media (prefers-contrast: more) {
   :root {
+    --path-guide: rgba(255, 255, 255, 0.5);
     --color-hairline: rgba(255, 255, 255, 0.5);
     --color-text-muted: #d0d0d0;
     --color-text-chip: #fff;

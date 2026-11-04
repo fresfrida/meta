@@ -131,6 +131,8 @@ export interface DetectResponse {
   hits: DetectHit[]
   /** Boxes SAM returned before the rule. */
   found: number
+  /** Hits beside the walking path (Brief 15): not spoken, not drawn. */
+  beside: number
   source: Source
   sam_ms: number
   cost_usd: number | null

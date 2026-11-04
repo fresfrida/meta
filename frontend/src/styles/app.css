@@ -318,6 +318,17 @@ p {
   overflow: hidden;
 }
 
+/* Path guide (Brief 15, TENTATIVE): two faint static hairlines; under the hazard box, under the card. */
+.path-guide {
+  position: absolute;
+  inset: 0;
+}
+
+.path-guide line {
+  stroke: var(--path-guide);
+  stroke-width: 1;
+}
+
 .hazard-box {
   position: absolute;
   border: var(--box-stroke) solid var(--color-text);

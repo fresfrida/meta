@@ -26,17 +26,7 @@ export type Fit = 'cover' | 'contain' | 'fill'
  */
 export function mapBox(box: Box, frame: Size, view: Size, fit: Fit): Rect | null {
   if (frame.width <= 0 || frame.height <= 0 || view.width <= 0 || view.height <= 0) return null
-
-  let scaleX = view.width / frame.width
-  let scaleY = view.height / frame.height
-  if (fit !== 'fill') {
-    const scale = fit === 'cover' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY)
-    scaleX = scale
-    scaleY = scale
-  }
-  // Centred: the overflow (cover, negative) or the bars (contain, positive) split evenly.
-  const offsetX = (view.width - frame.width * scaleX) / 2
-  const offsetY = (view.height - frame.height * scaleY) / 2
+  const { scaleX, scaleY, offsetX, offsetY } = viewTransform(frame, view, fit)
 
   const [xMin, yMin, xMax, yMax] = box
   const toX = (v: number) => offsetX + (v / BOX_GRID_MAX) * frame.width * scaleX
@@ -53,4 +43,19 @@ export function mapBox(box: Box, frame: Size, view: Size, fit: Fit): Rect | null
 /** Reads the element's computed object-fit; anything we do not model counts as the CSS default, fill. */
 export function fitOf(value: string): Fit {
   return value === 'cover' || value === 'contain' ? value : 'fill'
+}
+
+/** Frame pixels -> element pixels for `fit` (centred): view = frame * scale + offset. */
+export function viewTransform(frame: Size, view: Size, fit: Fit) {
+  let scaleX = view.width / frame.width
+  let scaleY = view.height / frame.height
+  if (fit !== 'fill') {
+    const scale = fit === 'cover' ? Math.max(scaleX, scaleY) : Math.min(scaleX, scaleY)
+    scaleX = scale
+    scaleY = scale
+  }
+  // Centred: the overflow (cover, negative) or the bars (contain, positive) split evenly.
+  const offsetX = (view.width - frame.width * scaleX) / 2
+  const offsetY = (view.height - frame.height * scaleY) / 2
+  return { scaleX, scaleY, offsetX, offsetY }
 }
