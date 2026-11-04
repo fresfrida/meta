@@ -26,7 +26,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     obstacle: ['In the way', 'Something you could walk into'],
   },
   zh: {
-    drain: ['水沟', '没有盖的水沟'],
+    drain: ['水沟', '敞开的水沟'],
     head_height: ['头顶障碍', '头部高度的障碍物'],
     person: ['行人', '人'],
     people: ['人群', '很多人'],
@@ -147,5 +147,19 @@ describe('repeat rule: person and people are one kind; switching between them ad
     expect(decide({ ...down, hazard: 'step_up' }, after(down, 0), 5_000, GAP, CLOSER).speak).toBe(true)
     expect(decide(down, after(down, 0), 5_000, GAP, CLOSER)).toEqual({ speak: false, why: 'repeat' })
     expect(decide(down, INITIAL_ANNOUNCE, 5_000, GAP, CLOSER).speak).toBe(true)
+  })
+})
+
+describe('ZH drain voice word (Owner approved 4 Nov: 敞开的水沟)', () => {
+  it('reads as a statement, not a question', () => {
+    const drain = (distance_m: number | null): Shown => ({
+      hazard: 'drain',
+      side: distance_m === null ? 'ahead' : 'right',
+      distance: distance_m === null ? 'near' : 'far',
+      distance_m,
+    })
+    expect(speechFor(drain(3), 'zh')).toBe('右前方大约3米，有敞开的水沟。')
+    expect(speechFor(drain(null), 'zh')).toBe('前面很近的地方有敞开的水沟。')
+    expect(phraseFor(drain(3), 'zh')).toBe('右前方3米，水沟')
   })
 })

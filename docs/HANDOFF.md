@@ -9,7 +9,7 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
-- **Prompt v5 (Brief 12, branch `claude/second-eyes-v5`, not yet merged into `claude/second-eyes` or live):**
+- **Prompt v5 (Brief 12), live since 4 Nov (merged into `claude/second-eyes`):**
   Muse names the hazard from a fixed list: step_down, step_up, curb, drain, head_height, person, people (3+),
   bike, vehicle, pole, barrier, ramp, door (incl. glass), wall (incl. glass), obstacle (catch-all: "something
   else the person could walk into"), clear, unsure. Prompt verbatim in `backend/app/config.py`

@@ -1,8 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
-- Native-speaker check of the v5 words (ZH / MS / TA); ZH drain voice "有没有盖的水沟" reads as a question (Owner to decide)
-- Head-height boxes sit under the phrase card (top of the screen); only the card shows them
+- Native-speaker check of the v5 words (ZH / MS / TA)
+- Polish pass: head-height boxes sit under the phrase card (top of the screen), so their outline and tag are hidden
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
 - README privacy paragraph (proposed in brief-07.md; Owner approves the wording first)
 - Face blur recall: 2x tiles for distant faces (~4x time) if the iPhone has headroom
@@ -15,10 +15,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 12: prompt v5 on `claude/second-eyes-v5` - built, measured, pushed; waiting for the Advisor's go to merge into `claude/second-eyes` (the Owner may be mid-test on the live checkout)
 - (none)
 
 ## Done
+- Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
 - Brief 11: two-speed fast warning - `/api/detect` (SAM 3.1 stairs + curb, parallel, bounded), geometry distance rule, merge rule (kind key, up/down adds, 3 s holds, 10 s per-kind memory), tone + vibrate cue, fast/detail pill, `?fast=0`; pytest x173, vitest x122; live desktop first speech 1.2-1.7 s vs 5.2 s; live for the Owner with a $15 cap (4 Nov)
 - Brief 10: backend back to mock; `MAX_OUTPUT_TOKENS` 2000 on every live vision / Ask call, cut reply = billed failure; pytest x151; SAM 3.1 timed (3 calls, $0.0075) (4 Nov)
 - Brief 9 (partial): model timings at `minimal` (1.3 / 1.2 / 1.1); stopped after a runaway 1.1 call ($0.63 vs cap $0.05) (4 Nov)

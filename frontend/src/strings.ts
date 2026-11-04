@@ -109,7 +109,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         step_down: '往下的台阶',
         step_up: '往上的台阶',
         curb: '路缘石',
-        drain: '没有盖的水沟',
+        drain: '敞开的水沟',
         head_height: '头部高度的障碍物',
         person: '人',
         people: '很多人',
