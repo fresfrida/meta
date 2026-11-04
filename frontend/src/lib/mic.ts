@@ -1,6 +1,6 @@
 // Microphone -> PCM16 mono 16 kHz frames (AudioWorklet in public/mic-worklet.js, encoder in pcm.ts).
 import { MIC_FRAME_MS, MIC_SAMPLE_RATE } from '../config'
-import { audioContext, unlockAudio } from './audio'
+import { audioContext, micClosed, micOpened, unlockAudio } from './audio'
 import { selfSound } from './micGate'
 import { Pcm16Encoder } from './pcm'
 
@@ -14,11 +14,24 @@ export interface MicHandle {
 export async function startMic(onFrame: (pcm: Int16Array<ArrayBuffer>) => void): Promise<MicHandle> {
   const ctx = audioContext() ?? unlockAudio()
   if (!ctx || !navigator.mediaDevices?.getUserMedia) throw new Error('microphone not available')
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
-    video: false,
-  })
-  await ctx.audioWorklet.addModule('/mic-worklet.js')
+  micOpened() // iOS: 'play-and-record' while the mic is open (Brief 26)
+  let stream: MediaStream
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true, channelCount: 1 },
+      video: false,
+    })
+  } catch (err) {
+    micClosed()
+    throw err
+  }
+  try {
+    await ctx.audioWorklet.addModule('/mic-worklet.js')
+  } catch (err) {
+    stream.getTracks().forEach((t) => t.stop())
+    micClosed()
+    throw err
+  }
   const source = ctx.createMediaStreamSource(stream)
   const node = new AudioWorkletNode(ctx, 'mic-capture')
   const mute = ctx.createGain()
@@ -36,6 +49,7 @@ export async function startMic(onFrame: (pcm: Int16Array<ArrayBuffer>) => void):
       node.disconnect()
       mute.disconnect()
       stream.getTracks().forEach((t) => t.stop())
+      micClosed()
     },
   }
 }

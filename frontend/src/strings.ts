@@ -530,8 +530,35 @@ export const strings = {
     distanceNow: (capturedM: string, nowM: string) => `distance: at capture ${capturedM} · when said ${nowM}`,
     dropped: (n: number) => `dropped late ${n}`,
     // Debug (Brief 25), English only: is speech unlocked, how did the last phrase go, Web Audio state
-    speech: (unlocked: boolean, last: string | null, detail: string | null, audio: string) =>
-      `speech: unlocked ${unlocked ? 'yes' : 'no'} · last speak ${last ?? '–'}${detail ? ` (${detail})` : ''} · audio ${audio}`,
+    speech: (unlocked: boolean, last: string | null, detail: string | null, audio: string, session: string) =>
+      `speech: unlocked ${unlocked ? 'yes' : 'no'} · last speak ${last ?? '–'}${detail ? ` (${detail})` : ''} · audio ${audio} · session ${session}`,
+    // Debug (Brief 26), English only: what the camera gives, and the vertical field of view the distances use
+    camera: (c: {
+      size: string
+      aspect: string
+      frame: string
+      zoom: string
+      facing: string
+      label: string
+      switched: boolean
+      vfov: string
+    }) =>
+      `camera: ${c.size} (${c.aspect}) · frame ${c.frame} · zoom ${c.zoom} · ${c.facing} · "${c.label}"${c.switched ? ' (switched from ultra-wide)' : ''} · vfov ${c.vfov}`,
+    // Debug (Brief 26), English only: where the time of the last answer went, ms
+    stages: (s: {
+      channel: string
+      captureMs: number
+      blurMs: number
+      encodeMs: number
+      queueMs: number
+      netMs: number
+      modelMs: number
+      waitMs: number | null
+      speechMs: number | null
+    }) =>
+      `last answer (${s.channel}): capture ${s.captureMs} · blur ${s.blurMs} · encode ${s.encodeMs} · queue ${s.queueMs} · net ${s.netMs} · model ${s.modelMs}` +
+      (s.waitMs === null ? ' · not spoken' : ` · wait ${s.waitMs} · speech start ${s.speechMs ?? '…'}`) +
+      ' ms',
     // TENTATIVE (Brief 7): the last frame actually sent
     sentFrame: 'Last frame sent',
     sentFrameLine: (blur: 'on' | 'off', faces: number, ms: number) =>

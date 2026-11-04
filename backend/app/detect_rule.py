@@ -2,7 +2,7 @@
 
 Keep a hit when its confidence is >= SAM_MIN_CONF and its box bottom is below the horizon (the frame centre line,
 for a level phone). Side comes from the box centre (the same rule as Muse boxes). Distance comes from the box
-bottom: a pinhole camera CAMERA_HEIGHT_M above flat ground, vertical field of view by the frame's orientation,
+bottom: a pinhole camera CAMERA_HEIGHT_M above flat ground, vertical field of view by the frame's orientation and aspect,
 distance = height / tan(angle below the horizon), whole metres 1..DISTANCE_M_MAX; further -> dropped. A box touching
 the frame bottom is "near" without metres (the ground it stands on is closer than the frame shows). Nearest first.
 
@@ -27,6 +27,7 @@ from .config import (
     DOOR_CENTRE_MIN,
     PATH_HALF_WIDTH_M,
     SAM_MIN_CONF,
+    VFOV_BASE_ASPECT,
     VFOV_LANDSCAPE_DEG,
     VFOV_PORTRAIT_DEG,
 )
@@ -82,23 +83,37 @@ def to_grid(raw: RawHit) -> list[int]:
     return [g(raw.x1, raw.w), g(raw.y1, raw.h), g(raw.x2 + 1, raw.w), g(raw.y2 + 1, raw.h)]
 
 
-def focal_px(h: int, portrait: bool) -> float:
+def vfov_deg(w: int, h: int) -> float:
+    """Vertical field of view of a w x h frame (Brief 26). The 4:3 angles are the base: a wider frame crops the short
+    side (the long side keeps VFOV_PORTRAIT_DEG), a squarer one crops the long side (the short side keeps
+    VFOV_LANDSCAPE_DEG). Exactly 67 / 53 for 4:3 and for portrait 16:9; landscape 16:9 is about 41."""
+    long_px, short_px = max(w, h), min(w, h)
+    aspect = long_px / short_px
+    if aspect >= VFOV_BASE_ASPECT:
+        long_deg = VFOV_PORTRAIT_DEG
+        short_deg = math.degrees(2 * math.atan(math.tan(math.radians(VFOV_LANDSCAPE_DEG) / 2) * VFOV_BASE_ASPECT / aspect))
+    else:
+        short_deg = VFOV_LANDSCAPE_DEG
+        long_deg = math.degrees(2 * math.atan(math.tan(math.radians(VFOV_PORTRAIT_DEG) / 2) * aspect / VFOV_BASE_ASPECT))
+    return long_deg if h > w else short_deg
+
+
+def focal_px(w: int, h: int) -> float:
     """Focal length in pixels from the vertical field of view (the horizontal one follows from the aspect ratio)."""
-    vfov = math.radians(VFOV_PORTRAIT_DEG if portrait else VFOV_LANDSCAPE_DEG)
-    return (h / 2) / math.tan(vfov / 2)
+    return (h / 2) / math.tan(math.radians(vfov_deg(w, h)) / 2)
 
 
-def ground_distance_m(bottom_px: float, h: int, portrait: bool) -> float | None:
+def ground_distance_m(bottom_px: float, w: int, h: int) -> float | None:
     """Metres to the ground point at `bottom_px` (0 = top) for a level camera; None at or above the horizon."""
     below = bottom_px - h / 2
     if below <= 0:
         return None
-    return CAMERA_HEIGHT_M * focal_px(h, portrait) / below
+    return CAMERA_HEIGHT_M * focal_px(w, h) / below
 
 
 def lateral_span_m(raw: RawHit, forward_m: float) -> tuple[float, float]:
     """The box's left and right edges, in metres sideways from straight ahead (negative = left), at `forward_m`."""
-    f = focal_px(raw.h, portrait=raw.h > raw.w)
+    f = focal_px(raw.w, raw.h)
     cx = raw.w / 2
     return (raw.x1 - cx) * forward_m / f, (raw.x2 + 1 - cx) * forward_m / f
 
@@ -136,7 +151,7 @@ def keep(raw: RawHit) -> DetectHit | str | None:
     if raw.w <= 0 or raw.h <= 0 or raw.confidence < SAM_MIN_CONF:
         return None
     bottom = raw.y2 + 1
-    metres = ground_distance_m(bottom, raw.h, portrait=raw.h > raw.w)
+    metres = ground_distance_m(bottom, raw.w, raw.h)
     box = to_grid(raw)
     far_ahead = DetectHit(kind=raw.kind, box=box, confidence=raw.confidence, side=side_of_box(box), distance="far")
     if metres is None:
