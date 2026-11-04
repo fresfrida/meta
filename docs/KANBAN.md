@@ -17,10 +17,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 13 on `claude/second-eyes-v6`: code + unit tests done (pytest 192, vitest 232, build OK). LEFT TO DO:
-  mock screenshots at 390 ("Connection lost" EN, a road warning ZH; worktree ports 8001 / 5174, `?fast=0`,
-  mock cycle has road 4th); v6 live calls (<= 10) only after the Owner approves the road part; report
-  `brief-13.md` final; merge when the Advisor says
+- Brief 13 on `claude/second-eyes-v6`: code + unit tests done (pytest 192, vitest 232, build OK); v6 live calls done
+  (10, $0.023: Steps3 now "road" not "curb", Curb1 "step_up" not "curb" - Owner to decide). LEFT TO DO: mock
+  screenshots at 390 ("Connection lost" EN, a road warning ZH; worktree ports 8001 / 5174, `?fast=0`, road 4th in
+  the mock cycle); browser run of tick / alerts / Talk more; merge when the Advisor says
 - (none)
 
 ## Done
