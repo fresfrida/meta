@@ -9,6 +9,10 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **Wording v2 (Brief 14, branch `claude/second-eyes-v8`, NOT merged, NOT live):** person-centred English (Owner
+  approved) - "Nothing seen in your path.", "Something in your path", "A group of people", "The edge of a road",
+  "A pedestrian crossing", near = "very close", the new connection lines, and Start / Stop lines. ZH / MS / TA
+  lines built as given and marked TENTATIVE in `strings.ts` (pending the Owner).
 - **Brief 13 / 13b (merged into `claude/second-eyes`, live 4 Nov):** prompt **v7** = v6 + "Also say whether you are
   sure what the hazard is." + "A single raised edge between a footpath and a road is a curb, not a step."; answers
   carry `sure`; hedge rule `lib/hedge.ts` (Muse sure=false, or SAM confidence < 0.7) -> "There might be ..." and a

@@ -16,7 +16,7 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- (none)
+- Brief 14 wording v2 on `claude/second-eyes-v8`: built and checked (pytest 198, vitest 330, build OK; mock screenshot "Nothing seen"). Waiting: the Owner on ZH / MS / TA, then the Advisor's go to merge
 
 ## Done
 - Brief 13 / 13b / 13c: prompt v7 (roads never clear, kerb sentence, sure), hedges ("There might be ..."), Kerb, SAM door, heartbeat, connection lost / back, Talk more; pytest 198, vitest 324; merged into `claude/second-eyes` and live (4 Nov)
