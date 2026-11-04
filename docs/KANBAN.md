@@ -16,11 +16,10 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 13 on `claude/second-eyes-v6`: done and checked (pytest 192, vitest 232, build OK; v6 live 10 calls; mock
-  screenshots EN connection lost, ZH road). Owner accepted the Steps3 "road" / Curb1 "step up" changes (4 Nov). Brief 13b (v7, hedges,
-  Kerb) built and checked on the same branch; v7 live results need review (Down -> step_up). Waiting: the Advisor's go to merge
+- (none)
 
 ## Done
+- Brief 13 / 13b / 13c: prompt v7 (roads never clear, kerb sentence, sure), hedges ("There might be ..."), Kerb, SAM door, heartbeat, connection lost / back, Talk more; pytest 198, vitest 324; merged into `claude/second-eyes` and live (4 Nov)
 - Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
 - Brief 11: two-speed fast warning - `/api/detect` (SAM 3.1 stairs + curb, parallel, bounded), geometry distance rule, merge rule (kind key, up/down adds, 3 s holds, 10 s per-kind memory), tone + vibrate cue, fast/detail pill, `?fast=0`; pytest x173, vitest x122; live desktop first speech 1.2-1.7 s vs 5.2 s; live for the Owner with a $15 cap (4 Nov)
 - Brief 10: backend back to mock; `MAX_OUTPUT_TOKENS` 2000 on every live vision / Ask call, cut reply = billed failure; pytest x151; SAM 3.1 timed (3 calls, $0.0075) (4 Nov)

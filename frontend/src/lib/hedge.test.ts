@@ -96,11 +96,13 @@ describe('hedged examples, verbatim', () => {
     expect(speechFor(kerb, 'ms')).toBe('Mungkin ada bebendul jalan kira-kira 3 meter di hadapan.')
     expect(speechFor(kerb, 'ta')).toBe('சுமார் 3 மீட்டர் முன்னால், நடைபாதை ஓரம் இருக்கலாம்.')
   })
-  it('screen: "?" right after the word', () => {
-    expect(phraseFor(kerb, 'en')).toBe('Kerb? 3 metres')
-    expect(phraseFor(kerb, 'ms')).toBe('Bebendul jalan? 3 meter')
-    expect(phraseFor(kerb, 'ta')).toBe('நடைபாதை விளிம்பு? 3 மீட்டர்')
-    expect(phraseFor(kerb, 'zh')).toBe('前方3米，路缘?')
+  it('screen: "?" at the end of the whole phrase (ZH full-width ？)', () => {
+    expect(phraseFor(kerb, 'en')).toBe('Kerb, 3 metres?')
+    expect(phraseFor({ ...kerb, distance: 'near', distance_m: null }, 'en')).toBe('Kerb ahead, close?')
+    expect(phraseFor(kerb, 'ms')).toBe('Bebendul jalan, 3 meter?')
+    expect(phraseFor(kerb, 'ta')).toBe('நடைபாதை விளிம்பு, 3 மீட்டர்?')
+    expect(phraseFor(kerb, 'zh')).toBe('前方3米，路缘？')
+    expect(phraseFor({ ...kerb, side: 'left', distance: 'near', distance_m: null }, 'zh')).toBe('左前方路缘，很近？')
     expect(phraseFor({ ...kerb, hedged: false }, 'en')).toBe('Kerb, 3 metres')
   })
 })

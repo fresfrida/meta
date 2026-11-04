@@ -24,11 +24,10 @@ export function phraseFor(answer: Shown, lang: Lang): string {
   const p = phrases[lang]
   const word = p.hazard[answer.hazard]
   if (!isWarning(answer)) return word
-  // Hedged: the same phrase with "?" right after the word (any comma that followed it is dropped).
-  const w = answer.hedged ? `${word}?` : word
   const text =
-    answer.distance_m !== null ? p.metres(w, answer.distance_m, answer.side) : p.plain(w, answer.side, answer.distance === 'near')
-  return answer.hedged ? text.replace('?, ', '? ').replace('?，', '? ') : text
+    answer.distance_m !== null ? p.metres(word, answer.distance_m, answer.side) : p.plain(word, answer.side, answer.distance === 'near')
+  // Hedged: the whole phrase ends in a question mark (Owner, 4 Nov): "Kerb, 3 metres?", "前方3米，路缘？".
+  return answer.hedged ? `${text}${lang === 'zh' ? '？' : '?'}` : text
 }
 
 /**

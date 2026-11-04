@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 4 Nov 2026, Brief 13 IN PROGRESS on branch `claude/second-eyes-v6` (worktree `../007-meta-v6`); live checkout still runs v5 (`33eded2`) with a $15.91 cap.
+Last updated: 4 Nov 2026, Brief 13 / 13b merged and live (prompt v7, hedges, Kerb, SAM door, alerts, heartbeat, Talk more; $15.91 cap).
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,8 +9,10 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
-- **Brief 13 (branch `claude/second-eyes-v6`, NOT merged, NOT live):** built and unit-tested, not yet run in a
-  browser. Merge only when the Advisor says.
+- **Brief 13 / 13b (merged into `claude/second-eyes`, live 4 Nov):** prompt **v7** = v6 + "Also say whether you are
+  sure what the hazard is." + "A single raised edge between a footpath and a road is a curb, not a step."; answers
+  carry `sure`; hedge rule `lib/hedge.ts` (Muse sure=false, or SAM confidence < 0.7) -> "There might be ..." and a
+  screen phrase ending in ? (ZH ？); EN screen "Kerb".
   - Prompt **v6** = v5 + road for cars / road crossing / cycle path / escalator / uneven ground, "Prefer roads,
     drops and things at head height", and "Never answer clear if the path leads onto a road for cars, a road
     crossing or a cycle path". Owner approved all of v6, road part included (4 Nov).
