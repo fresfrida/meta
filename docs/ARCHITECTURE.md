@@ -83,6 +83,22 @@ backend app/ask.py -> muse-spark-1.3 with the Owner-approved prompt (plain text)
 phone: speaks the answer in the chosen language; failure -> fixed "Sorry, I could not answer." (English)
 ```
 
+## Fast warning: two speeds (Brief 11)
+```
+phone loop: capture every 900 ms (at most 2 /api/detect in flight), face blur once
+  -> POST /api/detect { image_b64 }  every frame
+       backend/app/detect.py: SAM 3.1, POST https://api.meta.ai/v1/responses (same key), "stairs" and "curb" as two
+       requests in parallel on one keep-alive httpx client; each bounded by 4 s wall clock and 2 MB; masks dropped
+       -> detect_rule.py: confidence >= 0.5, below the horizon, side from the box, distance from the box bottom
+       -> { hits: [{kind, box, confidence, side, distance, distance_m}] nearest first, found, source, sam_ms, cost_usd }
+       budget: $0.0025 per image per concept (2 per frame)
+  -> POST /api/analyze { image_b64 }  every 2nd frame (Muse, as below), at most 2 in flight
+phone: lib/merge.ts decides what is shown; lib/announce.ts what is spoken; a spoken fast hit gets tone + vibration
+```
+Live cost per hour of Start time (measured on the Mac: ~1.1 frames/s to SAM, ~0.3 Muse calls/s): SAM ~1.1 x $0.005 x
+3600 = ~$20; Muse ~0.3 x $0.002 x 3600 = ~$2; ASR $0.18. About **$22/hour**. Mock: `DETECT_MODE` follows
+`VISION_MODE`; `MOCK_DETECT_DELAY_MS` / `MOCK_VISION_DELAY_MS` add pretend latency.
+
 ## Request flow (one capture)
 
 Loop mode (default): after Start, the phone starts a capture every

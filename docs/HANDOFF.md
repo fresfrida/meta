@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 4 Nov 2026, Brief 8 (Ask in 4 languages; live for the Owner's Android test with a $2 cap; $0.1203 in spend.json, plus $0.0045 of direct ASR measurement not in it). Branch `claude/second-eyes`.
+Last updated: 4 Nov 2026, Brief 11 (two-speed fast warning; live for the Owner with a $15 cap; spend.json $0.9178 + $0.67 of direct measurements not in it). Branch `claude/second-eyes`.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -9,15 +9,29 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
-- **Mock again (Brief 10, 4 Nov):** `backend/.env` is back to `VISION_MODE=mock` (listening and Ask follow it);
-  `BUDGET_USD=2.12` left in place. The Owner's Android test ran live before this (spend.json $0.2803).
+- **Live for the Owner (Brief 11, 4 Nov):** `backend/.env` has `VISION_MODE=live` (listening, Ask and detect
+  follow it) and `BUDGET_USD=15.91` = spend.json $0.9178 + the Owner's $15 cap (rounded down). Links: Tailscale
+  `https://100.113.121.44:5173`, LAN `https://192.168.50.177:5173` (certificate warning: Advanced -> Proceed).
+  Live costs about **$22 per hour of Start time** (SAM ~$20/h, Muse ~$2/h, ASR $0.18/h), so $15 is ~40 min.
+  Set `VISION_MODE=mock` again after filming.
+- **Two-speed fast warning (Brief 11):** every frame (900 ms apart, at most 2 in flight) goes to `/api/detect`:
+  SAM 3.1 "stairs" + "curb", two requests in parallel on one keep-alive client, 4 s / 2 MB bounds, $0.0025 per image
+  per concept. `backend/app/detect_rule.py` keeps hits with confidence >= 0.5 whose box bottom is below the frame
+  centre, side from the box centre (400 / 600), distance = 1.3 m / tan(angle below the horizon) with a 67 deg
+  (portrait) / 53 deg (landscape) vertical field of view, 1..10 m (further dropped), box touching the frame bottom
+  = near (red), nearest first. Every 2nd frame also goes to Muse, as before. `frontend/src/lib/merge.ts`: a fast hit
+  the repeat rule would speak is spoken at once after a short tone + vibration (Android); the repeat key is the kind
+  (step_up / step_down / steps are one kind; up / down is new information); a Muse "clear" / "not sure" does not
+  replace a fast warning younger than 3 s; a silent fast hit does not replace a Muse answer younger than 3 s; a fast
+  hit whose kind was spoken in the last 10 s stays silent unless closer (stops kerb / obstacle ping-pong). Lamp:
+  newest, the more severe for the same frame. Fast phrase words TENTATIVE ("Steps" / 台阶 / Tangga / படிகள்).
+  Pill "fast 1.6 s · detail 4.1 s"; panel "last SAM … ms · last model … ms". `?fast=0` = Muse only, as before.
+  Live desktop (CC0 tram stop): first speech 1.2-1.7 s (two speeds) vs 5.2-5.3 s (Muse only).
 - **Output cap (Brief 10):** every live vision and Ask call sends `max_completion_tokens` = `MAX_OUTPUT_TOKENS`
   (2000, `backend/app/config.py`; normal answers use ~270-650). A reply cut by it (`finish_reason` "length") is a
   model failure (`model_error`, 502; the phone shows "Model failed" / says its "sorry"), still billed, never a half
   answer. The realtime ASR has no per-session time limit: it is bounded by the budget guard (checked every 80 ms
   frame) and by the phone stopping; $0.18/hour.
-- SAM 3.1 measured (Brief 10, 3 calls, Mac Wi-Fi): 0.81 / 2.23 / 1.78 s total, all boxes on the real stairs / kerbs;
-  not in the app (decision pending).
 - Ask in 4 languages (Brief 8): the realtime ASR gets `languageBias` ["English", <chosen language>] (["English"]
   for English), because "Hey Eyes" is said in English inside a Chinese / Malay / Tamil question. Measured with
   macOS `say` clips: the ASR wrote "Hey Eyes" / "Hey eyes" in Latin letters in all 4 languages, so `wake.py` needed
