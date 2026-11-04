@@ -1,6 +1,6 @@
 // API shapes. Keep in sync with backend/app/schemas.py.
 
-/** Prompt v5 (Brief 12): 14 named kinds; "obstacle" is the catch-all ("something else the person could walk into"). */
+/** Prompt v6 (Brief 13): 19 named kinds; "obstacle" is the catch-all ("something else the person could walk into"). */
 export type Hazard =
   | 'step_down'
   | 'step_up'
@@ -16,6 +16,11 @@ export type Hazard =
   | 'ramp'
   | 'door'
   | 'wall'
+  | 'road'
+  | 'crossing'
+  | 'cycle_path'
+  | 'escalator'
+  | 'uneven'
   | 'obstacle'
   | 'clear'
   | 'unsure'
@@ -104,7 +109,7 @@ export type ListenEvent =
   | { type: 'error'; code: 'bad_language' | 'key_missing' | 'budget_reached' }
 
 /** Fast warning (SAM 3.1). Hits are already filtered on the backend (detect_rule.py), nearest first. */
-export type DetectKind = 'steps' | 'curb'
+export type DetectKind = 'steps' | 'curb' | 'door'
 
 export interface DetectHit {
   kind: DetectKind

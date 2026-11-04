@@ -1,5 +1,5 @@
-// Prompt v5 kinds (Brief 12): every kind's screen and voice words in 4 languages, verbatim as the Owner approved
-// them, through the existing templates; and the repeat rule for person / people.
+// Prompt v5 / v6 kinds (Briefs 12, 13): every kind's screen and voice words in 4 languages, verbatim as the Owner
+// approved them (road, crossing, cycle_path pending), through the existing templates; and the repeat rule for person / people.
 import { describe, expect, it } from 'vitest'
 import type { Hazard } from '../api/types'
 import type { Lang } from '../config'
@@ -23,6 +23,11 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     ramp: ['Ramp', 'A ramp'],
     door: ['Door', 'A door'],
     wall: ['Wall', 'A wall'],
+    road: ['Road', 'A road for cars'],
+    crossing: ['Crossing', 'A road crossing'],
+    cycle_path: ['Cycle path', 'A cycle path'],
+    escalator: ['Escalator', 'An escalator'],
+    uneven: ['Uneven ground', 'Uneven ground'],
     obstacle: ['In the way', 'Something you could walk into'],
   },
   zh: {
@@ -37,6 +42,11 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     ramp: ['坡道', '坡道'],
     door: ['门', '门'],
     wall: ['墙', '墙'],
+    road: ['车行道', '车行道'],
+    crossing: ['人行横道', '人行横道'],
+    cycle_path: ['自行车道', '自行车道'],
+    escalator: ['扶梯', '自动扶梯'],
+    uneven: ['地面不平', '不平的地面'],
     obstacle: ['障碍物', '可能会撞到的东西'],
   },
   ms: {
@@ -51,6 +61,11 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     ramp: ['Landaian', 'landaian'],
     door: ['Pintu', 'pintu'],
     wall: ['Dinding', 'dinding'],
+    road: ['Jalan raya', 'jalan raya'],
+    crossing: ['Lintasan', 'lintasan pejalan kaki'],
+    cycle_path: ['Laluan basikal', 'laluan basikal'],
+    escalator: ['Eskalator', 'eskalator'],
+    uneven: ['Tidak rata', 'permukaan tidak rata'],
     obstacle: ['Halangan', 'sesuatu yang boleh dilanggar'],
   },
   ta: {
@@ -65,6 +80,11 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     ramp: ['சாய்வுப் பாதை', 'சாய்வுப் பாதை உள்ளது'],
     door: ['கதவு', 'கதவு உள்ளது'],
     wall: ['சுவர்', 'சுவர் உள்ளது'],
+    road: ['வாகனச் சாலை', 'வாகனச் சாலை உள்ளது'],
+    crossing: ['பாதசாரி கடவை', 'பாதசாரி கடவை உள்ளது'],
+    cycle_path: ['மிதிவண்டிப் பாதை', 'மிதிவண்டிப் பாதை உள்ளது'],
+    escalator: ['நகரும் படிக்கட்டு', 'நகரும் படிக்கட்டு உள்ளது'],
+    uneven: ['சீரற்ற தரை', 'சீரற்ற தரை உள்ளது'],
     obstacle: ['தடை', 'மோதக்கூடிய ஒன்று உள்ளது'],
   },
 }
@@ -161,5 +181,27 @@ describe('ZH drain voice word (Owner approved 4 Nov: 敞开的水沟)', () => {
     expect(speechFor(drain(3), 'zh')).toBe('右前方大约3米，有敞开的水沟。')
     expect(speechFor(drain(null), 'zh')).toBe('前面很近的地方有敞开的水沟。')
     expect(phraseFor(drain(3), 'zh')).toBe('右前方3米，水沟')
+  })
+})
+
+describe('clear words (Brief 13): never "the path looks clear"', () => {
+  const clear: Shown = { hazard: 'clear', side: null, distance: null, distance_m: null }
+  it.each([
+    ['en', 'No hazard seen', 'No hazard seen.'],
+    ['zh', '未见障碍', '没有看到障碍。'],
+    ['ms', 'Tiada halangan dilihat', 'Tiada halangan dilihat.'],
+    ['ta', 'தடை தெரியவில்லை', 'தடை எதுவும் தெரியவில்லை.'],
+  ] as [Lang, string, string][])('%s', (lang, screen, voice) => {
+    expect(phraseFor(clear, lang)).toBe(screen)
+    expect(speechFor(clear, lang)).toBe(voice)
+  })
+})
+
+describe('road kinds are never green: amber, red when near or <= 2 m', () => {
+  it.each(['road', 'crossing', 'cycle_path'] as Kind[])('%s', (kind) => {
+    expect(lampFor({ hazard: kind, distance: 'far', distance_m: 8 })).toBe('amber')
+    expect(lampFor({ hazard: kind, distance: 'far', distance_m: null })).toBe('amber')
+    expect(lampFor({ hazard: kind, distance: 'far', distance_m: 2 })).toBe('red')
+    expect(lampFor({ hazard: kind, distance: 'near', distance_m: null })).toBe('red')
   })
 })
