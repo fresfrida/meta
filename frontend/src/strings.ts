@@ -421,17 +421,26 @@ export const strings = {
       `ask: question to answer ${totalS} s (speech recognition ${asrS} s, model ${modelS} s)`,
   },
 
-  // TENTATIVE (Brief 17): public demo copy, English only for now
+  // Public demo (Brief 19): Owner approved 4 Nov, verbatim, English only. `minutes` comes from DEMO_SLOT_S.
   demo: {
-    notice:
-      "Demo only. Second Eyes is a research prototype, not a mobility aid. Please don't rely on it to walk, especially near roads.",
-    understand: 'I understand',
+    welcomeTitle: 'Try Second Eyes',
+    welcomeLine:
+      'Point your phone ahead. Second Eyes tells you about steps, kerbs and other things in your path, out loud.',
+    youHave: (minutes: string) => `You have ${minutes}.`,
+    askBullet: 'Ask anything: say "Hey Eyes, what\'s in front of me?"',
+    privacyBullet:
+      "Faces are blurred on your phone. Images and questions go to Meta's AI to be understood, and we don't keep them.",
+    safety: 'This is an early demo. Please keep using your cane or guide, and take extra care near roads.',
+    start: (minutes: string) => `Start my ${minutes}`,
     left: (time: string) => `${time} left`,
-    timeUp: 'Your demo time is up. Thank you for trying Second Eyes.',
-    full: "Today's demo slots are full. Please watch the video instead.",
+    timeUp: (minutes: string) => `That's your ${minutes}. Thank you for trying Second Eyes.`,
+    full: (withVideo: boolean) =>
+      withVideo
+        ? "Today's demo spots are all taken. Please come back tomorrow, or watch the demo video."
+        : "Today's demo spots are all taken. Please come back tomorrow.",
     watchVideo: 'Watch the video',
-    tryLater: 'Please try again in a minute.',
-    back: 'Back',
+    tryLater: 'Lots of people are trying Second Eyes right now. Please try again in a minute.',
+    back: 'Back', // TENTATIVE (Brief 17): not part of the Brief 19 wording
   },
 
   button: {

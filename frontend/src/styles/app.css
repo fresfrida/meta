@@ -739,7 +739,31 @@ p {
   }
 }
 
-/* Public demo notice (Brief 17): the warning reads as body text, a little stronger than the help line. */
-.demo__notice {
+
+/* Public demo welcome (Brief 19): body text in reading order; rem-based, so Larger Text reflows it. */
+.demo__line,
+.demo__safety {
   color: var(--color-text);
+}
+
+.demo__list {
+  margin: 0;
+  padding-left: 1.25em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+  color: var(--color-text);
+}
+
+.demo__safety {
+  font-weight: var(--font-weight-semibold);
+}
+
+/* The video link looks and sizes like the primary button (64 px tall). */
+.demo__video {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  flex: none;
 }

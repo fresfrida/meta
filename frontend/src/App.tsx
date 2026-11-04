@@ -3,7 +3,7 @@ import { ApiError, requestSlot } from './api/client'
 import { BoxOverlay } from './components/BoxOverlay'
 import { Button } from './components/Button'
 import { Chips } from './components/Chips'
-import { DemoFull, DemoNotice } from './components/Demo'
+import { DemoFull, DemoWelcome } from './components/Demo'
 import { Home } from './components/Home'
 import { Notice } from './components/Notice'
 import { PhraseCard } from './components/PhraseCard'
@@ -13,7 +13,7 @@ import { TimingPill } from './components/TimingPill'
 import { HOLD_TO_ASK_MS } from './config'
 import { useHandsFree, useLanguage, useTalkMore, useVoices } from './hooks/useLanguage'
 import { unlockAudio } from './lib/audio'
-import { deviceId, formatLeft, setSlotToken } from './lib/demoSlot'
+import { deviceId, formatLeft, minutesText, setSlotToken } from './lib/demoSlot'
 import { getFaceBlurStatus, subscribeFaceBlur } from './lib/faceGuard'
 import { useSecondEyes } from './hooks/useSecondEyes'
 import { strings } from './strings'
@@ -29,9 +29,8 @@ export default function App() {
   const { videoRef, camera, backend, answer, holdStart, holdEnd } = eyes
   const cameraOn = camera === 'on'
 
-  // Public demo (Brief 17): notice once per visit (kept in memory only), a slot per Start, a countdown, the end.
-  const [noticeOpen, setNoticeOpen] = useState(false)
-  const [understood, setUnderstood] = useState(false)
+  // Public demo (Briefs 17, 19): the welcome screen instead of Home; its button gets a slot and starts in one tap.
+  const minutes = minutesText(eyes.demo.slotS ?? 180)
   const [refused, setRefused] = useState<'full' | 'later' | null>(null)
   const [slotEndsAt, setSlotEndsAt] = useState<number | null>(null)
   const [now, setNow] = useState(() => performance.now())
@@ -50,10 +49,6 @@ export default function App() {
   }, [])
 
   const begin = useCallback(() => eyes.start(eyes.demo.public ? getSlot : undefined), [eyes, getSlot])
-  const onStart = () => {
-    if (eyes.demo.public && !understood) setNoticeOpen(true)
-    else begin()
-  }
 
   // Countdown while running; at zero the demo stops with the time-up line. (A slot the server ends early is
   // stopped by the hook.)
@@ -66,11 +61,11 @@ export default function App() {
       if (t >= slotEndsAt) {
         setSlotEndsAt(null)
         setSlotToken(null)
-        stop(strings.demo.timeUp)
+        stop(strings.demo.timeUp(minutes))
       }
     }, 250)
     return () => clearInterval(timer)
-  }, [cameraOn, slotEndsAt, stop])
+  }, [cameraOn, slotEndsAt, stop, minutes])
   const leftMs = slotEndsAt === null ? null : slotEndsAt - now
   const stopNow = () => {
     setSlotEndsAt(null) // the slot keeps running on the server until it expires; Start again resumes it
@@ -112,19 +107,17 @@ export default function App() {
       {!cameraOn && refused !== null && (
         <DemoFull reason={refused} videoUrl={eyes.demo.videoUrl} onBack={() => setRefused(null)} />
       )}
-      {!cameraOn && refused === null && noticeOpen && (
-        <DemoNotice
-          onUnderstand={() => {
-            setUnderstood(true)
-            setNoticeOpen(false)
-            begin() // inside this tap: speech and audio unlock as on Start
-          }}
-          onBack={() => setNoticeOpen(false)}
+      {!cameraOn && refused === null && eyes.demo.public && (
+        <DemoWelcome
+          minutes={minutes}
+          canAsk={handsFree}
+          onStart={begin} // one tap: speech and audio unlock inside it, then the slot, then the camera
+          disabled={camera === 'starting'}
         />
       )}
       {!cameraOn &&
         refused === null &&
-        !noticeOpen &&
+        !eyes.demo.public &&
         (settingsOpen ? (
           <Settings
             lang={lang}
@@ -141,7 +134,7 @@ export default function App() {
             camera={camera}
             backend={backend}
             lang={lang}
-            onStart={onStart}
+            onStart={begin}
             onSettings={() => setSettingsOpen(true)}
           />
         ))}

@@ -55,7 +55,7 @@ import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
 import { museHedged } from '../lib/hedge'
-import { setSlotToken } from '../lib/demoSlot'
+import { minutesText, setSlotToken } from '../lib/demoSlot'
 import { type SpokenSides, holdSide, rememberSide } from '../lib/sideHold'
 import { atSpeakingTime } from '../lib/distanceNow'
 import { WalkDetector } from '../lib/motion'
@@ -108,6 +108,8 @@ export type Budget = Pick<HealthResponse, 'spent_usd' | 'budget_usd'>
 export interface DemoInfo {
   public: boolean
   videoUrl: string | null
+  /** Slot length in seconds (DEMO_SLOT_S). */
+  slotS: number | null
 }
 
 export interface Timings {
@@ -236,7 +238,11 @@ export function useSecondEyes(
   const [mode, setMode] = useState<Source | null>(null)
   const [budget, setBudget] = useState<Budget | null>(null)
   // Public demo (Brief 17): from /api/health.
-  const [demo, setDemo] = useState<DemoInfo>({ public: false, videoUrl: null })
+  const [demo, setDemo] = useState<DemoInfo>({ public: false, videoUrl: null, slotS: null })
+  const demoRef = useRef(demo)
+  useEffect(() => {
+    demoRef.current = demo
+  }, [demo])
   // The stop function, for the server ending a public-demo slot from inside a request (defined below).
   const stopRef = useRef<(say?: unknown) => void>(() => undefined)
   const [answer, setAnswer] = useState<Answer>({ kind: 'none' })
@@ -270,7 +276,7 @@ export function useSecondEyes(
         (h) => {
           setMode(h.vision_mode)
           setBudget({ spent_usd: h.spent_usd, budget_usd: h.budget_usd })
-          setDemo({ public: h.public_demo === true, videoUrl: h.video_url ?? null })
+          setDemo({ public: h.public_demo === true, videoUrl: h.video_url ?? null, slotS: h.demo_slot_s ?? null })
           setBackend('ok')
         },
         () => setBackend('unreachable'),
@@ -482,7 +488,7 @@ export function useSecondEyes(
         // Public demo: the server says this visitor's time is up.
         haltedRef.current = session
         setSlotToken(null)
-        stopRef.current(strings.demo.timeUp)
+        stopRef.current(strings.demo.timeUp(minutesText(demoRef.current.slotS ?? 180)))
         return
       }
       const reason = failureReason(err)
