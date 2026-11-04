@@ -1,6 +1,8 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Public demo copy in ZH / MS / TA (English only for now)
+- Decide DAILY_BUDGET_USD vs DEMO_SLOTS_PER_DAY: at ~$32/h, $8/day covers ~5 full slots of 10
 - Side lines: hysteresis (or a wider ahead band) so a box near 400 / 600 does not flip side between answers; log Muse's own side vs box side live
 - Backend access log has no timestamps: gaps and per-request times of a walk cannot be measured (use a uvicorn log config with times when restarting live)
 - Two-speed mode: "Model is slow…" shows whenever Muse > 6 s, and a Muse timeout shows "Model failed / Tap Capture" while SAM still answers; proposed fix in brief-13.md (start the slow timer only without SAM; treat Muse failures like SAM's)
@@ -17,7 +19,7 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- (none)
+- Brief 17 on `claude/second-eyes-cloud`: one container + public demo limits built and verified locally (Docker, mock). Waiting: Owner's server (Coolify), the copy, and the go to deploy / make public
 
 ## Done
 - Briefs 15 / 16 / 16b: in-path rule (doors by frame centre 250..750), big far hits, path guide, distance at speaking time, walking detection, side hysteresis, Muse side logging; pytest 211, vitest 350; merged and live (`b6a6465`, 4 Nov)

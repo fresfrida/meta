@@ -15,7 +15,27 @@ First written before the app code, per the Owner's standing architecture rule.
 | Database | None | n/a | The only stored data is the live spend counter, `backend/.data/spend.json` (gitignored, local file). Frames are never stored or logged. |
 | Background jobs | None | n/a | Every request is one frame in, one answer out. |
 
-Later hosting target: **not decided**.
+Later hosting target: **AWS Lightsail (Singapore) running Coolify** - see "Cloud (Brief 17)" below.
+
+## Cloud (Brief 17): one container on Lightsail + Coolify
+| Piece | Runs on | Notes |
+|---|---|---|
+| Pages (built PWA) | Inside the app container, served by FastAPI (`STATIC_DIR=/app/static`), SPA fallback to `index.html` | Same origin as the API: no CORS. Built with `vite build` in the Dockerfile's first stage. |
+| Backend | The same container: uvicorn on `PORT` (default 8000), plain HTTP | `/api/*` and the `/api/listen` WebSocket. |
+| HTTPS | Coolify's proxy (Traefik) in front of the container | Domain from sslip.io (`<name>.<server-ip>.sslip.io`), Let's Encrypt certificate. WebSockets pass through. |
+| Stored data | Coolify persistent volume mounted at `/data` (`DATA_DIR`) | `spend.json` (total live spend) and `demo.json` (today's slots, today's spend, running slots per hashed browser id). Atomic writes. No frames, no personal data. |
+| Vision / detection / ASR | Meta Model API (`api.meta.ai`), key from Coolify env `MODEL_API_KEY` | Never in the image or the repo. |
+| Background jobs | None | |
+
+Public demo limits (`PUBLIC_DEMO=1`, `backend/app/demo.py`): a signed slot per Start (`DEMO_SLOT_S`, 180 s), required on
+every `/api/analyze`, `/api/detect`, `/api/ask` and on `/api/listen` (as `?slot=`); `DEMO_SLOTS_PER_DAY` (10) new slots per
+Singapore day; `DAILY_BUDGET_USD` (8) per day on top of `BUDGET_USD`; one running slot per browser; 6 slot requests per IP
+per minute. Live cost is about $32 per hour of use, so $8 a day covers about 15 minutes of live use (about 5 full slots).
+
+What makes moving hosts easy: one image, every setting from env vars, state in one small volume, no host-specific code.
+What makes it harder: the `/data` volume must move with it (or spend / slot counts reset); the WebSocket needs a proxy that
+passes upgrades; the per-IP limit trusts `X-Forwarded-For` (fine behind Coolify's proxy, forgeable if exposed directly -
+the daily slot count and budget are the hard guards).
 
 ## How the phone reaches the backend
 

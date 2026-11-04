@@ -9,6 +9,10 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **Cloud packaging (Brief 17, branch `claude/second-eyes-cloud`, NOT merged, NOT deployed, NOT public):** a root
+  `Dockerfile` builds the frontend and serves it from FastAPI with `/api` and the WebSocket on one port; `PUBLIC_DEMO=1`
+  adds the visitor notice, 180 s signed slots, 10 slots per Singapore day, a $8 daily cap and a per-IP limit; state in
+  `DATA_DIR` (/data volume). Verified with Docker on the Mac in mock mode. How to deploy: `docs/DEPLOY.md`.
 - **Distance at speaking time (Brief 16, live 4 Nov):** metres said = metres at capture - 0.8 m/s x
   time since capture while walking (DeviceMotion; no data = walking); <= 1 m -> "very close"; stale and walked past ->
   dropped. Debug line in the timing panel.
