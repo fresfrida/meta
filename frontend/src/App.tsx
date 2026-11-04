@@ -15,6 +15,7 @@ import { useHandsFree, useLanguage, useTalkMore, useVoices } from './hooks/useLa
 import { unlockAudio } from './lib/audio'
 import { deviceId, formatLeft, minutesText, setSlotToken } from './lib/demoSlot'
 import { getFaceBlurStatus, subscribeFaceBlur } from './lib/faceGuard'
+import { stoppedScreen } from './lib/screen'
 import { useSecondEyes } from './hooks/useSecondEyes'
 import { strings } from './strings'
 
@@ -104,40 +105,40 @@ export default function App() {
       <video ref={videoRef} className="camera" playsInline muted autoPlay hidden={!cameraOn} />
       {cameraOn && <BoxOverlay hazardBox={eyes.hazardBox} videoRef={videoRef} lang={lang} />}
 
-      {!cameraOn && refused !== null && (
-        <DemoFull reason={refused} videoUrl={eyes.demo.videoUrl} onBack={() => setRefused(null)} />
-      )}
-      {!cameraOn && refused === null && eyes.demo.public && (
-        <DemoWelcome
-          minutes={minutes}
-          canAsk={handsFree}
-          onStart={begin} // one tap: speech and audio unlock inside it, then the slot, then the camera
-          disabled={camera === 'starting'}
-        />
-      )}
       {!cameraOn &&
-        refused === null &&
-        !eyes.demo.public &&
-        (settingsOpen ? (
-          <Settings
-            lang={lang}
-            voices={voices}
-            onLang={setLang}
-            handsFree={handsFree}
-            onHandsFree={setHandsFree}
-            talkMore={talkMore}
-            onTalkMore={setTalkMore}
-            onDone={() => setSettingsOpen(false)}
-          />
-        ) : (
-          <Home
-            camera={camera}
-            backend={backend}
-            lang={lang}
-            onStart={begin}
-            onSettings={() => setSettingsOpen(true)}
-          />
-        ))}
+        {
+          full: <DemoFull reason={refused ?? 'later'} videoUrl={eyes.demo.videoUrl} onBack={() => setRefused(null)} />,
+          settings: (
+            <Settings
+              lang={lang}
+              voices={voices}
+              onLang={setLang}
+              handsFree={handsFree}
+              onHandsFree={setHandsFree}
+              talkMore={talkMore}
+              onTalkMore={setTalkMore}
+              onDone={() => setSettingsOpen(false)}
+            />
+          ),
+          welcome: (
+            <DemoWelcome
+              minutes={minutes}
+              canAsk={handsFree}
+              onStart={begin} // one tap: speech and audio unlock inside it, then the slot, then the camera
+              onSettings={() => setSettingsOpen(true)}
+              disabled={camera === 'starting'}
+            />
+          ),
+          home: (
+            <Home
+              camera={camera}
+              backend={backend}
+              lang={lang}
+              onStart={begin}
+              onSettings={() => setSettingsOpen(true)}
+            />
+          ),
+        }[stoppedScreen({ refused: refused !== null, settingsOpen, publicDemo: eyes.demo.public })]}
 
       {cameraOn && (
         <>

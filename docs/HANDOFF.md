@@ -164,7 +164,8 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   (`components/TrafficLight.tsx`, rule in `lib/light.ts`: red = warning <= 2 m or
   near without metres, amber = other warning, green = clear, dark = unsure /
   waiting / stopped / error). Errors are white text with an icon.
-- Screens: Home (stopped: title, help, "Voice <language> ›", Start, gear) ->
+- Screens: Home (stopped: title, help, "Voice <language> ›", Start, gear; in
+  public mode the welcome screen replaces Home and has the same gear, Brief 21) ->
   Settings (language list in its own script with voice installed / missing,
   Voice list for the chosen language with "Recommended" on the default, Test
   voice, About). Camera screen: chips, phrase card (light + phrase, steps

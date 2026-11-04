@@ -3,6 +3,7 @@
 import { strings } from '../strings'
 import { Button } from './Button'
 import { Chip } from './Chips'
+import { GearIcon } from './Icons'
 
 const d = strings.demo
 
@@ -14,11 +15,13 @@ export function DemoWelcome({
   minutes,
   canAsk,
   onStart,
+  onSettings,
   disabled,
 }: {
   minutes: string
   canAsk: boolean
   onStart: () => void
+  onSettings: () => void
   disabled: boolean
 }) {
   return (
@@ -28,6 +31,10 @@ export function DemoWelcome({
           <div className="chips">
             <Chip label={strings.chip.betaLong} />
           </div>
+          {/* Brief 21: the same gear as Home, so visitors can choose a language and a voice */}
+          <button type="button" className="icon-button" aria-label={strings.home.settings} onClick={onSettings}>
+            <GearIcon />
+          </button>
         </header>
         <h1 className="home__title">{d.welcomeTitle}</h1>
         <p className="demo__line">{d.welcomeLine}</p>
