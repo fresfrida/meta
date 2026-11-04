@@ -49,38 +49,38 @@ export function playWarnCue(): void {
   } catch {
     // vibration is a bonus; never block the warning
   }
-  const ctx = audioContext()
-  if (!ctx) return
-  const toneS = WARN_TONE_MS / 1000
-  const start = ctx.currentTime + 0.01
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.frequency.value = WARN_TONE_HZ
-  gain.gain.setValueAtTime(0, start)
-  gain.gain.linearRampToValueAtTime(EARCON_GAIN, start + 0.01)
-  gain.gain.linearRampToValueAtTime(0, start + toneS)
-  osc.connect(gain).connect(ctx.destination)
-  osc.start(start)
-  osc.stop(start + toneS)
-  selfSound.start()
-  setTimeout(() => selfSound.end(performance.now()), WARN_TONE_MS + 10)
+  // A tone that fails (iOS can leave the context "interrupted") must never stop the phrase that follows (Brief 25).
+  try {
+    tone(WARN_TONE_HZ, WARN_TONE_MS, EARCON_GAIN, 0.01)
+  } catch (err) {
+    console.warn('[earcon] warn cue failed', err)
+  }
 }
 
 /** Heartbeat: a soft, short, low tick (TICK_*), quieter and lower than the fast cue. Does not wait. */
 export function playTick(): void {
+  try {
+    tone(TICK_HZ, TICK_MS, TICK_GAIN, 0.005)
+  } catch (err) {
+    console.warn('[earcon] tick failed', err)
+  }
+}
+
+/** One short tone; the microphone is closed while it plays. */
+function tone(hz: number, ms: number, peak: number, rampS: number): void {
   const ctx = audioContext()
   if (!ctx) return
-  const toneS = TICK_MS / 1000
+  const toneS = ms / 1000
   const start = ctx.currentTime + 0.01
   const osc = ctx.createOscillator()
   const gain = ctx.createGain()
-  osc.frequency.value = TICK_HZ
+  osc.frequency.value = hz
   gain.gain.setValueAtTime(0, start)
-  gain.gain.linearRampToValueAtTime(TICK_GAIN, start + 0.005)
+  gain.gain.linearRampToValueAtTime(peak, start + rampS)
   gain.gain.linearRampToValueAtTime(0, start + toneS)
   osc.connect(gain).connect(ctx.destination)
   osc.start(start)
   osc.stop(start + toneS)
   selfSound.start()
-  setTimeout(() => selfSound.end(performance.now()), TICK_MS + 10)
+  setTimeout(() => selfSound.end(performance.now()), ms + 10)
 }

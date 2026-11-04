@@ -33,3 +33,12 @@ export function onStop(s: SessionVoice): [SessionVoice, 'stop' | null] {
 export function holdForGreeting(decision: Decision, s: SessionVoice): Decision {
   return s.greeting && decision.speak ? { speak: false, why: 'busy' } : decision
 }
+
+/**
+ * Brief 20 / 25: the start line is said at once when the phone's voices are loaded, or when it must not wait
+ * (WebKit: an iPhone only speaks reliably when the first phrase is queued inside the tap). Otherwise it waits (at most
+ * VOICE_WAIT_MS) for the voices, so Android never uses a random fallback voice.
+ */
+export function greetAtOnce(voicesLoaded: boolean, mustNotWait: boolean): boolean {
+  return voicesLoaded || mustNotWait
+}

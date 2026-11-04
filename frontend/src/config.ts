@@ -13,6 +13,12 @@ export const REQUEST_TIMEOUT_MS = 12_000
 export const MODEL_SLOW_MS = 6_000
 /** If speech has not started this long after speak(), count it as failed. */
 export const SPEECH_START_TIMEOUT_MS = 3_000
+/**
+ * WebKit (iPhone / Safari) only: after cancelling speech that is playing, wait this long before the next speak().
+ * Speaking at once is dropped there (the new phrase ends without starting). Brief 25, iOS Simulator: 0 ms dropped;
+ * 50, 100 and 250 ms all spoke.
+ */
+export const SPEECH_CANCEL_GAP_MS = 100
 /** Calm, steady pace like station announcements (Brief 20). */
 export const SPEECH_RATE = 0.95
 /** Before the first speech of a session, wait this long at most for the phone's voices to load (Brief 20). */

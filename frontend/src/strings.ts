@@ -529,6 +529,9 @@ export const strings = {
     // Debug (Brief 16): distance at capture and at speaking time
     distanceNow: (capturedM: string, nowM: string) => `distance: at capture ${capturedM} · when said ${nowM}`,
     dropped: (n: number) => `dropped late ${n}`,
+    // Debug (Brief 25), English only: is speech unlocked, how did the last phrase go, Web Audio state
+    speech: (unlocked: boolean, last: string | null, detail: string | null, audio: string) =>
+      `speech: unlocked ${unlocked ? 'yes' : 'no'} · last speak ${last ?? '–'}${detail ? ` (${detail})` : ''} · audio ${audio}`,
     // TENTATIVE (Brief 7): the last frame actually sent
     sentFrame: 'Last frame sent',
     sentFrameLine: (blur: 'on' | 'off', faces: number, ms: number) =>

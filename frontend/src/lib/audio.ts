@@ -17,3 +17,8 @@ export function unlockAudio(): AudioContext | null {
 export function audioContext(): AudioContext | null {
   return ctx
 }
+
+/** For the debug line (Brief 25): "running", "suspended", "interrupted" (iOS), "closed", or "none" before Start. */
+export function audioState(): string {
+  return ctx?.state ?? 'none'
+}
