@@ -2,6 +2,7 @@
 import { MIC_FRAME_MS, MIC_SAMPLE_RATE } from '../config'
 import { audioContext, holdAudio, micClosed, micOpened, releaseAudio, unlockAudio } from './audio'
 import { selfSound } from './micGate'
+import { noteMic } from './micDebug'
 import { Pcm16Encoder } from './pcm'
 
 export interface MicHandle {
@@ -44,8 +45,14 @@ export async function startMic(onFrame: (pcm: Int16Array<ArrayBuffer>) => void):
   source.connect(node).connect(mute).connect(ctx.destination)
   const encoder = new Pcm16Encoder(ctx.sampleRate, MIC_SAMPLE_RATE, (MIC_SAMPLE_RATE * MIC_FRAME_MS) / 1000)
   node.port.onmessage = (e: MessageEvent<Float32Array>) => {
-    for (const frame of encoder.push(e.data)) if (selfSound.canSend(performance.now())) onFrame(frame)
+    let gated = 0
+    for (const frame of encoder.push(e.data)) {
+      if (selfSound.canSend(performance.now())) onFrame(frame)
+      else gated += 1
+    }
+    if (gated) noteMic((d) => ({ gated: d.gated + gated }))
   }
+  noteMic({ inputRate: ctx.sampleRate })
   return {
     inputRate: ctx.sampleRate,
     stop: () => {

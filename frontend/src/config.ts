@@ -34,6 +34,17 @@ export const SPEECH_RESUME_ENABLED = readFlag('resume', true)
 export const SPEECH_STUCK_MS = 1_000
 /** WebKit: this many phrases in a row that never started -> "Tap to turn the sound back on". */
 export const SPEECH_BLOCKED_AFTER = 2
+/**
+ * Brief 30, a lost end (TENTATIVE): a phrase that started but has had neither onend nor onerror after
+ * max(SPEECH_END_MIN_MS, characters x SPEECH_END_PER_CHAR_MS) + SPEECH_END_SLACK_MS is treated as ended: the mic gate
+ * reopens and ticks resume. WebKit can lose onend; elsewhere the timer never fires in normal use.
+ */
+export const SPEECH_END_MIN_MS = 4_000
+export const SPEECH_END_PER_CHAR_MS = 120
+export const SPEECH_END_SLACK_MS = 2_000
+export function speechEndMaxMs(text: string): number {
+  return Math.max(SPEECH_END_MIN_MS, text.length * SPEECH_END_PER_CHAR_MS) + SPEECH_END_SLACK_MS
+}
 /** The camera track muted this long while running -> reopen the camera (WebKit). */
 export const VIDEO_MUTE_WAIT_MS = 2_000
 /**

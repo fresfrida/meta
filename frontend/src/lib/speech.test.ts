@@ -1,7 +1,15 @@
 // Brief 25: iPhone speech. The WebKit cancel -> speak drop (reproduced in the iOS Simulator), the tap unlock, and the
 // debug state. A fake speech engine stands in for the browser.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SPEECH_CANCEL_GAP_MS, SPEECH_START_TIMEOUT_MS, SPEECH_STUCK_MS } from '../config'
+import {
+  HEARTBEAT_MIN_GAP_MS,
+  SELF_SPEECH_TAIL_MS,
+  SPEECH_CANCEL_GAP_MS,
+  SPEECH_START_TIMEOUT_MS,
+  SPEECH_STUCK_MS,
+  speechEndMaxMs,
+} from '../config'
+import { shouldTick } from './heartbeat'
 import { greetAtOnce } from './sessionVoice'
 
 const IPHONE_UA =
@@ -303,7 +311,7 @@ describe('Brief 27: "Tap to turn the sound back on"', () => {
 
   it('never on Android', async () => {
     const { speechBlocked } = await load(ANDROID_UA)
-    expect(speechBlocked({ unlocked: true, last: 'timeout', detail: null, failures: 5, respoken: 0 }, false)).toBe(false)
+    expect(speechBlocked({ unlocked: true, last: 'timeout', detail: null, failures: 5, respoken: 0, endsLost: 0 }, false)).toBe(false)
   })
 })
 
@@ -338,5 +346,100 @@ describe('Brief 28: a re-spoken start line ends only when the second one ends', 
     engine.spoken[1].onend?.()
     await Promise.resolve()
     expect(ended).toBe(true)
+  })
+})
+
+describe('Brief 30: a lost end (WebKit drops onend) no longer shuts the mic and the ticks', () => {
+  const TEXT = 'Steps, about 3 metres ahead.'
+
+  /** The useSecondEyes say() pattern: speaking from start until `ended`. */
+  async function started(ua: string) {
+    const mod = await load(ua)
+    const { selfSound } = await import('./micGate')
+    const state = { speaking: true, ended: false }
+    const h = mod.speak(TEXT, opts)
+    void h.ended.then(() => {
+      state.speaking = false
+      state.ended = true
+    })
+    engine.spoken[0].onstart?.()
+    await h.started
+    return { mod, selfSound, state, h }
+  }
+  const tickNow = (speaking: boolean) =>
+    shouldTick({ speaking, asking: false, now: 1e9, lastTickAt: 0, minGapMs: HEARTBEAT_MIN_GAP_MS })
+
+  it('the timer is max(4 s, characters x 120 ms) + 2 s', () => {
+    expect(speechEndMaxMs('Lift.')).toBe(6_000)
+    expect(speechEndMaxMs('x'.repeat(100))).toBe(14_000)
+  })
+
+  it('no onend and no onerror: after the timer the gate reopens, speaking is false, ticks resume, counted', async () => {
+    const { mod, selfSound, state } = await started(IPHONE_UA)
+    vi.advanceTimersByTime(speechEndMaxMs(TEXT) - 1)
+    await Promise.resolve()
+    expect(state.ended).toBe(false)
+    expect(selfSound.canSend(performance.now() + 10_000)).toBe(false) // still closed while it may be speaking
+    expect(tickNow(state.speaking)).toBe(false)
+    vi.advanceTimersByTime(1)
+    await Promise.resolve()
+    expect(state.ended).toBe(true)
+    expect(state.speaking).toBe(false)
+    expect(tickNow(state.speaking)).toBe(true)
+    expect(selfSound.canSend(performance.now() + SELF_SPEECH_TAIL_MS)).toBe(true)
+    expect(mod.speechDebug().endsLost).toBe(1)
+    // a late onend afterwards changes nothing
+    engine.spoken[0].onend?.()
+    expect(mod.speechDebug().endsLost).toBe(1)
+    expect(selfSound.canSend(performance.now() + SELF_SPEECH_TAIL_MS)).toBe(true)
+  })
+
+  it('a normal end: ended at once, the timer never fires, nothing counted (Android too)', async () => {
+    for (const ua of [IPHONE_UA, ANDROID_UA]) {
+      const { mod, selfSound, state } = await started(ua)
+      engine.spoken[0].onend?.()
+      await Promise.resolve()
+      expect(state.ended).toBe(true)
+      expect(selfSound.canSend(performance.now() + SELF_SPEECH_TAIL_MS)).toBe(true)
+      selfSound.start() // something else sounding: a stray timer must not release it
+      vi.advanceTimersByTime(60_000)
+      expect(mod.speechDebug().endsLost).toBe(0)
+      expect(selfSound.canSend(performance.now() + 60_000)).toBe(false)
+    }
+  })
+
+  it('a replaced phrase: its timer is cleared; only the new phrase has one', async () => {
+    const LONG = 'A lift, about 2 metres ahead. The doors are on the right, next to the stairs.' // a longer timer
+    const { mod, selfSound } = await started(ANDROID_UA)
+    const next = mod.speak(LONG, opts)
+    let nextEnded = false
+    void next.ended.then(() => (nextEnded = true))
+    engine.spoken[1].onstart?.()
+    await next.started
+    vi.advanceTimersByTime(speechEndMaxMs(TEXT)) // the old phrase's timer would have fired here
+    await Promise.resolve()
+    expect(mod.speechDebug().endsLost).toBe(0)
+    expect(nextEnded).toBe(false)
+    expect(selfSound.canSend(performance.now() + 60_000)).toBe(false) // the new phrase still holds the mic
+    vi.advanceTimersByTime(speechEndMaxMs(LONG))
+    await Promise.resolve()
+    expect(nextEnded).toBe(true)
+    expect(mod.speechDebug().endsLost).toBe(1)
+  })
+
+  it('cancel (Stop) clears the timer', async () => {
+    const { mod } = await started(IPHONE_UA)
+    mod.cancelSpeech()
+    vi.advanceTimersByTime(60_000)
+    expect(mod.speechDebug().endsLost).toBe(0)
+  })
+
+  it('an error ends it and clears the timer', async () => {
+    const { mod, state } = await started(IPHONE_UA)
+    engine.spoken[0].onerror?.({ error: 'synthesis-failed' })
+    await Promise.resolve()
+    expect(state.ended).toBe(true)
+    vi.advanceTimersByTime(60_000)
+    expect(mod.speechDebug().endsLost).toBe(0)
   })
 })
