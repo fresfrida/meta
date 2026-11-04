@@ -107,7 +107,7 @@ def in_path(raw: RawHit, forward_m: float | None) -> bool:
     """Is the hit in the walking path? `forward_m` None: the box touches the frame bottom.
 
     Steps and kerbs are wide and cross the path: any overlap counts. A door (Brief 16b) counts only when its box
-    centre is in the path, so a door on a side wall stays quiet.
+    centre is in the centre half of the frame (metres could not tell a corridor-wall door from a door ahead).
     """
     if raw.kind == "door":
         return centred(raw)
@@ -158,9 +158,15 @@ def keep(raw: RawHit) -> DetectHit | str | None:
 
 
 def kept_hits(raws: list[RawHit]) -> tuple[list[DetectHit], int]:
-    """Hits in the walking path, nearest first (touching the bottom first, then fewer metres, then higher
-    confidence), and how many were beside the path."""
+    """Hits in the walking path, nearest first (touching the bottom first, then fewer metres, then "far, no metres"
+    big hits last; higher confidence first on a tie), and how many were beside the path."""
     results = [keep(r) for r in raws]
     hits = [h for h in results if isinstance(h, DetectHit)]
     beside = sum(1 for h in results if h == BESIDE)
-    return sorted(hits, key=lambda h: (h.distance_m or 0, -h.confidence)), beside
+
+    def nearness(h: DetectHit) -> float:
+        if h.distance_m is not None:
+            return h.distance_m
+        return 0 if h.distance == "near" else DISTANCE_M_MAX + 1
+
+    return sorted(hits, key=lambda h: (nearness(h), -h.confidence)), beside

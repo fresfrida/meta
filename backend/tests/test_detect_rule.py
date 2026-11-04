@@ -169,3 +169,12 @@ def test_big_hit_ahead_beyond_the_geometry_is_kept_as_far_without_metres():
     assert keep(RawHit("door", 20, 20, 60, 339, 640, 640, 0.85)) is None
     # At / above the horizon too.
     assert keep(RawHit("steps", 290, 0, 350, 300, 640, 640, 0.85)).distance == "far"
+
+
+def test_a_far_no_metres_hit_sorts_after_hits_with_metres():
+    big_far = RawHit("door", 300, 20, 340, 339, 640, 640, 0.95)  # far, no metres
+    kerb_3m = RawHit("curb", 0, 400, 639, 459, 640, 640, 0.6)
+    touching = RawHit("steps", 200, 560, 440, 639, 640, 640, 0.6)
+    hits, _ = kept_hits([big_far, kerb_3m, touching])
+    assert [(h.kind, h.distance, h.distance_m) for h in hits][0] == ("steps", "near", None)
+    assert [h.kind for h in hits] == ["steps", "curb", "door"]
