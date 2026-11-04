@@ -6,7 +6,8 @@
 - Face blur recall: 2x tiles for distant faces (~4x time) if the iPhone has headroom
 - Native-speaker check of the ZH / MS / TA Ask texts (Brief 8)
 - Translations of the Ask chip, "Listening stopped", "Microphone not available" (EN only for now)
-- Owner approval of the fast phrase words (Steps / 台阶 / Tangga / படிகள்; voice படிகள் உள்ளன) - TENTATIVE
+- Native-speaker check of the ZH / MS / TA fast phrase words (Owner approved 4 Nov)
+- `strings.ts`: drop the 8 "TENTATIVE (Brief 11)" comments on the steps words (approved) - edit after the live test, so Vite does not reload the phone mid-test
 - Set `VISION_MODE=mock` again after the Owner's filming
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)

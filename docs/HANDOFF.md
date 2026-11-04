@@ -24,7 +24,7 @@ phone. Controlled demo only; nobody walks guided by it. UI says
   (step_up / step_down / steps are one kind; up / down is new information); a Muse "clear" / "not sure" does not
   replace a fast warning younger than 3 s; a silent fast hit does not replace a Muse answer younger than 3 s; a fast
   hit whose kind was spoken in the last 10 s stays silent unless closer (stops kerb / obstacle ping-pong). Lamp:
-  newest, the more severe for the same frame. Fast phrase words TENTATIVE ("Steps" / 台阶 / Tangga / படிகள்).
+  newest, the more severe for the same frame. Fast phrase words Owner approved 4 Nov ("Steps" / 台阶 / Tangga / படிகள்; ZH / MS / TA native check pending).
   Pill "fast 1.6 s · detail 4.1 s"; panel "last SAM … ms · last model … ms". `?fast=0` = Muse only, as before.
   Live desktop (CC0 tram stop): first speech 1.2-1.7 s (two speeds) vs 5.2-5.3 s (Muse only).
 - **Output cap (Brief 10):** every live vision and Ask call sends `max_completion_tokens` = `MAX_OUTPUT_TOKENS`
