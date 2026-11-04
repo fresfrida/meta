@@ -2,7 +2,7 @@
 
 ## Backlog
 - Backend access log has no timestamps: gaps and per-request times of a walk cannot be measured (use a uvicorn log config with times when restarting live)
-- Two-speed mode: a Muse timeout replaces the card with "Model failed" while SAM still answers; "Model is slow…" shows whenever Muse > 6 s (likely the "connecting" text the Owner saw)
+- Two-speed mode: "Model is slow…" shows whenever Muse > 6 s, and a Muse timeout shows "Model failed / Tap Capture" while SAM still answers; proposed fix in brief-13.md (start the slow timer only without SAM; treat Muse failures like SAM's)
 - Native-speaker check of the v5 words (ZH / MS / TA)
 - Polish pass: head-height boxes sit under the phrase card (top of the screen), so their outline and tag are hidden
 - Native-speaker check of the 中文 / Bahasa Melayu / தமிழ் screen phrases and voice sentences
@@ -17,11 +17,9 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- Brief 13 on `claude/second-eyes-v6`: code + unit tests done (pytest 192, vitest 232, build OK); v6 live calls done
-  (10, $0.023: Steps3 now "road" not "curb", Curb1 "step_up" not "curb" - Owner to decide). LEFT TO DO: mock
-  screenshots at 390 ("Connection lost" EN, a road warning ZH; worktree ports 8001 / 5174, `?fast=0`, road 4th in
-  the mock cycle); browser run of tick / alerts / Talk more; merge when the Advisor says
-- (none)
+- Brief 13 on `claude/second-eyes-v6`: done and checked (pytest 192, vitest 232, build OK; v6 live 10 calls; mock
+  screenshots EN connection lost, ZH road). Waiting: the Owner's decision on Steps3 "road" / Curb1 "step up", then the
+  Advisor's go to merge
 
 ## Done
 - Brief 12: prompt v5 (11 named kinds + catch-all), words in 4 languages, person/people repeat rule; 12 live photos (steps / kerbs all right); merged into `claude/second-eyes` and live (4 Nov)
