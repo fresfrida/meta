@@ -2,7 +2,7 @@
 
 ## Backlog
 - Car warning: car-specific in-path rule (box centre within 0.75 m) and a re-test (~10 SAM calls, ~$0.025) before CAR_FAST can default on
-- Cloud demo budget: $8.01 of $10 total spent (00:29, 5 Nov); Owner decides a new cap or stopping it before judges try it
+- Owner: in Coolify set DAILY_BUDGET_USD=20 and BUDGET_USD (Advisor: 100), then Deploy (cloud demo at $8.01 of $10)
 - 中文 / Bahasa Melayu / தமிழ் for the Brief 27 getting-ready lines and card (English only for now)
 - Restart the Mac backend so the Mac link uses prompt v8 (stop any page loop first)
 - iPad and Android re-test after Briefs 25-28
