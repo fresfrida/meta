@@ -47,6 +47,7 @@ import { unlockAudio } from '../lib/audio'
 import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
+import { museHedged } from '../lib/hedge'
 import { connectionText } from '../strings'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
@@ -463,7 +464,8 @@ export function useSecondEyes(
           setBudget((b) => (b ? { ...b, spent_usd: b.spent_usd + (res.cost_usd ?? 0) } : b))
         }
         setTimings((t) => ({ ...t, lastModelMs: Math.round(res.model_ms) }))
-        present('detail', res, res.box, seq, frame, { captureStart, requestSent, responseReceived, serverMs: res.model_ms })
+        const shown = { ...res, hedged: museHedged(res) }
+        present('detail', shown, res.box, seq, frame, { captureStart, requestSent, responseReceived, serverMs: res.model_ms })
       } catch (err) {
         if (session !== sessionRef.current || isLate('detail', seq)) return
         onFailure(err, session, 'detail')

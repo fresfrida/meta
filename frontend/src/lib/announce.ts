@@ -9,6 +9,8 @@ export interface AnnounceState {
   lastDistanceM: number | null
   /** The last spoken answer was "near" (near/far fallback). */
   lastNear: boolean
+  /** The last spoken answer was hedged ("There might be ..."). */
+  lastHedged: boolean
   /** When that speech was started (ms, same clock as `now`). */
   lastSpokenAt: number
   /** Speech is playing right now. */
@@ -20,12 +22,13 @@ export type Decision =
   | { speak: true; interrupt: boolean; again?: boolean }
   | { speak: false; why: 'unsure' | 'repeat' | 'too_soon' | 'busy' }
 
-type Answer = Pick<Shown, 'hazard' | 'distance' | 'distance_m'>
+type Answer = Pick<Shown, 'hazard' | 'distance' | 'distance_m' | 'hedged'>
 
 export const INITIAL_ANNOUNCE: AnnounceState = {
   lastHazard: null,
   lastDistanceM: null,
   lastNear: false,
+  lastHedged: false,
   lastSpokenAt: -Infinity,
   speaking: false,
 }
@@ -57,6 +60,8 @@ function isRepeat(answer: Answer, state: AnnounceState, closerM: number): boolea
   if (state.lastHazard === null || kindOf(answer.hazard) !== kindOf(state.lastHazard)) return false
   const detail = variant(answer.hazard)
   if (detail !== null && detail !== variant(state.lastHazard)) return false
+  // A sure answer after a hedged one ("There might be ...") adds something: said once without the hedge.
+  if (state.lastHedged && !answer.hedged) return false
   if (answer.distance_m !== null && state.lastDistanceM !== null) {
     return answer.distance_m > state.lastDistanceM - closerM
   }
@@ -97,6 +102,7 @@ export function spoke(answer: Answer, now: number): AnnounceState {
     lastHazard: answer.hazard,
     lastDistanceM: answer.distance_m,
     lastNear: answer.distance === 'near',
+    lastHedged: answer.hedged === true,
     lastSpokenAt: now,
     speaking: true,
   }

@@ -11,6 +11,8 @@ export interface Shown {
   side: Side | null
   distance: Distance | null
   distance_m: number | null
+  /** Said as "There might be ..." (Muse not sure, or a SAM hit below SAM_SURE_CONF): see hedge.ts. */
+  hedged?: boolean
 }
 
 /**
@@ -22,8 +24,11 @@ export function phraseFor(answer: Shown, lang: Lang): string {
   const p = phrases[lang]
   const word = p.hazard[answer.hazard]
   if (!isWarning(answer)) return word
-  if (answer.distance_m !== null) return p.metres(word, answer.distance_m, answer.side)
-  return p.plain(word, answer.side, answer.distance === 'near')
+  // Hedged: the same phrase with "?" right after the word (any comma that followed it is dropped).
+  const w = answer.hedged ? `${word}?` : word
+  const text =
+    answer.distance_m !== null ? p.metres(w, answer.distance_m, answer.side) : p.plain(w, answer.side, answer.distance === 'near')
+  return answer.hedged ? text.replace('?, ', '? ').replace('?，', '? ') : text
 }
 
 /**
@@ -35,6 +40,10 @@ export function speechFor(answer: Shown, lang: Lang): string | null {
   if (answer.hazard === 'unsure') return null
   if (!isWarning(answer)) return v.clear
   const what = v.hazard[answer.hazard]
+  if (answer.hedged) {
+    if (answer.distance_m !== null) return v.maybeMetres(what, answer.distance_m, answer.side)
+    return v.maybePlain(what, answer.side, answer.distance === 'near')
+  }
   if (answer.distance_m !== null) return v.metres(what, answer.distance_m, answer.side)
   return v.plain(what, answer.side, answer.distance === 'near')
 }

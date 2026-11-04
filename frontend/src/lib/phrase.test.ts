@@ -14,7 +14,7 @@ describe('phraseFor with metres', () => {
   it('English: "<Hazard>, N metres[, left|right]", 1 -> metre', () => {
     expect(phraseFor(a('step_down', 'ahead', 'near', 2), 'en')).toBe('Step down, 2 metres')
     expect(phraseFor(a('obstacle', 'left', 'far', 5), 'en')).toBe('In the way, 5 metres, left')
-    expect(phraseFor(a('curb', 'right', 'near', 1), 'en')).toBe('Curb, 1 metre, right')
+    expect(phraseFor(a('curb', 'right', 'near', 1), 'en')).toBe('Kerb, 1 metre, right')
   })
   it('Chinese: "[左前方|右前方|前方]N米，<hazard>"', () => {
     expect(phraseFor(a('step_down', 'ahead', 'near', 2), 'zh')).toBe('前方2米，下台阶')
@@ -38,7 +38,7 @@ describe('phraseFor without metres', () => {
   it('English', () => {
     expect(phraseFor(a('step_down', 'left', null, null), 'en')).toBe('Step down ahead, left')
     expect(phraseFor(a('obstacle', 'ahead', 'far', null), 'en')).toBe('In the way ahead')
-    expect(phraseFor(a('curb', 'right', 'near', null), 'en')).toBe('Curb ahead, right, close')
+    expect(phraseFor(a('curb', 'right', 'near', null), 'en')).toBe('Kerb ahead, right, close')
   })
   it('Chinese', () => {
     expect(phraseFor(a('curb', 'right', 'near', null), 'zh')).toBe('右前方路缘，很近')

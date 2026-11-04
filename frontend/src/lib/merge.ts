@@ -1,7 +1,9 @@
 // The two-speed merge: which answer (fast SAM hit or detailed Muse answer) is shown, and when the fast cue plays.
 // Whether it is spoken is the repeat rule's job (announce.ts), shared by both channels.
 import type { DetectHit, ShownHazard } from '../api/types'
+import { SAM_SURE_CONF } from '../config'
 import { type Decision, kindOf } from './announce'
+import { samHedged } from './hedge'
 import type { Lamp } from './light'
 import type { Shown } from './phrase'
 
@@ -21,8 +23,14 @@ export interface ShownState {
 export const NOTHING_SHOWN: ShownState = { channel: null, hazard: null, seq: 0, lamp: 'off', at: -Infinity }
 
 /** A kept SAM hit as a warning: "steps" (direction unknown) or "curb", with the rule's side and distance. */
-export function hitAsShown(hit: DetectHit): Shown {
-  return { hazard: hit.kind, side: hit.side, distance: hit.distance, distance_m: hit.distance_m }
+export function hitAsShown(hit: DetectHit, sureConf = SAM_SURE_CONF): Shown {
+  return {
+    hazard: hit.kind,
+    side: hit.side,
+    distance: hit.distance,
+    distance_m: hit.distance_m,
+    hedged: samHedged(hit, sureConf),
+  }
 }
 
 /**
@@ -48,11 +56,14 @@ export function replaces(
 }
 
 /** When each kind (kindOf) was last spoken, by either channel, and how close it was. */
-export type SpokenKinds = Partial<Record<ShownHazard, { at: number; distance_m: number | null; near: boolean }>>
+export type SpokenKinds = Partial<
+  Record<ShownHazard, { at: number; distance_m: number | null; near: boolean; hedged: boolean }>
+>
 
 /** Records a spoken answer in the per-kind memory. */
 export function rememberSpoken(kinds: SpokenKinds, answer: Shown, now: number): SpokenKinds {
-  return { ...kinds, [kindOf(answer.hazard)]: { at: now, distance_m: answer.distance_m, near: answer.distance === 'near' } }
+  const memory = { at: now, distance_m: answer.distance_m, near: answer.distance === 'near', hedged: answer.hedged === true }
+  return { ...kinds, [kindOf(answer.hazard)]: memory }
 }
 
 /**
@@ -63,6 +74,7 @@ export function rememberSpoken(kinds: SpokenKinds, answer: Shown, now: number): 
 export function fastRecentlySaid(hit: Shown, kinds: SpokenKinds, now: number, windowMs: number, closerM: number): boolean {
   const last = kinds[kindOf(hit.hazard)]
   if (!last || now - last.at >= windowMs) return false
+  if (last.hedged && !hit.hedged) return false // sure after "There might be ...": said once without the hedge
   if (hit.distance_m !== null && last.distance_m !== null) return hit.distance_m > last.distance_m - closerM
   return !(hit.distance === 'near' && !last.near)
 }

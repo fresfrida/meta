@@ -51,6 +51,8 @@ export interface VisionAnswer {
   box: Box | null
   /** Whole metres from the camera, 1..10, or null (clear, unsure, or the model gave none). */
   distance_m: number | null
+  /** Prompt v7: the model is sure what the hazard is (missing / invalid counts as sure). */
+  sure: boolean
 }
 
 export interface AnalyzeRequest {

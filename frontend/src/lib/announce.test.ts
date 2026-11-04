@@ -141,6 +141,7 @@ describe('spoke', () => {
       lastHazard: 'curb',
       lastDistanceM: 3,
       lastNear: false,
+      lastHedged: false,
       lastSpokenAt: 5,
       speaking: true,
     })

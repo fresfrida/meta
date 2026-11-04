@@ -27,18 +27,28 @@ export interface PhraseLanguage {
     metres: (what: string, metres: number, side: Side | null) => string
     /** Without metres: near / far (unknown distance counts as far). */
     plain: (what: string, side: Side | null, near: boolean) => string
+    /** Hedged (Brief 13b, "There might be ..."): with metres, and near / far. Same voice word. */
+    maybeMetres: (what: string, metres: number, side: Side | null) => string
+    maybePlain: (what: string, side: Side | null, near: boolean) => string
   }
 }
 
 const pick = (side: Side | null, left: string, right: string, ahead = '') =>
   side === 'left' ? left : side === 'right' ? right : ahead
 
+/** English voice words start with a capital ("A kerb"); inside "There might be ..." they are lower case. */
+const lower = (w: string) => w.charAt(0).toLowerCase() + w.slice(1)
+
+/** Tamil voice words end in a verb (உள்ளது / உள்ளன / இருக்கிறார் / இருக்கிறார்கள்); hedged, it becomes இருக்கலாம். */
+export const TA_VERB = / (உள்ளது|உள்ளன|இருக்கிறார்கள்|இருக்கிறார்)$/
+const taMaybe = (w: string) => w.replace(TA_VERB, ' இருக்கலாம்')
+
 export const phrases: Record<Lang, PhraseLanguage> = {
   en: {
     hazard: {
       step_down: 'Step down',
       step_up: 'Step up',
-      curb: 'Curb',
+      curb: 'Kerb', // British spelling (Brief 13b), like the voice
       drain: 'Drain',
       head_height: 'Head height',
       person: 'Person',
@@ -90,6 +100,10 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       metres: (w, n, side) =>
         `${w}, about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
       plain: (w, side, near) => `${w} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
+      maybeMetres: (w, n, side) =>
+        `There might be ${lower(w)} about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
+      maybePlain: (w, side, near) =>
+        `There might be ${lower(w)} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
     },
   },
   zh: {
@@ -147,6 +161,8 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       clear: '没有看到障碍。',
       metres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，有${w}。`,
       plain: (w, side, near) => `${pick(side, '左前方', '右前方', '前面')}${near ? '很近的地方有' : '有'}${w}。`,
+      maybeMetres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，可能有${w}。`,
+      maybePlain: (w, side, near) => `${pick(side, '左前方', '右前方', '前面')}${near ? '很近的地方可能有' : '可能有'}${w}。`,
     },
   },
   ms: {
@@ -206,6 +222,10 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         `Ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
       plain: (w, side, near) =>
         `Ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+      maybeMetres: (w, n, side) =>
+        `Mungkin ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+      maybePlain: (w, side, near) =>
+        `Mungkin ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
     },
   },
   ta: {
@@ -265,6 +285,10 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         `சுமார் ${n} மீட்டர் முன்னால்${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
       plain: (w, side, near) =>
         `${near ? 'மிக அருகில் முன்னால்' : 'முன்னால்'}${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
+      maybeMetres: (w, n, side) =>
+        `சுமார் ${n} மீட்டர் முன்னால்${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${taMaybe(w)}.`,
+      maybePlain: (w, side, near) =>
+        `${near ? 'மிக அருகில் முன்னால்' : 'முன்னால்'}${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${taMaybe(w)}.`,
     },
   },
 }
