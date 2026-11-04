@@ -391,6 +391,18 @@ p {
   inset: calc(var(--space-8) * -1) calc(var(--space-4) * -1);
 }
 
+/* Brief 30: the quiet "Say "Hey Eyes", then ask" line above Stop. No background, so a hazard box behind it still shows;
+   the negative margins keep the footer almost as low as before. */
+.ask-hint {
+  margin: calc(-1 * var(--space-6)) 0;
+  text-align: center;
+  color: var(--color-text-chip);
+  font-size: var(--font-size-13);
+  line-height: 1.3;
+  text-shadow: 0 0 4px var(--color-halo), 0 0 2px var(--color-halo);
+  pointer-events: none;
+}
+
 .controls {
   display: flex;
   gap: var(--space-12);

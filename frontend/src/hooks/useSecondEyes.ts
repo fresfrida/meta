@@ -92,7 +92,8 @@ import {
   showSlow,
   stillPreparing,
 } from '../lib/sessionVoice'
-import { connectionText, sessionText, strings } from '../strings'
+import { askHintText, connectionText, sessionText, strings } from '../strings'
+import { type HintState, hintAfterReady, hintOnSpeech, hintOnStart } from '../lib/askHint'
 import { cancelSpeech, nudgeSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
 import { sayStartLine } from '../lib/startLine'
 import { type StageTimes, type TimingRecord, pushHistory, stageTimes, toRecord } from '../lib/timing'
@@ -277,6 +278,8 @@ export function useSecondEyes(
   const haltedRef = useRef(-1)
   // The loop reads the current language and voices without restarting.
   const langRef = useRef(lang)
+  /** Brief 30: the spoken Ask hint for this run. */
+  const hintRef = useRef<HintState>('off')
   const voicesRef = useRef(voices)
   // English plain sentence of the last warning, for the Ask prompt ("Their last warning was: ...").
   const lastWarningRef = useRef<string | null>(null)
@@ -407,8 +410,11 @@ export function useSecondEyes(
     playTick()
   }, [suppressRef])
 
-  /** Speaks a connection alert. What was said before is forgotten, so the current warning is said again after it. */
-  const sayAlert = useCallback((text: string) => {
+  /**
+   * Speaks a connection alert. What was said before is forgotten, so the current warning is said again after it.
+   * `after(current)` runs once it really ended; `current`: no newer phrase took over.
+   */
+  const sayAlert = useCallback((text: string, after?: (current: boolean) => void) => {
     const speechId = ++speechIdRef.current
     announceRef.current = { ...INITIAL_ANNOUNCE, lastSpokenAt: performance.now(), speaking: true }
     spokenKindsRef.current = {}
@@ -418,8 +424,30 @@ export function useSecondEyes(
     const done = () => {
       if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
     }
-    handle.started.then(() => void handle.ended.then(done), done)
+    handle.started.then(
+      () =>
+        void handle.ended.then(() => {
+          const current = speechId === speechIdRef.current
+          done()
+          after?.(current)
+        }),
+      done,
+    )
   }, [])
+
+  /** Brief 30: the ready line, then (once per run, hands-free on, nothing spoken first) the spoken Ask hint. */
+  const sayReady = useCallback(
+    (line: string) => {
+      const session = sessionRef.current
+      sayAlert(line, (current) => {
+        const [next, now] = hintAfterReady(hintRef.current, current && session === sessionRef.current)
+        hintRef.current = next
+        const hint = askHintText[langRef.current]
+        if (now && hint && handsFreeRef.current) sayAlert(hint)
+      })
+    },
+    [sayAlert],
+  )
 
   /**
    * Brief 27: the first answer after Start ends "Getting ready". The ready line is said unless the answer is a hazard
@@ -434,10 +462,10 @@ export function useSecondEyes(
       setPreparing(false)
       const line = sessionText[langRef.current].ready
       if (say !== 'ready' || !line) return false
-      sayAlert(line)
+      sayReady(line)
       return true
     },
-    [sayAlert],
+    [sayReady],
   )
 
   /** A fresh answer arrived on either channel: the connection rule may say "Back online". */
@@ -472,6 +500,7 @@ export function useSecondEyes(
    */
   const say = useCallback(
     (res: Shown, text: string, speech: string, onStart: (speechStart: number) => void, onFailed?: () => void) => {
+      hintRef.current = hintOnSpeech(hintRef.current) // Brief 30: an answer spoken first drops the Ask hint
       const speechId = ++speechIdRef.current
       const announceBefore = announceRef.current
       announceRef.current = spoke(res, performance.now())
@@ -814,6 +843,7 @@ export function useSecondEyes(
     lastWarningRef.current = null
     const session = ++sessionRef.current
     phaseRef.current = enterPreparing(performance.now()) // Brief 27: "Getting ready…" until the first answer
+    hintRef.current = hintOnStart(handsFreeRef.current, askHintText[langRef.current]) // Brief 30
     setPreparing(true)
     videoRunRef.current = { reopened: false }
     resetRouteDebug()
@@ -842,7 +872,7 @@ export function useSecondEyes(
           const [phase, ready] = onGreetingEnd(phaseRef.current)
           phaseRef.current = phase
           const line = sessionText[langRef.current].ready
-          if (ready && line && session === sessionRef.current) sayAlert(line)
+          if (ready && line && session === sessionRef.current) sayReady(line)
         }
         const greetNow = (voices: readonly SpeechSynthesisVoice[]) => {
           if (speechId !== speechIdRef.current) return done() // stopped while waiting
@@ -893,7 +923,7 @@ export function useSecondEyes(
         sessionStopped()
       }
     })
-  }, [runLoop, sayAlert])
+  }, [runLoop, sayReady])
 
   /** Stop. `say` replaces the stop line (public demo: the time-up line). Button clicks pass an event: ignored. */
   const stop = useCallback((say?: unknown) => {

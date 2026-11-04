@@ -311,7 +311,7 @@ describe('Brief 27: "Tap to turn the sound back on"', () => {
 
   it('never on Android', async () => {
     const { speechBlocked } = await load(ANDROID_UA)
-    expect(speechBlocked({ unlocked: true, last: 'timeout', detail: null, failures: 5, respoken: 0 }, false)).toBe(false)
+    expect(speechBlocked({ unlocked: true, last: 'timeout', detail: null, failures: 5, respoken: 0, endsLost: 0 }, false)).toBe(false)
   })
 })
 

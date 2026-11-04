@@ -385,6 +385,17 @@ export const sessionText: Record<Lang, { start: string; stop: string; ready: str
   },
 }
 
+/**
+ * Brief 30: the spoken Ask hint, once per Start after the ready line, with hands-free listening on. English approved by
+ * the Owner 5 Nov ("Approve and send"), verbatim. Null: no spoken hint in that language for now.
+ */
+export const askHintText: Record<Lang, string | null> = {
+  en: 'You can ask me anything. Just say "Hey Eyes", then your question.',
+  zh: null,
+  ms: null,
+  ta: null,
+}
+
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */
 export const languages: Record<Lang, { name: string; english: string | null }> = {
   en: { name: 'English', english: null },
@@ -444,6 +455,9 @@ export const strings = {
   // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.
   ask: {
     micChip: 'Listening',
+    // Brief 30, Owner approved 5 Nov, verbatim: the camera screen line while hands-free listening is on. English in
+    // every language ("Hey Eyes" is said in English everywhere).
+    hintLine: 'Say "Hey Eyes", then ask',
     stopped: { title: 'Listening stopped', body: 'Touch and hold the screen to ask instead.' },
     micFailed: { title: 'Microphone not available', body: 'Touch and hold will not work either.' },
     timing: (totalS: string, asrS: string, modelS: string) =>
@@ -456,8 +470,8 @@ export const strings = {
     welcomeLine:
       'Point your phone ahead. Second Eyes tells you about steps, kerbs and other things in your path, out loud.',
     youHave: (minutes: string) => `You have ${minutes}.`,
-    // Brief 29: + the path question (TENTATIVE: how the two examples are joined)
-    askBullet: 'Ask anything: say "Hey Eyes, what\'s in front of me?" or "Hey Eyes, where does the path go?"',
+    // Brief 30, Owner approved 5 Nov ("Approve and send"), verbatim
+    askBullet: 'Ask me anything. Say "Hey Eyes", then your question, like "What\'s in front of me?" or "Where does the path go?"',
     privacyBullet:
       "Faces are blurred on your phone. Images and questions go to Meta's AI to be understood, and we don't keep them.",
     safety: 'This is an early demo. Please keep using your cane or guide, and take extra care near roads.',

@@ -204,6 +204,12 @@ export default function App() {
                 lastSent={eyes.lastSent}
               />
             )}
+            {eyes.listen === 'on' && (
+              // Brief 30: how to ask, while hands-free listening is on. English in every language.
+              <p className="ask-hint" lang="en">
+                {strings.ask.hintLine}
+              </p>
+            )}
             <nav className="controls" aria-label={strings.appName}>
               {!eyes.loop && (
                 <Button label={strings.button.capture} onClick={eyes.capture} disabled={answer.kind === 'waiting'} />
