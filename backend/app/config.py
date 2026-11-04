@@ -29,10 +29,10 @@ RIGHT_MIN = 600
 DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
-# Prompt sent with every live frame. v7 (Brief 13b, Owner approved 4 Nov 2026) = v6 + "Also say whether you are sure
-# what the hazard is." (after the metres sentence) + "A single raised edge between a footpath and a road is a curb,
-# not a step." (at the end). v6 (roads, never clear onto a road) and earlier are in git history.
-VISION_PROMPT_VERSION = "v7"
+# Prompt sent with every live frame. v8 (Brief 28, Owner approved "Yes, both" 4 Nov 2026) = v7 + "a lift (elevator)
+# door" in the list (after the escalator) + "A door can be a single door, double doors or a glass door." (at the end).
+# v7 (Brief 13b) = v6 + "Also say whether you are sure what the hazard is." + the kerb sentence. Earlier: git history.
+VISION_PROMPT_VERSION = "v8"
 VISION_PROMPT = (
     'You are checking a photo for a research prototype that warns about hazards on a walking path. The '
     'photo is taken from chest height, facing forward. Find the single most important hazard on the path '
@@ -40,7 +40,8 @@ VISION_PROMPT = (
     'at head height (such as a low branch or sign), a person, a group of people (three or more), a '
     'bicycle or scooter, a vehicle, a pole or post, a barrier or cone, a ramp, a door (including glass '
     'doors), a wall (including glass walls), a road for cars (including an intersection), a road '
-    'crossing, a cycle path, an escalator, uneven or broken ground, or something else the person could '
+    'crossing, a cycle path, an escalator, a lift (elevator) door, uneven or broken ground, or something '
+    'else the person could '
     'walk into if none of these fit. Prefer roads, drops and things at head height over things the person '
     'can walk around. Never answer clear if the path leads onto a road for cars, a road crossing or a '
     'cycle path; name it instead. Give its side (left, ahead or right) and distance (near means within '
@@ -51,7 +52,7 @@ VISION_PROMPT = (
     'hazard is from the camera in metres, as a whole number from 1 to 10, or no distance if the path is '
     'clear or you are unsure. Also say whether you are sure what the hazard is. Flat things lying on the '
     'ground, such as mats, rugs or painted lines, are not hazards. A single raised edge between a '
-    'footpath and a road is a curb, not a step.'
+    'footpath and a road is a curb, not a step. A door can be a single door, double doors or a glass door.'
 )
 
 # Ask (Brief 6): the Owner-approved prompt, verbatim. The three {...} placeholders are filled by replace().

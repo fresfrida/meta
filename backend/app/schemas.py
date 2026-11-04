@@ -35,6 +35,7 @@ Hazard = Literal[
     "crossing",
     "cycle_path",
     "escalator",
+    "lift",
     "uneven",
     "obstacle",
     "clear",

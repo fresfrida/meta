@@ -27,6 +27,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['Crossing', 'A pedestrian crossing'],
     cycle_path: ['Cycle path', 'A cycle path'],
     escalator: ['Escalator', 'An escalator'],
+    lift: ['Lift', 'A lift door'], // Brief 28, TENTATIVE
     uneven: ['Uneven ground', 'Uneven ground'],
     obstacle: ['In your path', 'Something in your path'],
   },
@@ -46,6 +47,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['人行横道', '人行横道'],
     cycle_path: ['自行车道', '自行车道'],
     escalator: ['扶梯', '自动扶梯'],
+    lift: ['Lift', '挡路的东西'], // Brief 28: English screen word, generic voice words for now
     uneven: ['地面不平', '不平的地面'],
     obstacle: ['挡路物', '挡路的东西'],
   },
@@ -65,6 +67,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['Lintasan', 'lintasan pejalan kaki'],
     cycle_path: ['Laluan basikal', 'laluan basikal'],
     escalator: ['Eskalator', 'eskalator'],
+    lift: ['Lift', 'sesuatu di laluan anda'],
     uneven: ['Tidak rata', 'permukaan tidak rata'],
     obstacle: ['Di laluan anda', 'sesuatu di laluan anda'],
   },
@@ -84,6 +87,7 @@ const WORDS: Record<Lang, Record<Kind, [string, string]>> = {
     crossing: ['பாதசாரி கடவை', 'பாதசாரி கடவை உள்ளது'],
     cycle_path: ['மிதிவண்டிப் பாதை', 'மிதிவண்டிப் பாதை உள்ளது'],
     escalator: ['நகரும் படிக்கட்டு', 'நகரும் படிக்கட்டு உள்ளது'],
+    lift: ['Lift', 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது'],
     uneven: ['சீரற்ற தரை', 'சீரற்ற தரை உள்ளது'],
     obstacle: ['பாதையில் தடை', 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது'],
   },
