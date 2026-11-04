@@ -16,7 +16,7 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- (none)
+- Brief 15 on `claude/second-eyes-v9`: in-path rule + path guide built and checked (pytest 206, vitest 333, build OK). Waiting: Owner / Advisor on the two open points in brief-15.md (glass door at 22.11.17 dropped by the >10 m rule; corridor door at 22.11.08 still inside the path), then the go to merge
 
 ## Done
 - Brief 14: wording v2 (person-centred, 4 languages, Owner approved) + Start / Stop lines; pytest 198, vitest 330; merged and live (`e73bcb4`, 4 Nov)

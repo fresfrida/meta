@@ -9,6 +9,10 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
+- **In-path rule + path guide (Brief 15, branch `claude/second-eyes-v9`, NOT merged, NOT live):** SAM hits are kept
+  only when their box overlaps the walking path (+-0.75 m at the ground point; bottom-touching boxes: centre half of
+  the frame); others are counted as `beside` and stay quiet. A faint path guide is drawn under hazard boxes
+  (`PATH_GUIDE`, tentative).
 - **Wording v2 (Brief 14), merged and live 4 Nov (`e73bcb4`):** person-centred English (Owner
   approved) - "Nothing seen in your path.", "Something in your path", "A group of people", "The edge of a road",
   "A pedestrian crossing", near = "very close", the new connection lines, and Start / Stop lines. ZH / MS / TA
