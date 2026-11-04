@@ -1,7 +1,7 @@
 // Brief 25: iPhone speech. The WebKit cancel -> speak drop (reproduced in the iOS Simulator), the tap unlock, and the
 // debug state. A fake speech engine stands in for the browser.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { SPEECH_CANCEL_GAP_MS, SPEECH_START_TIMEOUT_MS } from '../config'
+import { SPEECH_CANCEL_GAP_MS, SPEECH_START_TIMEOUT_MS, SPEECH_STUCK_MS } from '../config'
 import { greetAtOnce } from './sessionVoice'
 
 const IPHONE_UA =
@@ -36,6 +36,7 @@ function fakeSynth() {
   const synth = {
     speaking: false,
     pending: false,
+    resume: vi.fn(() => calls.push('resume')),
     speak: vi.fn((u: FakeUtterance) => {
       calls.push(`speak:${u.text}`)
       spoken.push(u)
@@ -48,10 +49,10 @@ function fakeSynth() {
 
 let engine: ReturnType<typeof fakeSynth>
 
-async function load(ua: string) {
+async function load(ua: string, search = '') {
   vi.resetModules() // fresh module state (debug, waiting phrase) per test
   engine = fakeSynth()
-  vi.stubGlobal('window', { speechSynthesis: engine.synth, location: { search: '' } })
+  vi.stubGlobal('window', { speechSynthesis: engine.synth, location: { search } })
   vi.stubGlobal('navigator', { userAgent: ua, maxTouchPoints: ua.includes('iPhone') ? 5 : 0 })
   vi.stubGlobal('SpeechSynthesisUtterance', FakeUtterance)
   vi.spyOn(console, 'warn').mockImplementation(() => undefined)
@@ -90,12 +91,12 @@ describe('the Start tap (iPhone)', () => {
       speak("Second Eyes is on. I'll tell you what I see in your path.", opts)
     }
     const done = tap()
-    expect(engine.calls).toEqual(['speak:']) // queued in the tap itself
+    expect(engine.calls.filter((c) => c !== 'resume')).toEqual(['speak:']) // queued in the tap itself
     expect(engine.spoken[0].volume).toBe(0)
     engine.spoken[0].onend?.() // the unlock finished
     await vi.advanceTimersByTimeAsync(1000)
     await done
-    expect(engine.calls).toEqual(['speak:', "speak:Second Eyes is on. I'll tell you what I see in your path."])
+    expect(engine.calls.filter((c) => c !== 'resume')).toEqual(['speak:', "speak:Second Eyes is on. I'll tell you what I see in your path."])
   })
 
   it('the start line never waits for voices on the iPhone (said in the tap); Android still waits', () => {
@@ -117,7 +118,7 @@ describe('cancel -> speak on WebKit (iPhone)', () => {
   it('nothing playing: no cancel, spoken at once', async () => {
     const { speak } = await load(IPHONE_UA)
     speak('Steps ahead.', opts)
-    expect(engine.calls).toEqual(['speak:Steps ahead.'])
+    expect(engine.calls).toEqual(['resume', 'speak:Steps ahead.']) // Brief 27: resume() first on WebKit
   })
 
   it('something playing: cancel, wait the gap, then speak (speaking at once is dropped on WebKit)', async () => {
@@ -128,7 +129,7 @@ describe('cancel -> speak on WebKit (iPhone)', () => {
     vi.advanceTimersByTime(SPEECH_CANCEL_GAP_MS - 1)
     expect(engine.calls).toEqual(['cancel'])
     vi.advanceTimersByTime(1)
-    expect(engine.calls).toEqual(['cancel', 'speak:Steps ahead.'])
+    expect(engine.calls).toEqual(['cancel', 'resume', 'speak:Steps ahead.'])
   })
 
   it('a newer phrase during the gap replaces the waiting one; only the newest is spoken', async () => {
@@ -185,7 +186,7 @@ describe('the debug line: last speak ok / timeout / error', () => {
     const h = speak('Steps ahead.', opts)
     engine.spoken[0].onstart?.()
     await h.started
-    expect(speechDebug()).toEqual({ unlocked: true, last: 'ok', detail: null })
+    expect(speechDebug()).toMatchObject({ unlocked: true, last: 'ok', detail: null, failures: 0 })
   })
 
   it('timeout when it never starts (logged, rejected: the card shows "Speech did not start")', async () => {
@@ -223,5 +224,98 @@ describe('the debug line: last speak ok / timeout / error', () => {
     await h.started
     off()
     expect(heard).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('Brief 27: a stuck phrase on WebKit is spoken again once', () => {
+  it('not started after SPEECH_STUCK_MS while the engine is busy: cancel, gap, speak again', async () => {
+    const { speak, speechDebug } = await load(IPHONE_UA)
+    const h = speak('Steps ahead.', opts)
+    engine.synth.speaking = true // the engine says busy, but nothing started
+    vi.advanceTimersByTime(SPEECH_STUCK_MS)
+    expect(engine.calls.slice(-1)).toEqual(['cancel'])
+    engine.spoken[0].onerror?.({ error: 'canceled' }) // the stuck one's cancel event is ignored
+    vi.advanceTimersByTime(SPEECH_CANCEL_GAP_MS)
+    expect(engine.calls.filter((c) => c.startsWith('speak:'))).toEqual(['speak:Steps ahead.', 'speak:Steps ahead.'])
+    expect(speechDebug().respoken).toBe(1)
+    engine.spoken[1].onstart?.()
+    await expect(h.started).resolves.toBeTypeOf('number')
+  })
+
+  it('only once: a second stall is left to the start timeout', async () => {
+    const { speak } = await load(IPHONE_UA)
+    const h = speak('Steps ahead.', opts)
+    const failed = expect(h.started).rejects.toThrow('speech did not start')
+    engine.synth.speaking = true
+    vi.advanceTimersByTime(SPEECH_START_TIMEOUT_MS)
+    await failed
+    expect(engine.calls.filter((c) => c.startsWith('speak:'))).toHaveLength(2)
+  })
+
+  it('engine idle (not busy): no re-speak', async () => {
+    const { speak } = await load(IPHONE_UA)
+    speak('Steps ahead.', opts)
+    vi.advanceTimersByTime(SPEECH_STUCK_MS + SPEECH_CANCEL_GAP_MS)
+    expect(engine.calls.filter((c) => c.startsWith('speak:'))).toHaveLength(1)
+  })
+
+  it('?resume=0: no resume() and no re-speak', async () => {
+    const { speak } = await load(IPHONE_UA, '?resume=0')
+    speak('Steps ahead.', opts)
+    engine.synth.speaking = true
+    vi.advanceTimersByTime(SPEECH_STUCK_MS + SPEECH_CANCEL_GAP_MS)
+    expect(engine.calls).toEqual(['speak:Steps ahead.'])
+  })
+
+  it('Android: never resume() or re-speak (unchanged)', async () => {
+    const { speak } = await load(ANDROID_UA)
+    speak('Steps ahead.', opts)
+    engine.synth.speaking = true
+    vi.advanceTimersByTime(SPEECH_STUCK_MS + SPEECH_CANCEL_GAP_MS)
+    expect(engine.calls).toEqual(['cancel', 'speak:Steps ahead.'])
+  })
+})
+
+describe('Brief 27: "Tap to turn the sound back on"', () => {
+  it('two phrases in a row that never started on WebKit -> blocked; a tap (unlock) clears it', async () => {
+    const { speak, speechBlocked, speechDebug, unlockSpeech } = await load(IPHONE_UA)
+    for (const text of ['Steps ahead.', 'Kerb ahead.']) {
+      const h = speak(text, opts)
+      engine.spoken[engine.spoken.length - 1].onend?.() // ended without starting
+      await expect(h.started).rejects.toThrow()
+    }
+    expect(speechBlocked()).toBe(true)
+    unlockSpeech()
+    expect(speechDebug().failures).toBe(0)
+    expect(speechBlocked()).toBe(false)
+  })
+
+  it('a phrase that starts resets the count', async () => {
+    const { speak, speechDebug } = await load(IPHONE_UA)
+    const a = speak('Steps ahead.', opts)
+    engine.spoken[0].onend?.()
+    await expect(a.started).rejects.toThrow()
+    const b = speak('Kerb ahead.', opts)
+    engine.spoken[1].onstart?.()
+    await b.started
+    expect(speechDebug().failures).toBe(0)
+  })
+
+  it('never on Android', async () => {
+    const { speechBlocked } = await load(ANDROID_UA)
+    expect(speechBlocked({ unlocked: true, last: 'timeout', detail: null, failures: 5, respoken: 0 }, false)).toBe(false)
+  })
+})
+
+describe('Brief 27: after a route change', () => {
+  it('nudgeSpeech wakes the WebKit engine and cancels a stray busy state; nothing on Android', async () => {
+    const ios = await load(IPHONE_UA)
+    engine.synth.speaking = true
+    ios.nudgeSpeech()
+    expect(engine.calls).toEqual(['resume', 'cancel'])
+    const android = await load(ANDROID_UA)
+    engine.synth.speaking = true
+    android.nudgeSpeech()
+    expect(engine.calls).toEqual([])
   })
 })

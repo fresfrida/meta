@@ -9,13 +9,22 @@ import {
   WARN_TONE_HZ,
   WARN_TONE_MS,
   WARN_VIBRATE_MS,
+  TONES_ENABLED,
 } from '../config'
-import { audioContext } from './audio'
+import { holdAudio, releaseAudio } from './audio'
+import { webKitSpeech } from './speech'
 import { selfSound } from './micGate'
 
+/** ?tone=0 (Brief 27 test flag): no Web Audio sounds on WebKit. Android always plays them. */
+function tonesOff(): boolean {
+  return !TONES_ENABLED && webKitSpeech()
+}
+
 /** Plays the earcon; resolves when it has finished. The microphone is closed while it plays. */
+
 export function playEarcon(): Promise<void> {
-  const ctx = audioContext()
+  if (tonesOff()) return Promise.resolve()
+  const ctx = holdAudio()
   if (!ctx) return Promise.resolve()
   const toneS = EARCON_TONE_MS / 1000
   const t0 = ctx.currentTime + 0.02
@@ -36,6 +45,7 @@ export function playEarcon(): Promise<void> {
   return new Promise((resolve) =>
     setTimeout(() => {
       selfSound.end(performance.now())
+      releaseAudio()
       resolve()
     }, totalMs),
   )
@@ -68,19 +78,28 @@ export function playTick(): void {
 
 /** One short tone; the microphone is closed while it plays. */
 function tone(hz: number, ms: number, peak: number, rampS: number): void {
-  const ctx = audioContext()
+  if (tonesOff()) return
+  const ctx = holdAudio()
   if (!ctx) return
-  const toneS = ms / 1000
-  const start = ctx.currentTime + 0.01
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.frequency.value = hz
-  gain.gain.setValueAtTime(0, start)
-  gain.gain.linearRampToValueAtTime(peak, start + rampS)
-  gain.gain.linearRampToValueAtTime(0, start + toneS)
-  osc.connect(gain).connect(ctx.destination)
-  osc.start(start)
-  osc.stop(start + toneS)
+  try {
+    const toneS = ms / 1000
+    const start = ctx.currentTime + 0.01
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.frequency.value = hz
+    gain.gain.setValueAtTime(0, start)
+    gain.gain.linearRampToValueAtTime(peak, start + rampS)
+    gain.gain.linearRampToValueAtTime(0, start + toneS)
+    osc.connect(gain).connect(ctx.destination)
+    osc.start(start)
+    osc.stop(start + toneS)
+  } catch (err) {
+    releaseAudio()
+    throw err
+  }
   selfSound.start()
-  setTimeout(() => selfSound.end(performance.now()), ms + 10)
+  setTimeout(() => {
+    selfSound.end(performance.now())
+    releaseAudio()
+  }, ms + 10)
 }

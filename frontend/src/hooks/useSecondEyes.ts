@@ -31,6 +31,9 @@ import {
   SPEECH_LANGS,
   TIMING_HISTORY_SIZE,
   VOICE_WAIT_MS,
+  FIRST_FRAME_WAIT_MS,
+  GETTING_READY_STILL_MS,
+  VIDEO_MUTE_WAIT_MS,
 } from '../config'
 import { type AnnounceState, type Decision, INITIAL_ANNOUNCE, decide, spoke } from '../lib/announce'
 import type { Size } from '../lib/boxMap'
@@ -40,6 +43,7 @@ import {
   type CameraFailure,
   type SentFrame,
   captureGuarded,
+  firstFrame,
   openRearCamera,
   stopStream,
 } from '../lib/camera'
@@ -59,7 +63,9 @@ import {
   replaces,
 } from '../lib/merge'
 import { type Shown, type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
-import { sessionStarted, sessionStopped, unlockAudio } from '../lib/audio'
+import { audioContext, recoverAudio, sessionStarted, sessionStopped, unlockAudio } from '../lib/audio'
+import { browserRouteSources, resetRouteDebug, watchAudioRoute } from '../lib/audioRoute'
+import { guardVideo, resetVideoDebug } from '../lib/videoGuard'
 import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
@@ -69,16 +75,24 @@ import { type SpokenSides, holdSide, rememberSide } from '../lib/sideHold'
 import { atSpeakingTime } from '../lib/distanceNow'
 import { WalkDetector } from '../lib/motion'
 import {
+  PHASE_IDLE,
   SESSION_IDLE,
   type SessionVoice,
+  type StartPhase,
+  enterPreparing,
   greetAtOnce,
   greetingDone,
   holdForGreeting,
+  leavePreparing,
+  onFirstAnswer,
+  onGreetingEnd,
   onStart,
   onStop,
+  showSlow,
+  stillPreparing,
 } from '../lib/sessionVoice'
 import { connectionText, sessionText, strings } from '../strings'
-import { cancelSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
+import { cancelSpeech, nudgeSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
 import { type StageTimes, type TimingRecord, pushHistory, stageTimes, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus, waitForVoices } from '../lib/voices'
 import { type AskTiming, type AskView, type ListenState, useAsk } from './useAsk'
@@ -165,8 +179,12 @@ export interface SecondEyes {
   hazardBox: HazardBox | null
   /** The last frame actually sent (after face blur), for the thumbnail. */
   lastSent: SentFrame | null
-  /** A request has taken longer than MODEL_SLOW_MS. */
+  /** A request has taken longer than MODEL_SLOW_MS (never while getting ready). */
   slow: boolean
+  /** Brief 27: between the Start tap and the first answer ("Getting ready…"). */
+  preparing: boolean
+  /** Brief 27: in a tap, after "Tap to turn the sound back on": unlock sound again. */
+  soundBack: () => void
   timings: Timings
   lastUsage: Usage | null
   start: (prepare?: () => Promise<boolean>) => void
@@ -246,6 +264,11 @@ export function useSecondEyes(
   const walkRef = useRef(new WalkDetector(WALK_WINDOW_MS, WALK_ACCEL_VAR))
   // Start / Stop lines (said once per tap; hazard speech waits for the start line).
   const sessionVoiceRef = useRef<SessionVoice>(SESSION_IDLE)
+  const phaseRef = useRef<StartPhase>(PHASE_IDLE)
+  const handsFreeRef = useRef(handsFree)
+  /** Brief 27: the camera is reopened at most once per run. */
+  const videoRunRef = useRef({ reopened: false })
+  const unguardRef = useRef<(() => void) | null>(null)
   // Bumped on Start and Stop so the loop and late responses from an old session stop.
   const sessionRef = useRef(0)
   // Set to the session when the loop must stop itself (budget reached, no key).
@@ -271,6 +294,9 @@ export function useSecondEyes(
   const [hazardBox, setHazardBox] = useState<HazardBox | null>(null)
   const [lastSent, setLastSent] = useState<SentFrame | null>(null)
   const [slow, setSlow] = useState(false)
+  const [preparing, setPreparing] = useState(false)
+  /** Changes when the camera stream is replaced (Brief 27 recovery), so the video guard watches the new track. */
+  const [streamTick, setStreamTick] = useState(0)
   const [timings, setTimings] = useState<Timings>(EMPTY_TIMINGS)
   const [lastUsage, setLastUsage] = useState<Usage | null>(null)
 
@@ -309,6 +335,17 @@ export function useSecondEyes(
   useEffect(() => {
     void checkHealth()
   }, [checkHealth])
+
+  useEffect(() => {
+    handsFreeRef.current = handsFree
+  }, [handsFree])
+
+  // Brief 27: load the face model while the Home screen is idle, so Start does not wait for it.
+  useEffect(() => {
+    const idle = (window as Window & { requestIdleCallback?: (cb: () => void) => number }).requestIdleCallback
+    if (idle) idle(() => warmUpFaceDetector())
+    else setTimeout(() => warmUpFaceDetector(), 1_000)
+  }, [])
 
   useEffect(
     () => () => {
@@ -382,6 +419,25 @@ export function useSecondEyes(
     handle.started.then(() => void handle.ended.then(done), done)
   }, [])
 
+  /**
+   * Brief 27: the first answer after Start ends "Getting ready". The ready line is said unless the answer is a hazard
+   * (the hazard is said instead) or the start line still plays (then after it). True when the ready line was said now:
+   * this answer then stays quiet.
+   */
+  const firstAnswer = useCallback(
+    (hazard: boolean): boolean => {
+      if (!phaseRef.current.preparing) return false
+      const [next, say] = onFirstAnswer(phaseRef.current, { hazard, greeting: sessionVoiceRef.current.greeting })
+      phaseRef.current = next
+      setPreparing(false)
+      const line = sessionText[langRef.current].ready
+      if (say !== 'ready' || !line) return false
+      sayAlert(line)
+      return true
+    },
+    [sayAlert],
+  )
+
   /** A fresh answer arrived on either channel: the connection rule may say "Back online". */
   const noteAnswer = useCallback(() => {
     const [next, said] = onAnswer(linkRef.current, performance.now(), !askActiveRef.current)
@@ -454,6 +510,7 @@ export function useSecondEyes(
     ) => {
       const now = performance.now()
       noteStages(channel, seq, marks)
+      const readyNow = firstAnswer(isWarning(captured))
       // Brief 16: say the metres left now, not the metres at capture (the person kept walking meanwhile).
       const atNow = atSpeakingTime(captured, marks.captureStart, now, walkRef.current.walking(now), WALK_SPEED_M_S, STALE_MS)
       const answerMs = Math.round(marks.responseReceived - marks.captureStart)
@@ -471,6 +528,7 @@ export function useSecondEyes(
       if (isWarning(shown)) setTimings((t) => ({ ...t, lastDistance: { capturedM: atNow.capturedM, nowM: atNow.nowM } }))
       // Hazard speech waits while the start line plays (it is said on the next answer).
       let decision = holdForGreeting(decideFor(shown, announceRef.current, now, talkMoreRef.current), sessionVoiceRef.current)
+      if (readyNow) decision = { speak: false, why: 'busy' } // the ready line is playing (Brief 27)
       const recent = () => fastRecentlySaid(shown, spokenKindsRef.current, now, FAST_REPEAT_MS, REPEAT_CLOSER_M)
       // A Talk more repeat of a fast hit waits for Muse when Muse's detail of it is on screen (Muse repeats that).
       const museShown = shownRef.current.channel === 'detail' && now - shownRef.current.at < SAM_HOLD_MS
@@ -529,7 +587,7 @@ export function useSecondEyes(
         maybeTick()
       }
     },
-    [maybeTick, noteStages, say, showAnswer, suppressRef],
+    [firstAnswer, maybeTick, noteStages, say, showAnswer, suppressRef],
   )
 
   /** An answer older than one already handled on its channel is dropped: counted, not shown, not spoken. */
@@ -615,6 +673,7 @@ export function useSecondEyes(
         const nearest = res.hits[0]
         if (!nearest) {
           noteStages('fast', seq, { captureStart, requestSent, responseReceived, serverMs: res.sam_ms })
+          firstAnswer(false)
           setTimings((t) => ({
             ...t,
             lastSamMs: Math.round(res.sam_ms),
@@ -635,7 +694,7 @@ export function useSecondEyes(
         onFailure(err, session, 'fast')
       }
     },
-    [isLate, maybeTick, noteAnswer, noteStages, onFailure, present],
+    [firstAnswer, isLate, maybeTick, noteAnswer, noteStages, onFailure, present],
   )
 
   /**
@@ -742,16 +801,21 @@ export function useSecondEyes(
   const start = useCallback((prepare?: () => Promise<boolean>) => {
     // iOS (Brief 26): a 'playback' audio session first, so speech and tones play on the speaker and the silent
     // switch cannot mute them. Feature-detected; nothing happens on Android.
-    sessionStarted()
+    sessionStarted(handsFreeRef.current) // Brief 27: one session type for the whole run
     unlockSpeech() // must run synchronously inside the tap
     // iOS asks for motion access inside a tap; refused or unsupported -> the distance rule assumes walking.
     const motion = (window as unknown as { DeviceMotionEvent?: { requestPermission?: () => Promise<string> } })
       .DeviceMotionEvent
     motion?.requestPermission?.().catch(() => undefined)
     unlockAudio() // earcons and the microphone (iOS)
-    warmUpFaceDetector() // load the face model now, before the first frame
+    warmUpFaceDetector() // usually loaded already while Home was idle (Brief 27); this is the fallback
     lastWarningRef.current = null
     const session = ++sessionRef.current
+    phaseRef.current = enterPreparing(performance.now()) // Brief 27: "Getting ready…" until the first answer
+    setPreparing(true)
+    videoRunRef.current = { reopened: false }
+    resetRouteDebug()
+    resetVideoDebug()
     announceRef.current = INITIAL_ANNOUNCE
     spokenKindsRef.current = {}
     spokenSidesRef.current = {}
@@ -760,7 +824,6 @@ export function useSecondEyes(
     setCamera('starting')
     setAnswer({ kind: 'none' })
     setHazardBox(null)
-    void checkHealth()
     const go = () => {
       const [voice, greet] = onStart(sessionVoiceRef.current)
       sessionVoiceRef.current = voice
@@ -773,6 +836,11 @@ export function useSecondEyes(
         const done = () => {
           sessionVoiceRef.current = greetingDone(sessionVoiceRef.current)
           if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
+          // Brief 27: the first answer came while the start line played: the ready line now.
+          const [phase, ready] = onGreetingEnd(phaseRef.current)
+          phaseRef.current = phase
+          const line = sessionText[langRef.current].ready
+          if (ready && line && session === sessionRef.current) sayAlert(line)
         }
         const greetNow = (voices: readonly SpeechSynthesisVoice[]) => {
           if (speechId !== speechIdRef.current) return done() // stopped while waiting
@@ -792,25 +860,37 @@ export function useSecondEyes(
           if (video) {
             video.srcObject = stream
             await video.play().catch(() => undefined)
+            await firstFrame(video, FIRST_FRAME_WAIT_MS) // Brief 27: the first capture finds a frame
+            if (session !== sessionRef.current) return
           }
           setCamera('on')
           if (LOOP_ENABLED) void runLoop(session)
         })
-        .catch((err) => setCamera(err instanceof CameraError ? err.failure : 'unavailable'))
+        .catch((err) => {
+          phaseRef.current = leavePreparing()
+          setPreparing(false)
+          sessionStopped()
+          setCamera(err instanceof CameraError ? err.failure : 'unavailable')
+        })
     }
     if (!prepare) return go()
     void prepare().then((ok) => {
       if (session !== sessionRef.current) return
       if (ok) go()
       else {
+        phaseRef.current = leavePreparing()
+        setPreparing(false)
         setCamera('off')
         sessionStopped()
       }
     })
-  }, [checkHealth, runLoop])
+  }, [runLoop, sayAlert])
 
   /** Stop. `say` replaces the stop line (public demo: the time-up line). Button clicks pass an event: ignored. */
   const stop = useCallback((say?: unknown) => {
+    unguardRef.current?.() // before the picture is cleared, so the pause is not "recovered"
+    phaseRef.current = leavePreparing()
+    setPreparing(false)
     sessionRef.current += 1
     speechIdRef.current += 1
     announceRef.current = INITIAL_ANNOUNCE
@@ -842,6 +922,99 @@ export function useSecondEyes(
     stopRef.current = stop
   }, [stop])
 
+  /** Brief 27: the camera could not be brought back: everything off, the Home screen shows the camera notice. */
+  const failCamera = useCallback(() => {
+    unguardRef.current?.()
+    sessionRef.current += 1
+    speechIdRef.current += 1
+    announceRef.current = INITIAL_ANNOUNCE
+    cancelSpeech()
+    sessionVoiceRef.current = onStop(sessionVoiceRef.current)[0]
+    phaseRef.current = leavePreparing()
+    setPreparing(false)
+    stopStream(streamRef.current)
+    streamRef.current = null
+    if (videoRef.current) videoRef.current.srcObject = null
+    sessionStopped()
+    setCamera('unavailable')
+    setAnswer({ kind: 'none' })
+    setHazardBox(null)
+  }, [])
+
+  // Brief 27 (WebKit): the picture pauses or the camera track stops while running -> play() again, or reopen once.
+  useEffect(() => {
+    const video = videoRef.current
+    const stream = streamRef.current
+    if (camera !== 'on' || !video || !stream || !webKitSpeech()) return
+    const session = sessionRef.current
+    const unguard = guardVideo(video, stream.getVideoTracks()[0] ?? null, {
+      muteWaitMs: VIDEO_MUTE_WAIT_MS,
+      run: videoRunRef.current,
+      reopen: async () => {
+        unguardRef.current?.()
+        stopStream(streamRef.current) // phones open one camera at a time
+        try {
+          const next = await openRearCamera()
+          if (session !== sessionRef.current) {
+            stopStream(next)
+            return false
+          }
+          streamRef.current = next
+          video.srcObject = next
+          await video.play().catch(() => undefined)
+          setStreamTick((t) => t + 1) // watch the new track
+          return true
+        } catch {
+          return false
+        }
+      },
+      onFailed: () => session === sessionRef.current && failCamera(),
+    })
+    unguardRef.current = unguard
+    return () => {
+      unguard()
+      if (unguardRef.current === unguard) unguardRef.current = null
+    }
+  }, [camera, streamTick, failCamera])
+
+  // Brief 27 (WebKit): headphones in / out, a call, Siri... -> resume the audio, wake speech, say the current warning
+  // again on the next answer.
+  useEffect(() => {
+    if (camera !== 'on' || !webKitSpeech()) return
+    return watchAudioRoute(browserRouteSources(audioContext()), () => {
+      recoverAudio()
+      nudgeSpeech()
+      if (!announceRef.current.speaking) {
+        announceRef.current = INITIAL_ANNOUNCE
+        spokenKindsRef.current = {}
+        spokenSidesRef.current = {}
+      }
+    })
+  }, [camera])
+
+  // Brief 27: still getting ready after GETTING_READY_STILL_MS -> the still-preparing line, once.
+  useEffect(() => {
+    if (!preparing) return
+    const left = phaseRef.current.since + GETTING_READY_STILL_MS - performance.now()
+    const timer = setTimeout(() => {
+      const [phase, still] = stillPreparing(phaseRef.current, performance.now(), GETTING_READY_STILL_MS)
+      phaseRef.current = phase
+      const line = sessionText[langRef.current].still
+      if (still && line && !announceRef.current.speaking) sayAlert(line)
+    }, Math.max(0, left))
+    return () => clearTimeout(timer)
+  }, [preparing, sayAlert])
+
+  /** Brief 27, inside the tap on "Tap to turn the sound back on": unlock audio and speech again. */
+  const soundBack = useCallback(() => {
+    sessionStarted(handsFreeRef.current)
+    unlockAudio()
+    unlockSpeech()
+    announceRef.current = INITIAL_ANNOUNCE
+    spokenKindsRef.current = {}
+    spokenSidesRef.current = {}
+  }, [])
+
   const capture = useCallback(() => {
     if (camera === 'on' && inFlightRef.current === 0) void captureOnce(sessionRef.current)
   }, [camera, captureOnce])
@@ -857,7 +1030,9 @@ export function useSecondEyes(
     answer,
     hazardBox,
     lastSent,
-    slow,
+    slow: showSlow({ ...PHASE_IDLE, preparing }, slow),
+    preparing,
+    soundBack,
     timings,
     lastUsage,
     start,

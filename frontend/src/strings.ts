@@ -349,14 +349,31 @@ export const connectionText: Record<Lang, { lost: string; back: string }> = {
 }
 
 /** Said once when the user taps Start / Stop (Brief 14). Owner approved 4 Nov; ZH / MS / TA native check pending. */
-export const sessionText: Record<Lang, { start: string; stop: string }> = {
-  en: { start: "Second Eyes is on. I'll tell you what I see in your path.", stop: 'Second Eyes is off.' },
-  zh: { start: 'Second Eyes 已开启。我会告诉您路上看到的情况。', stop: 'Second Eyes 已关闭。' },
+/**
+ * Start / Stop lines (Brief 14), and the getting-ready lines (Brief 27, English approved by the Owner 4 Nov, verbatim).
+ * `ready` / `still` are null until the ZH / MS / TA wording comes: those languages keep their Brief 14 start line and
+ * skip the two new lines.
+ */
+export const sessionText: Record<Lang, { start: string; stop: string; ready: string | null; still: string | null }> = {
+  en: {
+    start: 'Second Eyes is getting ready. Please wait a moment before you walk.',
+    stop: 'Second Eyes is off.',
+    ready: "Ready. I'll tell you what I see in your path.",
+    still: 'Still getting ready. Thank you for waiting.',
+  },
+  zh: { start: 'Second Eyes 已开启。我会告诉您路上看到的情况。', stop: 'Second Eyes 已关闭。', ready: null, still: null },
   ms: {
     start: 'Second Eyes sudah dihidupkan. Saya akan beritahu apa yang saya nampak di laluan anda.',
     stop: 'Second Eyes sudah dimatikan.',
+    ready: null,
+    still: null,
   },
-  ta: { start: 'Second Eyes இயக்கப்பட்டது. உங்கள் பாதையில் நான் பார்ப்பதைச் சொல்வேன்.', stop: 'Second Eyes நிறுத்தப்பட்டது.' },
+  ta: {
+    start: 'Second Eyes இயக்கப்பட்டது. உங்கள் பாதையில் நான் பார்ப்பதைச் சொல்வேன்.',
+    stop: 'Second Eyes நிறுத்தப்பட்டது.',
+    ready: null,
+    still: null,
+  },
 }
 
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */
@@ -454,6 +471,14 @@ export const strings = {
   },
 
   state: {
+    // Brief 27 (English approved by the Owner 4 Nov, verbatim; shown in English in every language for now)
+    gettingReady: {
+      title: 'Getting ready…',
+      body: 'This takes a few seconds the first time.',
+      steps: { camera: 'Camera', privacy: 'Privacy', firstLook: 'First look' },
+      done: 'done',
+    },
+    soundBack: { title: 'Tap to turn the sound back on' },
     cameraStarting: {
       title: 'Opening camera…',
       body: 'Allow camera access if asked.',
@@ -532,6 +557,9 @@ export const strings = {
     // Debug (Brief 25), English only: is speech unlocked, how did the last phrase go, Web Audio state
     speech: (unlocked: boolean, last: string | null, detail: string | null, audio: string, session: string) =>
       `speech: unlocked ${unlocked ? 'yes' : 'no'} · last speak ${last ?? '–'}${detail ? ` (${detail})` : ''} · audio ${audio} · session ${session}`,
+    // Debug (Brief 27), English only: audio route changes, picture pauses, stuck phrases spoken again
+    recovery: (changes: number, last: string | null, paused: number, recovered: number, respoken: number, failures: number) =>
+      `route changes ${changes}${last ? ` (last: ${last})` : ''} · video paused ${paused} · recovered ${recovered} · re-spoken ${respoken} · not started in a row ${failures}`,
     // Debug (Brief 26), English only: what the camera gives, and the vertical field of view the distances use
     camera: (c: {
       size: string

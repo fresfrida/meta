@@ -208,3 +208,22 @@ export async function captureGuarded(video: HTMLVideoElement): Promise<SentFrame
   }
   return { imageB64: dataUrl.slice(dataUrl.indexOf(',') + 1), dataUrl, blur: guard.status, faces: guard.blurred.length, blurMs, stages }
 }
+
+/**
+ * Brief 27: resolves when the video has a frame to capture (or after `maxMs`), so the first capture of a run does not
+ * fail on an empty video and wait a whole loop step for the next one.
+ */
+export function firstFrame(video: Pick<HTMLVideoElement, 'videoWidth' | 'addEventListener' | 'removeEventListener'>, maxMs: number): Promise<void> {
+  if (video.videoWidth > 0) return Promise.resolve()
+  const events = ['loadedmetadata', 'loadeddata', 'resize'] as const
+  return new Promise((resolve) => {
+    const done = () => {
+      clearTimeout(timer)
+      events.forEach((e) => video.removeEventListener(e, check))
+      resolve()
+    }
+    const check = () => video.videoWidth > 0 && done()
+    const timer = setTimeout(done, maxMs)
+    events.forEach((e) => video.addEventListener(e, check))
+  })
+}

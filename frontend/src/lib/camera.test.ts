@@ -105,3 +105,26 @@ describe('openRearCamera fallback', () => {
     expect(cam.cameraInfo()?.switched).toBe(false)
   })
 })
+
+describe('first frame (Brief 27)', () => {
+  it('resolves at once when the video has a size, else on loadedmetadata, else after the wait', async () => {
+    vi.useFakeTimers()
+    const { firstFrame } = await import('./camera')
+    const v = Object.assign(new EventTarget(), { videoWidth: 0 })
+    let done = false
+    void firstFrame(v as unknown as HTMLVideoElement, 2000).then(() => (done = true))
+    await vi.advanceTimersByTimeAsync(10)
+    expect(done).toBe(false)
+    v.videoWidth = 720
+    v.dispatchEvent(new Event('loadedmetadata'))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(done).toBe(true)
+    const w = Object.assign(new EventTarget(), { videoWidth: 0 })
+    let late = false
+    void firstFrame(w as unknown as HTMLVideoElement, 2000).then(() => (late = true))
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(late).toBe(true)
+    await expect(firstFrame({ videoWidth: 720 } as HTMLVideoElement, 2000)).resolves.toBeUndefined()
+    vi.useRealTimers()
+  })
+})
