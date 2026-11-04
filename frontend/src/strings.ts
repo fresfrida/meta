@@ -64,7 +64,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'Crossing',
       cycle_path: 'Cycle path',
       escalator: 'Escalator',
-      lift: 'Lift', // TENTATIVE (Brief 28): British / Singapore word, like 'Kerb'
+      lift: 'Lift', // Brief 28, Owner approved 5 Nov ("Approve all")
       uneven: 'Uneven ground',
       obstacle: 'In your path',
       clear: 'Nothing seen',
@@ -93,7 +93,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'A pedestrian crossing',
         cycle_path: 'A cycle path',
         escalator: 'An escalator',
-        lift: 'A lift door', // TENTATIVE (Brief 28)
+        lift: 'A lift', // Brief 28, Owner approved 5 Nov
         uneven: 'Uneven ground',
         obstacle: 'Something in your path',
         steps: 'Steps',
@@ -128,7 +128,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: '人行横道',
       cycle_path: '自行车道',
       escalator: '扶梯',
-      lift: 'Lift', // Brief 28: English until the Advisor sends 中文
+      lift: '电梯', // Brief 28, Owner approved 5 Nov
       uneven: '地面不平',
       obstacle: '挡路物',
       clear: '未见障碍',
@@ -157,7 +157,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: '人行横道',
         cycle_path: '自行车道',
         escalator: '自动扶梯',
-        lift: '挡路的东西', // Brief 28: the generic (obstacle) words until the Advisor sends 中文
+        lift: '电梯', // Brief 28, Owner approved 5 Nov
         uneven: '不平的地面',
         obstacle: '挡路的东西',
         steps: '台阶',
@@ -189,7 +189,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'Lintasan',
       cycle_path: 'Laluan basikal',
       escalator: 'Eskalator',
-      lift: 'Lift', // Brief 28: English until the Advisor sends Bahasa Melayu
+      lift: 'Lif', // Brief 28, Owner approved 5 Nov
       uneven: 'Tidak rata',
       obstacle: 'Di laluan anda',
       clear: 'Tiada apa-apa',
@@ -218,7 +218,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'lintasan pejalan kaki',
         cycle_path: 'laluan basikal',
         escalator: 'eskalator',
-        lift: 'sesuatu di laluan anda', // Brief 28: the generic (obstacle) words until the Advisor sends BM
+        lift: 'lif', // Brief 28, Owner approved 5 Nov
         uneven: 'permukaan tidak rata',
         obstacle: 'sesuatu di laluan anda',
         steps: 'tangga',
@@ -254,7 +254,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       crossing: 'பாதசாரி கடவை',
       cycle_path: 'மிதிவண்டிப் பாதை',
       escalator: 'நகரும் படிக்கட்டு',
-      lift: 'Lift', // Brief 28: English until the Advisor sends தமிழ்
+      lift: 'லிஃப்ட்', // Brief 28, Owner approved 5 Nov
       uneven: 'சீரற்ற தரை',
       obstacle: 'பாதையில் தடை',
       clear: 'எதுவும் தெரியவில்லை',
@@ -283,7 +283,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         crossing: 'பாதசாரி கடவை உள்ளது',
         cycle_path: 'மிதிவண்டிப் பாதை உள்ளது',
         escalator: 'நகரும் படிக்கட்டு உள்ளது',
-        lift: 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது', // Brief 28: the generic (obstacle) words until the Advisor sends தமிழ்
+        lift: 'லிஃப்ட் உள்ளது', // Brief 28, Owner approved 5 Nov
         uneven: 'சீரற்ற தரை உள்ளது',
         obstacle: 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது',
         steps: 'படிகள் உள்ளன',
