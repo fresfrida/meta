@@ -6,7 +6,7 @@
 - Face blur recall: 2x tiles for distant faces (~4x time) if the iPhone has headroom
 - Native-speaker check of the ZH / MS / TA Ask texts (Brief 8)
 - Translations of the Ask chip, "Listening stopped", "Microphone not available" (EN only for now)
-- Set `VISION_MODE=mock` and `BUDGET_USD` back after the Android test
+- Decide: SAM 3.1 as a fast first warning (median 1.8 s on the Mac, boxes right on 3/3) - next brief only if the Owner says yes
 - Design polish on the demo path
 - README (privacy note: no people or personal details in frames)
 
@@ -14,6 +14,8 @@
 - (none)
 
 ## Done
+- Brief 10: backend back to mock; `MAX_OUTPUT_TOKENS` 2000 on every live vision / Ask call, cut reply = billed failure; pytest x151; SAM 3.1 timed (3 calls, $0.0075) (4 Nov)
+- Brief 9 (partial): model timings at `minimal` (1.3 / 1.2 / 1.1); stopped after a runaway 1.1 call ($0.63 vs cap $0.05) (4 Nov)
 - Brief 8: ASR bias English + chosen language; wake spellings measured per language (Latin in all 4, 16/16 woke, 0/8 distractors); Ask texts and spoken sorry per language; Android permission copy; pytest x149, vitest x95; live for the Android test, $2 cap (4 Nov)
 - Brief 7b: face threshold 0.2 (Owner); offline range and false-hit re-run (4 Nov)
 - Brief 7: on-device face blur (YuNet + onnxruntime-web bundled, padded mosaic) on every sent frame, fail-open with visible chip, sent-frame thumbnail; Home/Settings light/dark, Larger Text (rem), Increase Contrast; vitest x86; live 6 calls on Steps3/CC0 (cap was 4 - see report) (3 Nov)
@@ -34,8 +36,6 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
-- Brief 9 (measure only): stopped after 8 calls - one muse-spark-1.1 call ran away (147,757 output tokens, $0.63; brief cap $0.05). Owner decides: SAM 3.1 timing (3 calls), muse-wonder-1.0, and an output cap in the app
-- Android (Chrome) live test: Owner runs it now (camera, speech, "Hey Eyes" in each language, `?mictest=1`); $2 cap
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
 - iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`
 - iPhone "Hey Eyes" test (real voice, real room)

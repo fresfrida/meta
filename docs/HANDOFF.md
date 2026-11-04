@@ -9,11 +9,15 @@ phone. Controlled demo only; nobody walks guided by it. UI says
 "Beta · research prototype".
 
 ## Current state (true of the code today)
-- **Live for the Owner's Android (Chrome) test (Brief 8, 4 Nov):** `backend/.env` has `VISION_MODE=live` (so
-  listening and Ask are live too) and `BUDGET_USD=2.12` = $0.1203 already in `spend.json` + the Owner's $2 cap; the
-  guard refuses live calls (402 / `budget_reached`) once spend reaches it. Phone URL `https://<mac-lan-ip>:5173`
-  (Chrome: Advanced -> Proceed on the certificate warning), mic test `?mictest=1`. Set `VISION_MODE=mock` again
-  after the test.
+- **Mock again (Brief 10, 4 Nov):** `backend/.env` is back to `VISION_MODE=mock` (listening and Ask follow it);
+  `BUDGET_USD=2.12` left in place. The Owner's Android test ran live before this (spend.json $0.2803).
+- **Output cap (Brief 10):** every live vision and Ask call sends `max_completion_tokens` = `MAX_OUTPUT_TOKENS`
+  (2000, `backend/app/config.py`; normal answers use ~270-650). A reply cut by it (`finish_reason` "length") is a
+  model failure (`model_error`, 502; the phone shows "Model failed" / says its "sorry"), still billed, never a half
+  answer. The realtime ASR has no per-session time limit: it is bounded by the budget guard (checked every 80 ms
+  frame) and by the phone stopping; $0.18/hour.
+- SAM 3.1 measured (Brief 10, 3 calls, Mac Wi-Fi): 0.81 / 2.23 / 1.78 s total, all boxes on the real stairs / kerbs;
+  not in the app (decision pending).
 - Ask in 4 languages (Brief 8): the realtime ASR gets `languageBias` ["English", <chosen language>] (["English"]
   for English), because "Hey Eyes" is said in English inside a Chinese / Malay / Tamil question. Measured with
   macOS `say` clips: the ASR wrote "Hey Eyes" / "Hey eyes" in Latin letters in all 4 languages, so `wake.py` needed
@@ -179,7 +183,7 @@ and open `http://localhost:5173` on the Mac.
 None. Later host: not decided. See ARCHITECTURE "Things that make deploying later hard".
 
 ## Known risks
-- No `max_completion_tokens` on the vision or Ask calls (`backend/app/vision.py`, `ask.py`). In Brief 9 one muse-spark-1.1 call ran away to 147,757 output tokens ($0.63). 1.3 has not done this in ~70 live calls, but nothing bounds one call's cost. Owner to decide on a cap of about 2000.
+- One live call costs at most ~2000 output tokens (~$0.009) since Brief 10. Before that, a muse-spark-1.1 call in Brief 9 ran away to 147,757 tokens ($0.63).
 - iOS speech: needs the Start tap to unlock; behaviour with the silent switch
   and Bluetooth is unmeasured.
 - The self-signed certificate must be accepted on the iPhone; camera access
