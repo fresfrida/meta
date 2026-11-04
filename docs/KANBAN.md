@@ -17,7 +17,7 @@
 
 ## Doing
 - Brief 13 on `claude/second-eyes-v6`: done and checked (pytest 192, vitest 232, build OK; v6 live 10 calls; mock
-  screenshots EN connection lost, ZH road). Waiting: the Owner's decision on Steps3 "road" / Curb1 "step up", then the
+  screenshots EN connection lost, ZH road). Owner accepted the Steps3 "road" / Curb1 "step up" changes (4 Nov). Waiting: the
   Advisor's go to merge
 
 ## Done
