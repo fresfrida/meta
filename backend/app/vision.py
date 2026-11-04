@@ -20,7 +20,7 @@ MOCK_ANSWERS: tuple[VisionAnswer, ...] = (
     # Every named kind appears once (prompt v5); the first three are the ones a demo sees first.
     VisionAnswer(hazard="step_down", side="ahead", distance="near", box=[80, 600, 920, 720], distance_m=2),
     VisionAnswer(hazard="head_height", side="ahead", distance="near", box=[250, 120, 750, 330], distance_m=2),
-    VisionAnswer(hazard="people", side="left", distance="far", box=[40, 330, 420, 700], distance_m=4),
+    VisionAnswer(hazard="people", side="left", distance="far", box=[40, 330, 420, 700], distance_m=4, sure=False),
     VisionAnswer(hazard="road", side="ahead", distance="near", box=[0, 620, 1000, 1000], distance_m=2),
     VisionAnswer(hazard="crossing", side="ahead", distance="far", box=[100, 560, 900, 760], distance_m=4),
     VisionAnswer(hazard="cycle_path", side="left", distance="far", box=[0, 600, 450, 900], distance_m=3),
@@ -28,7 +28,7 @@ MOCK_ANSWERS: tuple[VisionAnswer, ...] = (
     VisionAnswer(hazard="uneven", side="right", distance="near", box=[550, 700, 1000, 950], distance_m=2),
     VisionAnswer(hazard="clear"),
     VisionAnswer(hazard="obstacle", side="left", distance="far", box=[60, 380, 300, 640], distance_m=5),
-    VisionAnswer(hazard="curb", side="right", distance="near", box=[620, 600, 980, 770], distance_m=1),
+    VisionAnswer(hazard="curb", side="right", distance="near", box=[620, 600, 980, 770], distance_m=1, sure=False),
     VisionAnswer(hazard="person", side="right", distance="far", box=[640, 300, 820, 700], distance_m=3),
     VisionAnswer(hazard="step_up", side="ahead", distance="far", box=[300, 440, 700, 560], distance_m=6),
     VisionAnswer(hazard="pole", side="right", distance="far", box=[700, 150, 760, 720], distance_m=3),

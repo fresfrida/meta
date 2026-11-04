@@ -4,8 +4,8 @@ from app.config import VISION_PROMPT, VISION_PROMPT_VERSION
 from app.schemas import VisionAnswer, vision_answer_json_schema
 from app.vision import parse_answer
 
-# Brief 13 (4 Nov 2026): v6 = v5 + the road / escalator / uneven list and the never-clear-onto-a-road rule.
-PROMPT_V6 = (
+# Brief 13b (4 Nov 2026): v7 = v6 + the "are you sure" sentence and the kerb sentence, Owner approved verbatim.
+PROMPT_V7 = (
     'You are checking a photo for a research prototype that warns about hazards on a walking path. The photo '
     'is taken from chest height, facing forward. Find the single most important hazard on the path within '
     'about 5 metres. Name it as one of: a step down, a step up, a curb, an open drain, something at head '
@@ -20,14 +20,32 @@ PROMPT_V6 = (
     "identify or describe people beyond naming them as a person or a group of people. Also give the hazard's "
     'bounding box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is clear or you '
     'are unsure. Also estimate how far the hazard is from the camera in metres, as a whole number from 1 to '
-    '10, or no distance if the path is clear or you are unsure. Flat things lying on the ground, such as '
-    'mats, rugs or painted lines, are not hazards.'
+    '10, or no distance if the path is clear or you are unsure. Also say whether you are sure what the hazard '
+    'is. Flat things lying on the ground, such as mats, rugs or painted lines, are not hazards. A single '
+    'raised edge between a footpath and a road is a curb, not a step.'
 )
 
 
-def test_prompt_v6_verbatim():
-    assert VISION_PROMPT == PROMPT_V6
-    assert VISION_PROMPT_VERSION == "v6"
+def test_prompt_v7_verbatim():
+    assert VISION_PROMPT == PROMPT_V7
+    assert VISION_PROMPT_VERSION == "v7"
+
+
+def test_schema_asks_for_sure_as_a_required_boolean():
+    schema = vision_answer_json_schema()
+    assert schema["properties"]["sure"] == {"type": "boolean"}
+    assert "sure" in schema["required"]
+
+
+@pytest.mark.parametrize(("raw", "sure"), [("true", True), ("false", False), ("null", True), ('"no"', True)])
+def test_sure_is_kept_and_anything_invalid_counts_as_sure(raw, sure):
+    answer, problem = parse_answer('{"hazard": "curb", "side": "left", "distance": "near", "box": null, "distance_m": 2, "sure": %s}' % raw)
+    assert problem is None and answer.sure is sure
+
+
+def test_missing_sure_counts_as_sure():
+    answer, _ = parse_answer('{"hazard": "curb", "side": "left", "distance": "near", "box": null, "distance_m": 2}')
+    assert answer.sure is True
 
 
 def test_schema_names_every_v6_kind_and_the_catch_all():

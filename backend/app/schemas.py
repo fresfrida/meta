@@ -85,6 +85,13 @@ class VisionAnswer(BaseModel):
     distance: Optional[Distance] = None
     box: Optional[Box] = None
     distance_m: Optional[int] = None
+    # Prompt v7: is the model sure what the hazard is? Missing, null or invalid counts as sure (never a guess of "unsure").
+    sure: bool = True
+
+    @field_validator("sure", mode="before")
+    @classmethod
+    def _sure_or_true(cls, value: Any) -> bool:
+        return value if isinstance(value, bool) else True
 
     @field_validator("distance_m", mode="before")
     @classmethod
@@ -152,8 +159,9 @@ def vision_answer_json_schema() -> dict:
                     {"type": "null"},
                 ]
             },
+            "sure": {"type": "boolean"},
         },
-        "required": ["hazard", "side", "distance", "box", "distance_m"],
+        "required": ["hazard", "side", "distance", "box", "distance_m", "sure"],
         "additionalProperties": False,
     }
 

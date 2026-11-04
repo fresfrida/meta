@@ -29,10 +29,10 @@ RIGHT_MIN = 600
 DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
-# Prompt sent with every live frame. v6 (Brief 13, 4 Nov 2026) = v5 + road / crossing / cycle path / escalator /
-# uneven ground in the list, and roads first plus "never answer clear" onto a road. Owner approved all of v6 on
-# 4 Nov 2026 (road part: "Ok."). v5 is in git history.
-VISION_PROMPT_VERSION = "v6"
+# Prompt sent with every live frame. v7 (Brief 13b, Owner approved 4 Nov 2026) = v6 + "Also say whether you are sure
+# what the hazard is." (after the metres sentence) + "A single raised edge between a footpath and a road is a curb,
+# not a step." (at the end). v6 (roads, never clear onto a road) and earlier are in git history.
+VISION_PROMPT_VERSION = "v7"
 VISION_PROMPT = (
     'You are checking a photo for a research prototype that warns about hazards on a walking path. The '
     'photo is taken from chest height, facing forward. Find the single most important hazard on the path '
@@ -49,8 +49,9 @@ VISION_PROMPT = (
     "a person or a group of people. Also give the hazard's bounding box as [x_min, y_min, x_max, y_max] "
     'on a 0 to 1000 grid, or no box if the path is clear or you are unsure. Also estimate how far the '
     'hazard is from the camera in metres, as a whole number from 1 to 10, or no distance if the path is '
-    'clear or you are unsure. Flat things lying on the ground, such as mats, rugs or painted lines, are '
-    'not hazards.'
+    'clear or you are unsure. Also say whether you are sure what the hazard is. Flat things lying on the '
+    'ground, such as mats, rugs or painted lines, are not hazards. A single raised edge between a '
+    'footpath and a road is a curb, not a step.'
 )
 
 # Ask (Brief 6): the Owner-approved prompt, verbatim. The three {...} placeholders are filled by replace().
