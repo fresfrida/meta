@@ -15,7 +15,7 @@ from .config import (
     RIGHT_MIN,
 )
 
-# Prompt v5 (Brief 12): 14 named kinds, "obstacle" = the catch-all ("something else the person could walk into").
+# Prompt v6 (Brief 13): 19 named kinds, "obstacle" = the catch-all ("something else the person could walk into").
 Hazard = Literal[
     "step_down",
     "step_up",
@@ -31,6 +31,11 @@ Hazard = Literal[
     "ramp",
     "door",
     "wall",
+    "road",
+    "crossing",
+    "cycle_path",
+    "escalator",
+    "uneven",
     "obstacle",
     "clear",
     "unsure",
@@ -197,7 +202,7 @@ class AskResponse(BaseModel):
     cost_usd: Optional[float] = None
 
 
-DetectKind = Literal["steps", "curb"]
+DetectKind = Literal["steps", "curb", "door"]
 
 
 class DetectRequest(BaseModel):

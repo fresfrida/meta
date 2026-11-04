@@ -32,7 +32,9 @@ def sam_stream(text):
 BOXES = {
     "stairs": "<0f>0<|box;x1=36;y1=420;x2=324;y2=500;w=360;h=640;c=0.9|><|mask;x=0;y=0;data=1,1,!x|>\n",
     "curb": "<0f>0<|box;x1=220;y1=400;x2=350;y2=460;w=360;h=640;c=0.4|>\n",  # below SAM_MIN_CONF: dropped
+    "door": "",  # nothing found
 }
+N = len(SAM_CONCEPTS)
 
 
 class FakeSam:
@@ -65,11 +67,11 @@ def test_live_detect_sends_both_concepts_as_documented_and_keeps_only_passing_hi
     r = client.post("/api/detect", json={"image_b64": IMG})
     assert r.status_code == 200
     body = r.json()
-    assert body["source"] == "live" and body["found"] == 2
+    assert body["source"] == "live" and body["found"] == 2  # stairs 1 + curb 1 + door 0
     assert [(h["kind"], h["side"], h["distance"]) for h in body["hits"]] == [("steps", "ahead", "far")]
     assert body["hits"][0]["box"] == [100, 656, 903, 783]
-    assert body["cost_usd"] == pytest.approx(2 * SAM_PRICE_PER_IMAGE)
-    assert client.get("/api/health").json()["spent_usd"] == pytest.approx(2 * SAM_PRICE_PER_IMAGE)
+    assert body["cost_usd"] == pytest.approx(N * SAM_PRICE_PER_IMAGE)
+    assert client.get("/api/health").json()["spent_usd"] == pytest.approx(N * SAM_PRICE_PER_IMAGE)
 
     assert sorted(b["input"][0]["content"][0]["text"] for _, b in fake.requests) == sorted(SAM_CONCEPTS.values())
     for request, b in fake.requests:
@@ -90,20 +92,20 @@ def test_the_two_concepts_run_in_parallel(make_settings):
     client, _ = live_detect_app(make_settings, fake)
     started = time.perf_counter()
     assert client.post("/api/detect", json={"image_b64": IMG}).json()["hits"] == []
-    assert time.perf_counter() - started < 0.55  # not 0.6 s in series
-    assert len(fake.threads) == 2
+    assert time.perf_counter() - started < 0.55  # not 0.9 s in series
+    assert len(fake.threads) == N
 
 
 def test_one_concept_failing_still_returns_the_other(make_settings):
     def handler(concept):
         if concept == "curb":
             return httpx.Response(500, content=b"oops")
-        return httpx.Response(200, content=sam_stream(BOXES["stairs"]))
+        return httpx.Response(200, content=sam_stream(BOXES[concept]))
 
     client, _ = live_detect_app(make_settings, FakeSam(handler))
     body = client.post("/api/detect", json={"image_b64": IMG}).json()
     assert [h["kind"] for h in body["hits"]] == ["steps"]
-    assert body["cost_usd"] == pytest.approx(SAM_PRICE_PER_IMAGE)  # the refused one is not billed
+    assert body["cost_usd"] == pytest.approx((N - 1) * SAM_PRICE_PER_IMAGE)  # the refused one is not billed
 
 
 def test_a_response_over_the_size_cap_is_aborted_but_billed(make_settings, monkeypatch):
@@ -112,7 +114,7 @@ def test_a_response_over_the_size_cap_is_aborted_but_billed(make_settings, monke
     client, _ = live_detect_app(make_settings, FakeSam(lambda c: httpx.Response(200, content=big)))
     r = client.post("/api/detect", json={"image_b64": IMG})
     assert r.status_code == 502 and r.json()["detail"]["code"] == "model_error"
-    assert client.get("/api/health").json()["spent_usd"] == pytest.approx(2 * SAM_PRICE_PER_IMAGE)
+    assert client.get("/api/health").json()["spent_usd"] == pytest.approx(N * SAM_PRICE_PER_IMAGE)
 
 
 def test_a_slow_stream_is_aborted_at_the_wall_clock_limit(make_settings, monkeypatch):
@@ -173,3 +175,11 @@ def test_jpeg_size_reads_the_frame_size():
 def test_detect_mode_can_be_mock_while_vision_is_live(make_settings):
     client = TestClient(create_app(make_settings(VISION_MODE="live", MODEL_API_KEY=FAKE_KEY, DETECT_MODE="mock")))
     assert client.post("/api/detect", json={"image_b64": IMG}).json()["source"] == "mock"
+
+
+def test_door_is_a_third_concept_and_its_hits_come_back_as_door(make_settings):
+    assert SAM_CONCEPTS == {"steps": "stairs", "curb": "curb", "door": "door"}
+    boxes = dict(BOXES, door="<0f>0<|box;x1=100;y1=300;x2=250;y2=560;w=360;h=640;c=0.85|>\n")
+    client, _ = live_detect_app(make_settings, FakeSam(lambda c: httpx.Response(200, content=sam_stream(boxes[c]))))
+    kinds = [h["kind"] for h in client.post("/api/detect", json={"image_b64": IMG}).json()["hits"]]
+    assert "door" in kinds

@@ -4,38 +4,45 @@ from app.config import VISION_PROMPT, VISION_PROMPT_VERSION
 from app.schemas import VisionAnswer, vision_answer_json_schema
 from app.vision import parse_answer
 
-# Owner approved verbatim (Brief 12, 4 Nov 2026: "For now ok").
-PROMPT_V5 = (
-    'You are checking a photo for a research prototype that warns about hazards on a walking path. The photo is '
-    'taken from chest height, facing forward. Find the single most important hazard on the path within about 5 '
-    'metres. Name it as one of: a step down, a step up, a curb, an open drain, something at head height (such as '
-    'a low branch or sign), a person, a group of people (three or more), a bicycle or scooter, a vehicle, a pole '
-    'or post, a barrier or cone, a ramp, a door (including glass doors), a wall (including glass walls), or '
-    'something else the person could walk into if none of these fit. Prefer drops and things at head height over '
-    'things the person can walk around. Give its side (left, ahead or right) and distance (near means within '
-    'about 2 metres, otherwise far). If the path is clear, answer clear. If the photo is too dark, blurred or '
-    'unclear to judge, answer unsure. Do not identify or describe people beyond naming them as a person or a '
-    "group of people. Also give the hazard's bounding box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or "
-    'no box if the path is clear or you are unsure. Also estimate how far the hazard is from the camera in '
-    'metres, as a whole number from 1 to 10, or no distance if the path is clear or you are unsure. Flat things '
-    'lying on the ground, such as mats, rugs or painted lines, are not hazards.'
+# Brief 13 (4 Nov 2026): v6 = v5 + the road / escalator / uneven list and the never-clear-onto-a-road rule.
+PROMPT_V6 = (
+    'You are checking a photo for a research prototype that warns about hazards on a walking path. The photo '
+    'is taken from chest height, facing forward. Find the single most important hazard on the path within '
+    'about 5 metres. Name it as one of: a step down, a step up, a curb, an open drain, something at head '
+    'height (such as a low branch or sign), a person, a group of people (three or more), a bicycle or '
+    'scooter, a vehicle, a pole or post, a barrier or cone, a ramp, a door (including glass doors), a wall '
+    '(including glass walls), a road for cars (including an intersection), a road crossing, a cycle path, an '
+    'escalator, uneven or broken ground, or something else the person could walk into if none of these fit. '
+    'Prefer roads, drops and things at head height over things the person can walk around. Never answer clear '
+    'if the path leads onto a road for cars, a road crossing or a cycle path; name it instead. Give its side '
+    '(left, ahead or right) and distance (near means within about 2 metres, otherwise far). If the path is '
+    'clear, answer clear. If the photo is too dark, blurred or unclear to judge, answer unsure. Do not '
+    "identify or describe people beyond naming them as a person or a group of people. Also give the hazard's "
+    'bounding box as [x_min, y_min, x_max, y_max] on a 0 to 1000 grid, or no box if the path is clear or you '
+    'are unsure. Also estimate how far the hazard is from the camera in metres, as a whole number from 1 to '
+    '10, or no distance if the path is clear or you are unsure. Flat things lying on the ground, such as '
+    'mats, rugs or painted lines, are not hazards.'
 )
 
 
-def test_prompt_v5_verbatim():
-    assert VISION_PROMPT == PROMPT_V5
-    assert VISION_PROMPT_VERSION == "v5"
+def test_prompt_v6_verbatim():
+    assert VISION_PROMPT == PROMPT_V6
+    assert VISION_PROMPT_VERSION == "v6"
 
 
-def test_schema_names_every_v5_kind_and_the_catch_all():
+def test_schema_names_every_v6_kind_and_the_catch_all():
     hazards = vision_answer_json_schema()["properties"]["hazard"]["enum"]
     assert hazards == [
         "step_down", "step_up", "curb", "drain", "head_height", "person", "people", "bike", "vehicle",
-        "pole", "barrier", "ramp", "door", "wall", "obstacle", "clear", "unsure",
+        "pole", "barrier", "ramp", "door", "wall", "road", "crossing", "cycle_path", "escalator", "uneven",
+        "obstacle", "clear", "unsure",
     ]  # fmt: skip
 
 
-NEW_KINDS = ["drain", "head_height", "person", "people", "bike", "vehicle", "pole", "barrier", "ramp", "door", "wall"]
+NEW_KINDS = [
+    "drain", "head_height", "person", "people", "bike", "vehicle", "pole", "barrier", "ramp", "door", "wall",
+    "road", "crossing", "cycle_path", "escalator", "uneven",
+]  # fmt: skip
 
 
 @pytest.mark.parametrize("kind", NEW_KINDS)
