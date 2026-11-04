@@ -29,7 +29,7 @@ RIGHT_MIN = 600
 DISTANCE_M_MIN = 1
 DISTANCE_M_MAX = 10
 
-# Prompt sent with every live frame. v9 (Brief 31, TEST BRANCH ONLY, sentence TENTATIVE until the Owner approves it) = v8
+# Prompt sent with every live frame. v9 (Brief 31, Owner approved 5 Nov 2026 ("Approve v9")) = v8
 # + "If a door is a lift (elevator) door, for example with call buttons beside it, call it a lift." (at the end).
 # v8 (Brief 28, Owner approved "Yes, both" 4 Nov 2026) = v7 + "a lift (elevator)
 # door" in the list (after the escalator) + "A door can be a single door, double doors or a glass door." (at the end).
