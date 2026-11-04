@@ -1,7 +1,7 @@
 // The two-speed merge: which answer (fast SAM hit or detailed Muse answer) is shown, and when the fast cue plays.
 // Whether it is spoken is the repeat rule's job (announce.ts), shared by both channels.
-import type { DetectHit } from '../api/types'
-import type { Decision } from './announce'
+import type { DetectHit, ShownHazard } from '../api/types'
+import { type Decision, kindOf } from './announce'
 import type { Lamp } from './light'
 import type { Shown } from './phrase'
 
@@ -10,6 +10,7 @@ export type Channel = 'fast' | 'detail'
 /** What is on screen now. */
 export interface ShownState {
   channel: Channel | null
+  hazard: ShownHazard | null
   /** Capture number of the frame it came from. */
   seq: number
   lamp: Lamp
@@ -17,7 +18,7 @@ export interface ShownState {
   at: number
 }
 
-export const NOTHING_SHOWN: ShownState = { channel: null, seq: 0, lamp: 'off', at: -Infinity }
+export const NOTHING_SHOWN: ShownState = { channel: null, hazard: null, seq: 0, lamp: 'off', at: -Infinity }
 
 /** A kept SAM hit as a warning: "steps" (direction unknown) or "curb", with the rule's side and distance. */
 export function hitAsShown(hit: DetectHit): Shown {
@@ -25,8 +26,10 @@ export function hitAsShown(hit: DetectHit): Shown {
 }
 
 /**
- * Does this answer replace what is on screen (and go on to the repeat rule)?
- * - A fast hit always does (SAM sends only hits; "nothing found" changes nothing).
+ * Does this answer replace what is on screen (and may it be spoken)? `speaks`: the repeat rule would speak it.
+ * - A fast hit that would be spoken always does (SAM sends only hits; "nothing found" changes nothing).
+ * - A silent fast hit does not replace a Muse answer of the same kind younger than `holdMs`: Muse's detail
+ *   ("going down", its metres) stays on screen instead of flipping back to "steps" every frame.
  * - A Muse "clear" or "not sure" does not cancel a fast warning younger than `holdMs`: not shown, not spoken.
  * - Every other Muse answer does, as today (obstacles, up / down, metres).
  */
@@ -36,10 +39,16 @@ export function replaces(
   shown: ShownState,
   now: number,
   holdMs: number,
+  speaks: boolean,
 ): boolean {
-  if (channel === 'fast') return true
+  const young = now - shown.at < holdMs
+  if (channel === 'fast') {
+    if (speaks) return true
+    const sameKind = shown.hazard !== null && kindOf(shown.hazard) === kindOf(answer.hazard)
+    return !(shown.channel === 'detail' && sameKind && young)
+  }
   const quiet = answer.hazard === 'clear' || answer.hazard === 'unsure'
-  return !(quiet && shown.channel === 'fast' && now - shown.at < holdMs)
+  return !(quiet && shown.channel === 'fast' && young)
 }
 
 const SEVERITY: Record<Lamp, number> = { off: 0, green: 1, amber: 2, red: 3 }

@@ -8,10 +8,10 @@ import { TimingPanel } from './TimingPanel'
 
 const seconds = (ms: number) => (ms / 1000).toFixed(1)
 
-/** Median capture to answer for one channel, in seconds, or "–" before its first answer. */
+/** Median capture to answer for one channel, in seconds, or null before its first answer. */
 const medianS = (values: number[]) => {
   const s = stats(values)
-  return s ? seconds(s.median) : '–'
+  return s ? seconds(s.median) : null
 }
 
 /**

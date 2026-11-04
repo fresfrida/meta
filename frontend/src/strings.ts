@@ -315,7 +315,8 @@ export const strings = {
     pill: (lastS: string, medianS: string) => `Last ${lastS} s · median ${medianS} s`,
     pillNone: 'No answers yet',
     // TENTATIVE (Brief 11): two channels, median capture to answer
-    pillTwo: (fastS: string, detailS: string) => `fast ${fastS} s · detail ${detailS} s`,
+    pillTwo: (fastS: string | null, detailS: string | null) =>
+      `fast ${fastS === null ? '–' : `${fastS} s`} · detail ${detailS === null ? '–' : `${detailS} s`}`,
     channels: (samMs: string, modelMs: string) => `last SAM ${samMs} ms · last model ${modelMs} ms`,
     dropped: (n: number) => `dropped late ${n}`,
     // TENTATIVE (Brief 7): the last frame actually sent

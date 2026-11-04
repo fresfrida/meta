@@ -24,7 +24,7 @@ const muse = (hazard: Shown['hazard'], distance_m: number | null = null, side: S
 })
 const run = (x: Shown, s: AnnounceState, now: number) => decide(x, s, now, GAP, CLOSER)
 const after = (x: Shown, at: number): AnnounceState => ({ ...spoke(x, at), speaking: false })
-const fastShown = (at: number, seq = 5): ShownState => ({ channel: 'fast', seq, lamp: 'amber', at })
+const fastShown = (at: number, seq = 5): ShownState => ({ channel: 'fast', hazard: 'steps', seq, lamp: 'amber', at })
 
 describe('fast hit -> spoken at once, with the cue', () => {
   it('a new steps hit speaks, and the cue plays', () => {
@@ -84,23 +84,35 @@ describe('a later Muse answer about the same kind speaks only if it adds somethi
 
 describe('replaces: a Muse "clear" / "not sure" does not cancel a young fast warning', () => {
   it('clear and unsure are held back while the fast warning is younger than the hold', () => {
-    expect(replaces('detail', muse('clear'), fastShown(10_000), 12_999, HOLD)).toBe(false)
-    expect(replaces('detail', muse('unsure'), fastShown(10_000), 12_000, HOLD)).toBe(false)
+    expect(replaces('detail', muse('clear'), fastShown(10_000), 12_999, HOLD, false)).toBe(false)
+    expect(replaces('detail', muse('unsure'), fastShown(10_000), 12_000, HOLD, false)).toBe(false)
   })
 
   it('after the hold, or over a Muse answer, clear shows as today', () => {
-    expect(replaces('detail', muse('clear'), fastShown(10_000), 13_000, HOLD)).toBe(true)
-    expect(replaces('detail', muse('clear'), { ...fastShown(10_000), channel: 'detail' }, 11_000, HOLD)).toBe(true)
+    expect(replaces('detail', muse('clear'), fastShown(10_000), 13_000, HOLD, false)).toBe(true)
+    expect(replaces('detail', muse('clear'), { ...fastShown(10_000), channel: 'detail', hazard: 'obstacle' }, 11_000, HOLD, false)).toBe(true)
   })
 
-  it('Muse warnings and fast hits always replace', () => {
-    expect(replaces('detail', muse('obstacle', 3), fastShown(10_000), 10_500, HOLD)).toBe(true)
-    expect(replaces('fast', hitAsShown(hit('curb', 3)), NOTHING_SHOWN, 0, HOLD)).toBe(true)
+  it('Muse warnings always replace; a fast hit replaces when nothing of its kind from Muse is young', () => {
+    expect(replaces('detail', muse('obstacle', 3), fastShown(10_000), 10_500, HOLD, false)).toBe(true)
+    expect(replaces('fast', hitAsShown(hit('curb', 3)), NOTHING_SHOWN, 0, HOLD, false)).toBe(true)
+  })
+})
+
+describe('replaces: a silent fast hit does not overwrite Muse detail of the same kind', () => {
+  const museDown: ShownState = { channel: 'detail', hazard: 'step_down', seq: 6, lamp: 'red', at: 10_000 }
+  it('silent "steps" keeps "steps going down" on screen while it is young', () => {
+    expect(replaces('fast', hitAsShown(hit('steps', 6)), museDown, 11_000, HOLD, false)).toBe(false)
+    expect(replaces('fast', hitAsShown(hit('steps', 6)), museDown, 13_000, HOLD, false)).toBe(true)
+  })
+  it('a fast hit that is spoken (closer, or another kind) always shows', () => {
+    expect(replaces('fast', hitAsShown(hit('steps', 1)), museDown, 11_000, HOLD, true)).toBe(true)
+    expect(replaces('fast', hitAsShown(hit('curb', 6)), museDown, 11_000, HOLD, false)).toBe(true)
   })
 })
 
 describe('traffic light: newest, the more severe on a tie (same frame)', () => {
-  const shown: ShownState = { channel: 'fast', seq: 7, lamp: 'red', at: 0 }
+  const shown: ShownState = { channel: 'fast', hazard: 'steps', seq: 7, lamp: 'red', at: 0 }
   it('Muse amber about the same frame keeps the fast red', () => {
     expect(mergedLamp('amber', 7, shown)).toBe('red')
   })

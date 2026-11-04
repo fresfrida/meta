@@ -290,12 +290,13 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
         channel === 'fast'
           ? { ...t, fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE) }
           : { ...t, answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE) }
-      if (!replaces(channel, shown, shownRef.current, now, SAM_HOLD_MS)) {
+      const decision = decideFor(shown, announceRef.current, now)
+      if (!replaces(channel, shown, shownRef.current, now, SAM_HOLD_MS, decision.speak)) {
         setTimings((t) => ({ ...countAnswer(t), silentCount: t.silentCount + 1 }))
-        return // a Muse "clear" / "not sure" while a fast warning is young: not shown, not spoken
+        return // see merge.ts: kept off screen and not spoken
       }
       const lamp = mergedLamp(lampFor(shown), seq, shownRef.current)
-      shownRef.current = { channel, seq, lamp, at: now }
+      shownRef.current = { channel, hazard: shown.hazard, seq, lamp, at: now }
       setHazardBox(
         isWarning(shown) && box ? { seq: ++boxSeqRef.current, hazard: shown.hazard, box, frame } : null,
       )
@@ -303,7 +304,6 @@ export function useSecondEyes(lang: Lang, voices: SpeechSynthesisVoice[], handsF
       const text = phraseFor(shown, langRef.current)
       const speech = speechFor(shown, langRef.current)
       const noVoice = voiceStatus(voicesRef.current, SPEECH_LANGS[langRef.current]) === 'missing'
-      const decision = decideFor(shown, announceRef.current, now)
       showAnswer(shown, text, noVoice, lamp)
       // While waiting for the user's question, hazard speech stays quiet (and is not marked as spoken).
       if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
