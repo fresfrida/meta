@@ -2,7 +2,7 @@
 
 ## Backlog
 - Car warning: car-specific in-path rule (box centre within 0.75 m) and a re-test (~10 SAM calls, ~$0.025) before CAR_FAST can default on
-- Owner to approve the welcome Ask bullet with both examples (TENTATIVE)
+- Cloud demo budget: $8.01 of $10 total spent (00:29, 5 Nov); Owner decides a new cap or stopping it before judges try it
 - 中文 / Bahasa Melayu / தமிழ் for the Brief 27 getting-ready lines and card (English only for now)
 - Restart the Mac backend so the Mac link uses prompt v8 (stop any page loop first)
 - iPad and Android re-test after Briefs 25-28
@@ -66,7 +66,7 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
-- Filming (Mac link, own budget; cloud demo $5.14 of $10 at 23:23)
+- Filming (Mac link, own budget $5.19 of $15.91; restart the Mac backend first for prompt v8 and the path Ask)
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
 - iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`
 - iPhone "Hey Eyes" test (real voice, real room)

@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 5 Nov 2026 ~01:00 SGT, Briefs 25-29 merged into `claude/second-eyes` (7d1f250, pushed); cloud branch 780923b waiting for the Owner to Deploy.
+Last updated: 5 Nov 2026 00:30 SGT. Briefs 25-29 merged into `claude/second-eyes` (code 7d1f250; docs commits on top, local). Cloud demo still serves Brief 27 and has spent $8.01 of its $10 total; cloud branch 780923b (Briefs 28-29) waits for the Owner's Deploy.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -28,7 +28,7 @@ Each item is in the code on `claude/second-eyes` (7d1f250) unless marked.
 ## Current state (true of the code today)
 - **Brief 29 (5 Nov, 7d1f250 / cloud 780923b):** Ask prompt adds, verbatim, "Describe where the path goes; never
   tell the person which way to go." (live 5/5 described, 0 directions, $0.0091); welcome Ask bullet now lists both
-  examples (TENTATIVE). SAM "car" mapped to the vehicle kind behind `CAR_FAST` (env, default off; phone `?car=0/1`);
+  examples (Owner approved 5 Nov). SAM "car" mapped to the vehicle kind behind `CAR_FAST` (env, default off; phone `?car=0/1`);
   near-car test 9 calls $0.0225 failed the rule (close cars in the path 2/4, parked beside 2/4 quiet), so it stays
   off. With cars about $42/h; $1.65 -> $2.15 per 3-minute slot.
 - **Briefs 25-28 (4-5 Nov night, `claude/second-eyes` 404812d; cloud branch 1531d0b):**
@@ -53,7 +53,7 @@ Each item is in the code on `claude/second-eyes` (7d1f250) unless marked.
     still runs prompt v7 (not restarted); the Mac's Vite serves the newest frontend.
 - **Cloud demo (Brief 17), LIVE since 4 Nov:** https://second-eyes.52.76.242.161.sslip.io (Coolify on AWS
   Lightsail, Singapore), deploys from `claude/second-eyes-cloud` when the Owner clicks Deploy (no auto-deploy).
-  `PUBLIC_DEMO=1`: 180 s slots, 10 per Singapore day, $8 per day, $10 total; $5.14 spent at 23:23. Repo still
+  `PUBLIC_DEMO=1`: 180 s slots, 10 per Singapore day, $8 per day, $10 total; $8.01 spent at 00:29 on 5 Nov (slots reset at Singapore midnight). Repo still
   private. How to deploy: `docs/DEPLOY.md`.
 - **Distance at speaking time (Brief 16, live 4 Nov):** metres said = metres at capture - 0.8 m/s x
   time since capture while walking (DeviceMotion; no data = walking); <= 1 m -> "very close"; stale and walked past ->
