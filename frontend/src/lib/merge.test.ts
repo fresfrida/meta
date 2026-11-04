@@ -151,7 +151,7 @@ describe('fast phrase per language (TENTATIVE words)', () => {
     expect(speechFor(hitAsShown(hit('curb', 3, 'right')), 'en')).toBe('A kerb, about 3 metres ahead, on your right.')
   })
   it('near (touching the frame bottom) uses the near template', () => {
-    expect(speechFor(hitAsShown(hit('steps', null)), 'en')).toBe('Steps just ahead.')
+    expect(speechFor(hitAsShown(hit('steps', null)), 'en')).toBe('Steps very close.')
   })
   it('screen phrase', () => {
     expect(phraseFor(hitAsShown(hit('steps', 3)), 'en')).toBe('Steps, 3 metres')

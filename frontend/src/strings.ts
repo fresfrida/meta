@@ -65,8 +65,8 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       cycle_path: 'Cycle path',
       escalator: 'Escalator',
       uneven: 'Uneven ground',
-      obstacle: 'In the way',
-      clear: 'No hazard seen',
+      obstacle: 'In your path',
+      clear: 'Nothing seen',
       unsure: 'Not sure',
       steps: 'Steps', // fast warning (SAM), direction unknown; Owner approved 4 Nov (Brief 11)
     },
@@ -80,7 +80,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         drain: 'An open drain',
         head_height: 'Something at head height',
         person: 'A person',
-        people: 'Several people',
+        people: 'A group of people',
         bike: 'A bicycle or scooter',
         vehicle: 'A vehicle',
         pole: 'A pole',
@@ -88,22 +88,22 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: 'A ramp',
         door: 'A door',
         wall: 'A wall',
-        road: 'A road for cars',
-        crossing: 'A road crossing',
+        road: 'The edge of a road',
+        crossing: 'A pedestrian crossing',
         cycle_path: 'A cycle path',
         escalator: 'An escalator',
         uneven: 'Uneven ground',
-        obstacle: 'Something you could walk into',
+        obstacle: 'Something in your path',
         steps: 'Steps',
       },
-      clear: 'No hazard seen.',
+      clear: 'Nothing seen in your path.',
       metres: (w, n, side) =>
         `${w}, about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
-      plain: (w, side, near) => `${w} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
+      plain: (w, side, near) => `${w} ${near ? 'very close' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
       maybeMetres: (w, n, side) =>
         `There might be ${lower(w)} about ${n} ${n === 1 ? 'metre' : 'metres'} ahead${pick(side, ', on your left', ', on your right')}.`,
       maybePlain: (w, side, near) =>
-        `There might be ${lower(w)} ${near ? 'just ahead' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
+        `There might be ${lower(w)} ${near ? 'very close' : 'ahead'}${pick(side, ', on your left', ', on your right')}.`,
     },
   },
   zh: {
@@ -122,12 +122,12 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: '坡道',
       door: '门',
       wall: '墙',
-      road: '车行道',
+      road: '路边', // TENTATIVE (Brief 14): pending the Owner
       crossing: '人行横道',
       cycle_path: '自行车道',
       escalator: '扶梯',
       uneven: '地面不平',
-      obstacle: '障碍物',
+      obstacle: '挡路物', // TENTATIVE (Brief 14): pending the Owner
       clear: '未见障碍',
       unsure: '不确定',
       steps: '台阶',
@@ -142,7 +142,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         drain: '敞开的水沟',
         head_height: '头部高度的障碍物',
         person: '人',
-        people: '很多人',
+        people: '一群人', // TENTATIVE (Brief 14): pending the Owner
         bike: '自行车或滑板车',
         vehicle: '车',
         pole: '柱子',
@@ -150,15 +150,15 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: '坡道',
         door: '门',
         wall: '墙',
-        road: '车行道',
+        road: '马路边缘', // TENTATIVE (Brief 14): pending the Owner
         crossing: '人行横道',
         cycle_path: '自行车道',
         escalator: '自动扶梯',
         uneven: '不平的地面',
-        obstacle: '可能会撞到的东西',
+        obstacle: '挡路的东西', // TENTATIVE (Brief 14): pending the Owner
         steps: '台阶',
       },
-      clear: '没有看到障碍。',
+      clear: '前面的路上没有看到障碍。', // TENTATIVE (Brief 14): pending the Owner
       metres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，有${w}。`,
       plain: (w, side, near) => `${pick(side, '左前方', '右前方', '前面')}${near ? '很近的地方有' : '有'}${w}。`,
       maybeMetres: (w, n, side) => `${pick(side, '左前方', '右前方', '前面')}大约${n}米，可能有${w}。`,
@@ -173,7 +173,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       drain: 'Longkang',
       head_height: 'Paras kepala',
       person: 'Orang',
-      people: 'Ramai orang',
+      people: 'Sekumpulan orang', // TENTATIVE (Brief 14): pending the Owner
       bike: 'Basikal',
       vehicle: 'Kenderaan',
       pole: 'Tiang',
@@ -181,13 +181,13 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: 'Landaian',
       door: 'Pintu',
       wall: 'Dinding',
-      road: 'Jalan raya',
+      road: 'Tepi jalan', // TENTATIVE (Brief 14): pending the Owner
       crossing: 'Lintasan',
       cycle_path: 'Laluan basikal',
       escalator: 'Eskalator',
       uneven: 'Tidak rata',
-      obstacle: 'Halangan',
-      clear: 'Tiada halangan dilihat',
+      obstacle: 'Di laluan anda', // TENTATIVE (Brief 14): pending the Owner
+      clear: 'Tiada apa-apa', // TENTATIVE (Brief 14): pending the Owner
       unsure: 'Tidak pasti',
       steps: 'Tangga',
     },
@@ -201,7 +201,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         drain: 'longkang terbuka',
         head_height: 'sesuatu di paras kepala',
         person: 'orang',
-        people: 'ramai orang',
+        people: 'sekumpulan orang', // TENTATIVE (Brief 14): pending the Owner
         bike: 'basikal atau skuter',
         vehicle: 'kenderaan',
         pole: 'tiang',
@@ -209,23 +209,23 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: 'landaian',
         door: 'pintu',
         wall: 'dinding',
-        road: 'jalan raya',
+        road: 'tepi jalan raya', // TENTATIVE (Brief 14): pending the Owner
         crossing: 'lintasan pejalan kaki',
         cycle_path: 'laluan basikal',
         escalator: 'eskalator',
         uneven: 'permukaan tidak rata',
-        obstacle: 'sesuatu yang boleh dilanggar',
+        obstacle: 'sesuatu di laluan anda', // TENTATIVE (Brief 14): pending the Owner
         steps: 'tangga',
       },
-      clear: 'Tiada halangan dilihat.',
+      clear: 'Tiada apa-apa dilihat di laluan anda.', // TENTATIVE (Brief 14): pending the Owner
       metres: (w, n, side) =>
         `Ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
       plain: (w, side, near) =>
-        `Ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+        `Ada ${w} ${near ? 'sangat dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`, // TENTATIVE (Brief 14): pending the Owner
       maybeMetres: (w, n, side) =>
         `Mungkin ada ${w} kira-kira ${n} meter di hadapan${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
       maybePlain: (w, side, near) =>
-        `Mungkin ada ${w} ${near ? 'dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`,
+        `Mungkin ada ${w} ${near ? 'sangat dekat di hadapan' : 'di hadapan'}${pick(side, ', di sebelah kiri', ', di sebelah kanan')}.`, // TENTATIVE (Brief 14): pending the Owner
     },
   },
   ta: {
@@ -244,13 +244,13 @@ export const phrases: Record<Lang, PhraseLanguage> = {
       ramp: 'சாய்வுப் பாதை',
       door: 'கதவு',
       wall: 'சுவர்',
-      road: 'வாகனச் சாலை',
+      road: 'சாலை ஓரம்', // TENTATIVE (Brief 14): pending the Owner
       crossing: 'பாதசாரி கடவை',
       cycle_path: 'மிதிவண்டிப் பாதை',
       escalator: 'நகரும் படிக்கட்டு',
       uneven: 'சீரற்ற தரை',
-      obstacle: 'தடை',
-      clear: 'தடை தெரியவில்லை',
+      obstacle: 'பாதையில் தடை', // TENTATIVE (Brief 14): pending the Owner
+      clear: 'எதுவும் தெரியவில்லை', // TENTATIVE (Brief 14): pending the Owner
       unsure: 'உறுதியில்லை',
       steps: 'படிகள்',
     },
@@ -264,7 +264,7 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         drain: 'திறந்த வடிகால் உள்ளது',
         head_height: 'தலை உயரத்தில் ஏதோ உள்ளது',
         person: 'ஒருவர் இருக்கிறார்',
-        people: 'பலர் இருக்கிறார்கள்',
+        people: 'மக்கள் கூட்டம் உள்ளது', // TENTATIVE (Brief 14): pending the Owner
         bike: 'மிதிவண்டி அல்லது ஸ்கூட்டர் உள்ளது',
         vehicle: 'வாகனம் உள்ளது',
         pole: 'கம்பம் உள்ளது',
@@ -272,15 +272,15 @@ export const phrases: Record<Lang, PhraseLanguage> = {
         ramp: 'சாய்வுப் பாதை உள்ளது',
         door: 'கதவு உள்ளது',
         wall: 'சுவர் உள்ளது',
-        road: 'வாகனச் சாலை உள்ளது',
+        road: 'சாலையின் ஓரம் உள்ளது', // TENTATIVE (Brief 14): pending the Owner
         crossing: 'பாதசாரி கடவை உள்ளது',
         cycle_path: 'மிதிவண்டிப் பாதை உள்ளது',
         escalator: 'நகரும் படிக்கட்டு உள்ளது',
         uneven: 'சீரற்ற தரை உள்ளது',
-        obstacle: 'மோதக்கூடிய ஒன்று உள்ளது',
+        obstacle: 'உங்கள் பாதையில் ஏதோ ஒன்று உள்ளது', // TENTATIVE (Brief 14): pending the Owner
         steps: 'படிகள் உள்ளன',
       },
-      clear: 'தடை எதுவும் தெரியவில்லை.',
+      clear: 'உங்கள் பாதையில் எதுவும் தெரியவில்லை.', // TENTATIVE (Brief 14): pending the Owner
       metres: (w, n, side) =>
         `சுமார் ${n} மீட்டர் முன்னால்${pick(side, ', உங்கள் இடது பக்கம்', ', உங்கள் வலது பக்கம்')}, ${w}.`,
       plain: (w, side, near) =>
@@ -334,11 +334,29 @@ export const askText: Record<Lang, AskText> = {
 }
 
 /** Connection alerts (Brief 13), spoken and shown in the chosen language. Owner approved 4 Nov, verbatim. */
+// Wording v2 (Brief 14): EN Owner approved 4 Nov; ZH / MS / TA TENTATIVE, pending the Owner.
 export const connectionText: Record<Lang, { lost: string; back: string }> = {
-  en: { lost: 'Connection lost. Warnings have stopped.', back: 'Back online.' },
-  zh: { lost: '连接中断，警告已停止。', back: '已重新连接。' },
-  ms: { lost: 'Sambungan terputus. Amaran telah berhenti.', back: 'Sambungan pulih.' },
-  ta: { lost: 'இணைப்பு துண்டிக்கப்பட்டது. எச்சரிக்கைகள் நின்றுவிட்டன.', back: 'மீண்டும் இணைக்கப்பட்டது.' },
+  en: { lost: "Connection lost. I can't warn you right now. Please use your cane.", back: "I'm back. Warnings are on again." },
+  zh: { lost: '连接中断。我现在无法提醒您，请使用手杖。', back: '我回来了，提醒已恢复。' },
+  ms: {
+    lost: 'Sambungan terputus. Saya tidak dapat memberi amaran sekarang. Sila gunakan tongkat anda.',
+    back: 'Saya kembali. Amaran aktif semula.',
+  },
+  ta: {
+    lost: 'இணைப்பு துண்டிக்கப்பட்டது. இப்போது என்னால் எச்சரிக்க முடியாது. உங்கள் கைத்தடியைப் பயன்படுத்துங்கள்.',
+    back: 'நான் திரும்பி வந்துவிட்டேன். எச்சரிக்கைகள் மீண்டும் இயங்குகின்றன.',
+  },
+}
+
+/** Said once when the user taps Start / Stop (Brief 14). EN Owner approved 4 Nov; ZH / MS / TA TENTATIVE. */
+export const sessionText: Record<Lang, { start: string; stop: string }> = {
+  en: { start: "Second Eyes is on. I'll tell you what I see in your path.", stop: 'Second Eyes is off.' },
+  zh: { start: 'Second Eyes 已开启。我会告诉您路上看到的情况。', stop: 'Second Eyes 已关闭。' },
+  ms: {
+    start: 'Second Eyes sudah dihidupkan. Saya akan beritahu apa yang saya nampak di laluan anda.',
+    stop: 'Second Eyes sudah dimatikan.',
+  },
+  ta: { start: 'Second Eyes இயக்கப்பட்டது. உங்கள் பாதையில் நான் பார்ப்பதைச் சொல்வேன்.', stop: 'Second Eyes நிறுத்தப்பட்டது.' },
 }
 
 /** How each language is listed: its own name, and an English subtitle (null for English itself). */

@@ -63,12 +63,12 @@ describe('repeat rule with hedges', () => {
 const HEDGE: Record<Lang, { m: (w: string) => string; near: (w: string) => string }> = {
   en: {
     m: (w) => `There might be ${w.charAt(0).toLowerCase() + w.slice(1)} about 3 metres ahead, on your right.`,
-    near: (w) => `There might be ${w.charAt(0).toLowerCase() + w.slice(1)} just ahead.`,
+    near: (w) => `There might be ${w.charAt(0).toLowerCase() + w.slice(1)} very close.`,
   },
   zh: { m: (w) => `右前方大约3米，可能有${w}。`, near: (w) => `前面很近的地方可能有${w}。` },
   ms: {
     m: (w) => `Mungkin ada ${w} kira-kira 3 meter di hadapan, di sebelah kanan.`,
-    near: (w) => `Mungkin ada ${w} dekat di hadapan.`,
+    near: (w) => `Mungkin ada ${w} sangat dekat di hadapan.`,
   },
   ta: {
     m: (w) => `சுமார் 3 மீட்டர் முன்னால், உங்கள் வலது பக்கம், ${w.replace(TA_VERB, ' இருக்கலாம்')}.`,

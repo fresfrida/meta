@@ -77,3 +77,19 @@ describe('heartbeat tick', () => {
     expect(shouldTick({ ...base, lastTickAt: 9_300 })).toBe(true)
   })
 })
+
+describe('connection lines (wording v2), verbatim', () => {
+  it('4 languages', async () => {
+    const { connectionText } = await import('../strings')
+    expect(connectionText.en).toEqual({ lost: "Connection lost. I can't warn you right now. Please use your cane.", back: "I'm back. Warnings are on again." })
+    expect(connectionText.zh).toEqual({ lost: '连接中断。我现在无法提醒您，请使用手杖。', back: '我回来了，提醒已恢复。' })
+    expect(connectionText.ms).toEqual({
+      lost: 'Sambungan terputus. Saya tidak dapat memberi amaran sekarang. Sila gunakan tongkat anda.',
+      back: 'Saya kembali. Amaran aktif semula.',
+    })
+    expect(connectionText.ta).toEqual({
+      lost: 'இணைப்பு துண்டிக்கப்பட்டது. இப்போது என்னால் எச்சரிக்க முடியாது. உங்கள் கைத்தடியைப் பயன்படுத்துங்கள்.',
+      back: 'நான் திரும்பி வந்துவிட்டேன். எச்சரிக்கைகள் மீண்டும் இயங்குகின்றன.',
+    })
+  })
+})

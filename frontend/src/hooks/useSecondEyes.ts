@@ -48,7 +48,8 @@ import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
 import { museHedged } from '../lib/hedge'
-import { connectionText } from '../strings'
+import { SESSION_IDLE, type SessionVoice, greetingDone, holdForGreeting, onStart, onStop } from '../lib/sessionVoice'
+import { connectionText, sessionText } from '../strings'
 import { cancelSpeech, speak, unlockSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus } from '../lib/voices'
@@ -193,6 +194,8 @@ export function useSecondEyes(
   const lastTickAtRef = useRef(-Infinity)
   // A question is being asked or answered (no tick, no connection alert over it).
   const askActiveRef = useRef(false)
+  // Start / Stop lines (said once per tap; hazard speech waits for the start line).
+  const sessionVoiceRef = useRef<SessionVoice>(SESSION_IDLE)
   // Bumped on Start and Stop so the loop and late responses from an old session stop.
   const sessionRef = useRef(0)
   // Set to the session when the loop must stop itself (budget reached, no key).
@@ -370,7 +373,8 @@ export function useSecondEyes(
         channel === 'fast'
           ? { ...t, fastMs: pushHistory(t.fastMs, answerMs, TIMING_HISTORY_SIZE) }
           : { ...t, answerMs: pushHistory(t.answerMs, answerMs, TIMING_HISTORY_SIZE) }
-      let decision = decideFor(shown, announceRef.current, now, talkMoreRef.current)
+      // Hazard speech waits while the start line plays (it is said on the next answer).
+      let decision = holdForGreeting(decideFor(shown, announceRef.current, now, talkMoreRef.current), sessionVoiceRef.current)
       const recent = () => fastRecentlySaid(shown, spokenKindsRef.current, now, FAST_REPEAT_MS, REPEAT_CLOSER_M)
       // A Talk more repeat of a fast hit waits for Muse when Muse's detail of it is on screen (Muse repeats that).
       const museShown = shownRef.current.channel === 'detail' && now - shownRef.current.at < SAM_HOLD_MS
@@ -606,6 +610,20 @@ export function useSecondEyes(
     announceRef.current = INITIAL_ANNOUNCE
     spokenKindsRef.current = {}
     shownRef.current = NOTHING_SHOWN
+    const [voice, greet] = onStart(sessionVoiceRef.current)
+    sessionVoiceRef.current = voice
+    if (greet) {
+      // Said inside the tap (iOS allows speech then); no tick and no hazard speech over it.
+      const speechId = ++speechIdRef.current
+      announceRef.current = { ...INITIAL_ANNOUNCE, speaking: true }
+      const speechLang = SPEECH_LANGS[langRef.current]
+      const handle = speak(sessionText[langRef.current].start, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+      const done = () => {
+        sessionVoiceRef.current = greetingDone(sessionVoiceRef.current)
+        if (speechId === speechIdRef.current) announceRef.current = { ...announceRef.current, speaking: false }
+      }
+      handle.started.then(() => void handle.ended.then(done), done)
+    }
     handledSeqRef.current = { fast: captureSeqRef.current, detail: captureSeqRef.current }
     setCamera('starting')
     setAnswer({ kind: 'none' })
@@ -632,6 +650,12 @@ export function useSecondEyes(
     announceRef.current = INITIAL_ANNOUNCE
     spokenKindsRef.current = {}
     cancelSpeech()
+    const [voice, bye] = onStop(sessionVoiceRef.current)
+    sessionVoiceRef.current = voice
+    if (bye) {
+      const speechLang = SPEECH_LANGS[langRef.current]
+      speak(sessionText[langRef.current].stop, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+    }
     stopStream(streamRef.current)
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null
