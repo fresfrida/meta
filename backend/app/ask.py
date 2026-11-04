@@ -6,8 +6,8 @@ import time
 from dataclasses import dataclass
 from typing import Any, Callable, Protocol
 
-from .config import ASK_MAX_SENTENCES, ASK_PROMPT, LANGUAGE_NAMES, Settings
-from .vision import VisionError, _status_error, default_client_factory
+from .config import ASK_MAX_SENTENCES, ASK_PROMPT, LANGUAGE_NAMES, MAX_OUTPUT_TOKENS, Settings
+from .vision import VisionError, _status_error, check_not_cut, default_client_factory, usage_of
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +67,7 @@ class LiveAsk:
             response = self._client.chat.completions.create(
                 model=s.vision_model,
                 reasoning_effort=s.reasoning_effort,
+                max_completion_tokens=MAX_OUTPUT_TOKENS,
                 messages=[
                     {
                         "role": "user",
@@ -84,17 +85,17 @@ class LiveAsk:
         except openai.APIStatusError as exc:
             raise _status_error(exc.status_code)
         model_ms = (time.perf_counter() - started) * 1000
+        check_not_cut(response)
 
         content = (response.choices[0].message.content if response.choices else None) or ""
         answer = first_sentences(content)
-        usage = response.usage
-        details = getattr(usage, "prompt_tokens_details", None) if usage else None
+        usage = usage_of(response)
         result = AskResult(
             answer=answer,
             model_ms=model_ms,
-            input_tokens=usage.prompt_tokens if usage else None,
-            cached_tokens=(getattr(details, "cached_tokens", None) or 0) if usage else None,
-            output_tokens=usage.completion_tokens if usage else None,
+            input_tokens=usage.input_tokens,
+            cached_tokens=usage.cached_tokens,
+            output_tokens=usage.output_tokens,
         )
         if not answer:
             # Billed but empty: the caller still records the cost, the phone says its fixed "sorry".

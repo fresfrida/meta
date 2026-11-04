@@ -68,6 +68,8 @@ def create_app(
             result = vision.analyze(req.image_b64)
         except VisionError as exc:
             log.warning("live call failed: %s (%s)", exc.code, exc.message)
+            if live and exc.usage and exc.usage.input_tokens is not None and exc.usage.output_tokens is not None:
+                budget.add(cost_usd(settings.prices, exc.usage.input_tokens, exc.usage.cached_tokens or 0, exc.usage.output_tokens))
             raise _error(exc.status, exc.code, exc.message)
 
         cost = None
@@ -106,6 +108,8 @@ def create_app(
             raise _error(502, "empty_answer", "the model returned no answer")
         except VisionError as exc:
             log.warning("ask failed: %s (%s)", exc.code, exc.message)
+            if exc.usage:
+                billed(exc.usage.input_tokens, exc.usage.cached_tokens, exc.usage.output_tokens)
             raise _error(exc.status, exc.code, exc.message)
 
         return AskResponse(

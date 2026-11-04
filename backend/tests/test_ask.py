@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.ask import ask_prompt, first_sentences, LiveAsk, MockAsk, MOCK_ANSWER
-from app.config import ASK_PROMPT
+from app.config import ASK_PROMPT, MAX_OUTPUT_TOKENS
 from app.main import create_app
 
 from .conftest import FAKE_KEY, IMG
@@ -73,6 +73,7 @@ def test_live_ask_answers_trims_and_bills(make_settings):
     call = fake.calls[0]
     assert "response_format" not in call  # plain text answer
     assert call["reasoning_effort"] == "minimal"
+    assert call["max_completion_tokens"] == MAX_OUTPUT_TOKENS == 2000
     text, image = call["messages"][0]["content"]
     assert text["text"] == ask_prompt("what is there?", "A kerb, about 1 metre ahead.", "en")
     assert image["image_url"]["url"].endswith(IMG)
@@ -126,3 +127,10 @@ def test_ask_mode_can_be_live_while_vision_is_mock(make_settings):
 
 def test_mock_ask_class():
     assert MockAsk().ask("q", IMG, None, "en").answer == MOCK_ANSWER
+
+
+def test_live_ask_cut_by_the_output_cap_is_a_failure_but_billed(make_settings):
+    client, _, _ = live_ask_app(make_settings, completion("A path goes ahead and", 800, MAX_OUTPUT_TOKENS, finish_reason="length"))
+    r = client.post("/api/ask", json=BODY)
+    assert r.status_code == 502 and r.json()["detail"]["code"] == "model_error"  # the phone says its "sorry"
+    assert client.get("/api/health").json()["spent_usd"] == pytest.approx((800 * 1.25 + MAX_OUTPUT_TOKENS * 4.25) / 1e6, abs=1e-6)

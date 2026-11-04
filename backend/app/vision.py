@@ -10,7 +10,7 @@ from typing import Any, Callable, Protocol
 
 from pydantic import ValidationError
 
-from .config import VISION_PROMPT, Settings
+from .config import MAX_OUTPUT_TOKENS, VISION_PROMPT, Settings
 from .schemas import VisionAnswer, vision_answer_json_schema
 
 log = logging.getLogger(__name__)
@@ -40,11 +40,37 @@ class VisionResult:
 class VisionError(Exception):
     """A live call failed. `code` matches schemas.ErrorCode; the message never holds secrets."""
 
-    def __init__(self, code: str, message: str, status: int) -> None:
+    def __init__(self, code: str, message: str, status: int, usage: "Usage | None" = None) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
         self.status = status
+        self.usage = usage  # set when the failed call was still billed
+
+
+@dataclass(frozen=True)
+class Usage:
+    input_tokens: int | None
+    cached_tokens: int | None
+    output_tokens: int | None
+
+
+def usage_of(response: Any) -> Usage:
+    usage = response.usage
+    details = getattr(usage, "prompt_tokens_details", None) if usage else None
+    return Usage(
+        input_tokens=usage.prompt_tokens if usage else None,
+        cached_tokens=(getattr(details, "cached_tokens", None) or 0) if usage else None,
+        output_tokens=usage.completion_tokens if usage else None,
+    )
+
+
+def check_not_cut(response: Any) -> None:
+    """A reply stopped by the output cap is a model failure (billed), never a half answer."""
+    if response.choices and getattr(response.choices[0], "finish_reason", None) == "length":
+        raise VisionError(
+            "model_error", f"model reply cut at the {MAX_OUTPUT_TOKENS}-token output cap", 502, usage_of(response)
+        )
 
 
 class Vision(Protocol):
@@ -108,6 +134,7 @@ class LiveVision:
             response = self._client.chat.completions.create(
                 model=s.vision_model,
                 reasoning_effort=s.reasoning_effort,
+                max_completion_tokens=MAX_OUTPUT_TOKENS,
                 messages=[
                     {
                         "role": "user",
@@ -129,20 +156,20 @@ class LiveVision:
         except openai.APIStatusError as exc:
             raise _status_error(exc.status_code)
         model_ms = (time.perf_counter() - started) * 1000
+        check_not_cut(response)
 
         content = response.choices[0].message.content if response.choices else None
         answer, reason = parse_answer(content)
         if reason:
             log.warning("live answer replaced with unsure: %s", reason)
 
-        usage = response.usage
-        details = getattr(usage, "prompt_tokens_details", None) if usage else None
+        usage = usage_of(response)
         return VisionResult(
             answer=answer,
             model_ms=model_ms,
-            input_tokens=usage.prompt_tokens if usage else None,
-            cached_tokens=(getattr(details, "cached_tokens", None) or 0) if usage else None,
-            output_tokens=usage.completion_tokens if usage else None,
+            input_tokens=usage.input_tokens,
+            cached_tokens=usage.cached_tokens,
+            output_tokens=usage.output_tokens,
         )
 
 

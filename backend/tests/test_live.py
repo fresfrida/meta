@@ -10,16 +10,16 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.budget import Budget, cost_usd
-from app.config import VISION_PROMPT
+from app.config import MAX_OUTPUT_TOKENS, VISION_PROMPT
 from app.main import create_app
 from app.vision import LiveVision, default_client_factory
 
 from .conftest import FAKE_KEY, IMG
 
 
-def completion(content, prompt_tokens=1400, completion_tokens=30, cached=0):
+def completion(content, prompt_tokens=1400, completion_tokens=30, cached=0, finish_reason="stop"):
     return SimpleNamespace(
-        choices=[SimpleNamespace(message=SimpleNamespace(content=content))],
+        choices=[SimpleNamespace(message=SimpleNamespace(content=content), finish_reason=finish_reason)],
         usage=SimpleNamespace(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
@@ -65,6 +65,7 @@ def test_good_json_answer_and_request_shape(make_settings):
     call = fake.calls[0]
     assert call["model"] == "muse-spark-1.3"
     assert call["reasoning_effort"] == "minimal"
+    assert call["max_completion_tokens"] == MAX_OUTPUT_TOKENS == 2000
     assert call["response_format"]["type"] == "json_schema"
     schema = call["response_format"]["json_schema"]["schema"]
     assert schema["properties"]["hazard"]["enum"] == ["step_down", "step_up", "curb", "obstacle", "clear", "unsure"]
@@ -198,3 +199,14 @@ def test_real_sdk_builds_expected_http_request(make_settings):
     assert seen["auth"] == f"Bearer {FAKE_KEY}"
     assert seen["body"]["reasoning_effort"] == "minimal"
     assert seen["body"]["response_format"]["json_schema"]["name"] == "vision_answer"
+
+
+def test_reply_cut_by_the_output_cap_is_a_model_failure_but_billed(make_settings):
+    # A complete-looking JSON answer is still refused when the cap cut the reply: never a half answer.
+    cut = completion(json.dumps({"hazard": "clear"}), 600, MAX_OUTPUT_TOKENS, finish_reason="length")
+    client, _, _ = live_app(make_settings, cut)
+    r = client.post("/api/analyze", json={"image_b64": IMG})
+    assert r.status_code == 502 and r.json()["detail"]["code"] == "model_error"
+    assert "output cap" in r.json()["detail"]["message"]
+    spent = client.get("/api/health").json()["spent_usd"]
+    assert spent == pytest.approx((600 * 1.25 + MAX_OUTPUT_TOKENS * 4.25) / 1e6, abs=1e-6)

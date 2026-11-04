@@ -54,6 +54,9 @@ ASK_PROMPT = (
     "there is a person."
 )
 ASK_MAX_SENTENCES = 2
+# Upper bound on the model's output (reasoning included) for every live vision and Ask call, so no single call can
+# run away (Brief 9: one call produced 147,757 tokens). Normal answers use ~270-650. A reply cut here is a failure.
+MAX_OUTPUT_TOKENS = 2000
 MAX_QUESTION_CHARS = 500
 MAX_LAST_WARNING_CHARS = 200
 # Language codes the phone sends -> names used in the Ask prompt and in the ASR languageBias (docs: names, not codes).
