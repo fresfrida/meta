@@ -125,7 +125,8 @@ export type ListenEvent =
   | { type: 'error'; code: 'bad_language' | 'key_missing' | 'budget_reached' | 'slot_ended' }
 
 /** Fast warning (SAM 3.1). Hits are already filtered on the backend (detect_rule.py), nearest first. */
-export type DetectKind = 'steps' | 'curb' | 'door'
+/** vehicle: SAM "car" (Brief 29, behind CAR_FAST), shown and spoken with the approved vehicle words. */
+export type DetectKind = 'steps' | 'curb' | 'door' | 'vehicle'
 
 export interface DetectHit {
   kind: DetectKind
@@ -139,6 +140,8 @@ export interface DetectHit {
 
 export interface DetectRequest {
   image_b64: string
+  /** Brief 29: the fast car warning for this frame; left out = the server's CAR_FAST. */
+  car?: boolean
 }
 
 export interface DetectResponse {

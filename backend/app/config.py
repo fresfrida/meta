@@ -56,12 +56,14 @@ VISION_PROMPT = (
 )
 
 # Ask (Brief 6): the Owner-approved prompt, verbatim. The three {...} placeholders are filled by replace().
+# Brief 29 (Owner approved 5 Nov): + "Describe where the path goes; never tell the person which way to go." after
+# "describing only what you can see.", so "Hey Eyes, where does the path go?" is answered as a description.
 ASK_PROMPT = (
     "You are helping a person who is blind or has low vision understand the photo from their phone camera, "
     "taken from chest height facing forward. Their last warning was: {last warning}. They asked: {question}. "
-    "Answer in {language}, in at most two short sentences, describing only what you can see. Never say it is "
-    "safe to walk, cross or move; if you cannot tell, say so. Do not identify or describe people beyond saying "
-    "there is a person."
+    "Answer in {language}, in at most two short sentences, describing only what you can see. Describe where the "
+    "path goes; never tell the person which way to go. Never say it is safe to walk, cross or move; if you "
+    "cannot tell, say so. Do not identify or describe people beyond saying there is a person."
 )
 ASK_MAX_SENTENCES = 2
 # Upper bound on the model's output (reasoning included) for every live vision and Ask call, so no single call can
@@ -86,6 +88,14 @@ ASR_END_DRAIN_S = 3.0  # after endStream, wait this long for the last events
 SAM_MODEL = "sam-3.1"
 # Hit kind the phone shows -> SAM concept prompt (docs: one short noun phrase per request).
 SAM_CONCEPTS = {"steps": "stairs", "curb": "curb", "door": "door"}  # door: Brief 13 test, found both glass doors
+# Brief 29: the fast car warning. SAM "car" -> the existing vehicle kind (approved vehicle words), same in-path and
+# distance rules as kerbs. Behind CAR_FAST (env; the phone can override with ?car=0 / ?car=1). +1 SAM image per frame.
+CAR_CONCEPT = {"vehicle": "car"}
+
+
+def sam_concepts(car: bool) -> dict[str, str]:
+    """The SAM concepts asked for one frame: the three above, plus "car" when the car warning is on."""
+    return {**SAM_CONCEPTS, **CAR_CONCEPT} if car else dict(SAM_CONCEPTS)
 SAM_PRICE_PER_IMAGE = 2.50 / 1000  # USD per image per concept (docs: $2.50 per 1,000 images)
 DETECT_TIMEOUT_S = 4.0  # per SAM request, wall clock
 DETECT_MAX_BYTES = 2 * 1024 * 1024  # per SAM response; masks are streamed too, then ignored
@@ -144,6 +154,8 @@ class Settings:
     asr_model: str
     asr_price_per_hour: float
     detect_mode: VisionMode
+    # Brief 29: fast car warning on (SAM "car"), unless the request says otherwise.
+    car_fast: bool
     # Mock only: pretend latency, so the two-speed loop can be seen without live calls (0 = instant).
     mock_vision_delay_ms: int
     mock_detect_delay_ms: int
@@ -215,6 +227,7 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         # USD per hour of audio streamed (docs: $0.18/hour, billed per whole second).
         asr_price_per_hour=_float("ASR_PRICE_PER_HOUR", 0.18),
         detect_mode=detect_mode,  # type: ignore[arg-type]
+        car_fast=os.environ.get("CAR_FAST", "0").strip().lower() in ("1", "true", "yes"),
         mock_vision_delay_ms=int(_float("MOCK_VISION_DELAY_MS", 0)),
         mock_detect_delay_ms=int(_float("MOCK_DETECT_DELAY_MS", 0)),
         public_demo=os.environ.get("PUBLIC_DEMO", "").strip() in ("1", "true", "yes"),

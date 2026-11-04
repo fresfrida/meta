@@ -179,7 +179,7 @@ def create_app(
             return cost
 
         try:
-            result = detector.detect(req.image_b64)
+            result = detector.detect(req.image_b64, car=settings.car_fast if req.car is None else req.car)
         except DetectFailed as exc:
             billed(exc.images_billed)
             log.warning("detect failed: %s (%s)", exc.code, exc.message)

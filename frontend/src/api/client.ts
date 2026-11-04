@@ -102,6 +102,11 @@ export function requestSlot(deviceId: string): Promise<SlotResponse> {
 }
 
 /** Fast warning: SAM steps and kerb hits for one frame. */
+/** The /api/detect body: the car override only when the phone's URL sets one (Brief 29). */
+export function detectBody(image_b64: string, car: boolean | null): DetectRequest {
+  return car === null ? { image_b64 } : { image_b64, car }
+}
+
 export function detect(body: DetectRequest): Promise<DetectResponse> {
   return request<DetectResponse>(
     '/detect',

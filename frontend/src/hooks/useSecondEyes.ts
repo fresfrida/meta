@@ -1,6 +1,6 @@
 // Orchestrates camera -> frame -> backend -> phrase -> speech, and the visible states.
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError, analyze, detect, getHealth } from '../api/client'
+import { ApiError, analyze, detect, detectBody, getHealth } from '../api/client'
 import type { Box, HealthResponse, Source } from '../api/types'
 import {
   DETAIL_EVERY,
@@ -31,6 +31,7 @@ import {
   SPEECH_LANGS,
   TIMING_HISTORY_SIZE,
   VOICE_WAIT_MS,
+  CAR_FAST_OVERRIDE,
   FIRST_FRAME_WAIT_MS,
   GETTING_READY_STILL_MS,
   VIDEO_MUTE_WAIT_MS,
@@ -663,7 +664,7 @@ export function useSecondEyes(
   const runFast = useCallback(
     async (session: number, seq: number, image: string, frame: Size, captureStart: number, requestSent: number) => {
       try {
-        const res = await detect({ image_b64: image })
+        const res = await detect(detectBody(image, CAR_FAST_OVERRIDE))
         const responseReceived = performance.now()
         if (session !== sessionRef.current) return
         noteAnswer()
