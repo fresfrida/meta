@@ -80,14 +80,16 @@ class Vision(Protocol):
 class MockVision:
     """Cycles through MOCK_ANSWERS in order, repeating each one `hold_calls` times."""
 
-    def __init__(self, hold_calls: int = 1) -> None:
+    def __init__(self, hold_calls: int = 1, delay_ms: int = 0) -> None:
         self._answers = cycle([a for a in MOCK_ANSWERS for _ in range(hold_calls)])
         self._lock = Lock()
+        self._delay_s = delay_ms / 1000
 
     def analyze(self, image_b64: str) -> VisionResult:
         started = time.perf_counter()
         with self._lock:
             answer = next(self._answers)
+        time.sleep(self._delay_s)
         return VisionResult(answer=answer, model_ms=(time.perf_counter() - started) * 1000)
 
 

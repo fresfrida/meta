@@ -23,6 +23,9 @@ ENV_VARS = (
     "META_ASR_URL",
     "ASR_MODEL",
     "ASR_PRICE_PER_HOUR",
+    "DETECT_MODE",
+    "MOCK_VISION_DELAY_MS",
+    "MOCK_DETECT_DELAY_MS",
 )
 
 IMG = base64.b64encode(b"\xff\xd8\xff\xe0fake-jpeg").decode()

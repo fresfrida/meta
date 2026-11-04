@@ -10,10 +10,21 @@ from fastapi import WebSocket
 
 from .ask import Ask, EmptyAnswer, LiveAsk, MockAsk
 from .budget import Budget, cost_usd
-from .config import Settings, load_settings
+from .config import SAM_PRICE_PER_IMAGE, Settings, load_settings
+from .detect import DetectFailed, Detector, LiveDetect, MockDetect
 from .listen import AsrConnect, default_asr_connect, run_listen
-from .schemas import AnalyzeRequest, AnalyzeResponse, AskRequest, AskResponse, ErrorDetail, HealthResponse, resolve_side
-from .vision import LiveVision, MockVision, Vision, VisionError
+from .schemas import (
+    AnalyzeRequest,
+    AnalyzeResponse,
+    AskRequest,
+    AskResponse,
+    DetectRequest,
+    DetectResponse,
+    ErrorDetail,
+    HealthResponse,
+    resolve_side,
+)
+from .vision import LiveVision, MockVision, Vision, VisionError, default_client_factory
 
 log = logging.getLogger(__name__)
 
@@ -35,12 +46,23 @@ def create_app(
     budget: Budget | None = None,
     asker: Ask | None = None,
     asr_connect: AsrConnect | None = None,
+    detector: Detector | None = None,
 ) -> FastAPI:
     settings = settings or load_settings()
     live = settings.vision_mode == "live"
-    vision = vision or (LiveVision(settings) if live else MockVision(settings.mock_hold_calls))
     ask_live = settings.ask_mode == "live"
-    asker = asker or (LiveAsk(settings) if ask_live else MockAsk())
+    detect_live = settings.detect_mode == "live"
+    # One keep-alive Muse client shared by vision and Ask (built only when one of them is live).
+    muse = default_client_factory(settings) if (live or ask_live) and settings.key_present else None
+    vision = vision or (
+        LiveVision(settings, client_factory=lambda s: muse)
+        if live
+        else MockVision(settings.mock_hold_calls, settings.mock_vision_delay_ms)
+    )
+    asker = asker or (LiveAsk(settings, client_factory=lambda s: muse) if ask_live else MockAsk())
+    detector = detector or (
+        LiveDetect(settings) if detect_live else MockDetect(settings.mock_hold_calls, settings.mock_detect_delay_ms)
+    )
     asr_connect = asr_connect or default_asr_connect
     budget = budget or Budget(settings.spend_file, settings.budget_usd)
     app = FastAPI(title="Second Eyes")
@@ -86,6 +108,36 @@ def create_app(
             input_tokens=result.input_tokens,
             output_tokens=result.output_tokens,
             cost_usd=cost,
+        )
+
+    @app.post("/api/detect", response_model=DetectResponse)
+    def detect(req: DetectRequest) -> DetectResponse:
+        """Fast warning: SAM 3.1 steps and kerb boxes -> kept hits (detect_rule.py), nearest first."""
+        _valid_b64(req.image_b64)
+        if detect_live and budget.reached():
+            raise _error(402, "budget_reached", f"live budget of ${settings.budget_usd:g} reached")
+
+        def billed(images: int) -> float | None:
+            if not detect_live:
+                return None
+            cost = images * SAM_PRICE_PER_IMAGE
+            budget.add(cost)
+            return cost
+
+        try:
+            result = detector.detect(req.image_b64)
+        except DetectFailed as exc:
+            billed(exc.images_billed)
+            log.warning("detect failed: %s (%s)", exc.code, exc.message)
+            raise _error(exc.status, exc.code, exc.message)
+        except VisionError as exc:
+            raise _error(exc.status, exc.code, exc.message)
+        return DetectResponse(
+            hits=result.hits,
+            found=result.found,
+            source=settings.detect_mode,
+            sam_ms=result.sam_ms,
+            cost_usd=billed(result.images_billed),
         )
 
     @app.post("/api/ask", response_model=AskResponse)

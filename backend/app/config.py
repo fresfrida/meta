@@ -72,6 +72,20 @@ ASR_MAX_QUEUE_S = 2.0  # phone audio buffered beyond this is dropped (docs: neve
 ASR_HANDSHAKE_TIMEOUT_S = 10.0
 ASR_END_DRAIN_S = 3.0  # after endStream, wait this long for the last events
 
+# Fast warning (Brief 11): SAM 3.1 finds steps and kerbs in ~1-2 s and the phone speaks first; Muse adds the detail.
+SAM_MODEL = "sam-3.1"
+# Hit kind the phone shows -> SAM concept prompt (docs: one short noun phrase per request).
+SAM_CONCEPTS = {"steps": "stairs", "curb": "curb"}
+SAM_PRICE_PER_IMAGE = 2.50 / 1000  # USD per image per concept (docs: $2.50 per 1,000 images)
+DETECT_TIMEOUT_S = 4.0  # per SAM request, wall clock
+DETECT_MAX_BYTES = 2 * 1024 * 1024  # per SAM response; masks are streamed too, then ignored
+SAM_MIN_CONF = 0.5  # hits below this confidence are dropped
+# Distance from the box bottom, for a level phone held at chest height (pinhole camera, horizon = frame centre).
+CAMERA_HEIGHT_M = 1.3
+VFOV_PORTRAIT_DEG = 67.0  # typical phone main camera (26 mm equivalent, 4:3), long side vertical
+VFOV_LANDSCAPE_DEG = 53.0  # short side vertical
+BOTTOM_TOUCH_FRAC = 0.01  # a box ending within this fraction of the frame bottom touches it: "near", no metres
+
 
 @dataclass(frozen=True)
 class Prices:
@@ -99,6 +113,10 @@ class Settings:
     asr_url: str
     asr_model: str
     asr_price_per_hour: float
+    detect_mode: VisionMode
+    # Mock only: pretend latency, so the two-speed loop can be seen without live calls (0 = instant).
+    mock_vision_delay_ms: int
+    mock_detect_delay_ms: int
 
     @property
     def key_present(self) -> bool:
@@ -124,7 +142,8 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
     # Listen and Ask follow VISION_MODE unless set (e.g. a live Ask test while the camera loop stays on mock).
     listen_mode = os.environ.get("LISTEN_MODE", "").strip().lower() or mode
     ask_mode = os.environ.get("ASK_MODE", "").strip().lower() or mode
-    for name, value in (("LISTEN_MODE", listen_mode), ("ASK_MODE", ask_mode)):
+    detect_mode = os.environ.get("DETECT_MODE", "").strip().lower() or mode
+    for name, value in (("LISTEN_MODE", listen_mode), ("ASK_MODE", ask_mode), ("DETECT_MODE", detect_mode)):
         if value not in VISION_MODES:
             raise ValueError(f"{name} must be one of {VISION_MODES}, got {value!r}")
 
@@ -151,4 +170,7 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         asr_model=os.environ.get("ASR_MODEL", "").strip() or "muse-voice-transcribe-1.0",
         # USD per hour of audio streamed (docs: $0.18/hour, billed per whole second).
         asr_price_per_hour=_float("ASR_PRICE_PER_HOUR", 0.18),
+        detect_mode=detect_mode,  # type: ignore[arg-type]
+        mock_vision_delay_ms=int(_float("MOCK_VISION_DELAY_MS", 0)),
+        mock_detect_delay_ms=int(_float("MOCK_DETECT_DELAY_MS", 0)),
     )

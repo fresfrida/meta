@@ -82,17 +82,21 @@ class VisionAnswer(BaseModel):
         return self
 
 
+def side_of_box(box: Box) -> Side:
+    """The one side rule for a box: its centre x against LEFT_MAX / RIGHT_MIN (Muse and SAM boxes alike)."""
+    centre_x = (box[0] + box[2]) / 2
+    if centre_x <= LEFT_MAX:
+        return "left"
+    if centre_x >= RIGHT_MIN:
+        return "right"
+    return "ahead"
+
+
 def resolve_side(answer: VisionAnswer) -> tuple[Optional[Side], SideSource]:
-    """The one side rule: with a box, side comes from the box centre x; without one, the model's side stands."""
+    """With a box, side comes from the box centre x; without one, the model's side stands."""
     if answer.box is None:
         return answer.side, "model"
-    x_min, _, x_max, _ = answer.box
-    centre_x = (x_min + x_max) / 2
-    if centre_x <= LEFT_MAX:
-        return "left", "box"
-    if centre_x >= RIGHT_MIN:
-        return "right", "box"
-    return "ahead", "box"
+    return side_of_box(answer.box), "box"
 
 
 def vision_answer_json_schema() -> dict:
@@ -171,4 +175,30 @@ class AskResponse(BaseModel):
     model_ms: float
     input_tokens: Optional[int] = None
     output_tokens: Optional[int] = None
+    cost_usd: Optional[float] = None
+
+
+DetectKind = Literal["steps", "curb"]
+
+
+class DetectRequest(BaseModel):
+    image_b64: str = Field(min_length=1, max_length=MAX_IMAGE_B64_CHARS)
+
+
+class DetectHit(BaseModel):
+    """A kept SAM hit (see detect_rule.py): side from the box, distance from the box bottom."""
+
+    kind: DetectKind
+    box: Box
+    confidence: float
+    side: Side
+    distance: Distance  # "near" when the box touches the frame bottom (then distance_m is null)
+    distance_m: Optional[int] = None
+
+
+class DetectResponse(BaseModel):
+    hits: list[DetectHit]  # kept hits, nearest first; empty when nothing passed the rule
+    found: int  # boxes SAM returned before the rule
+    source: Source
+    sam_ms: float
     cost_usd: Optional[float] = None
