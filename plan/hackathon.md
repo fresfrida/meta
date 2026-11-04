@@ -2,6 +2,18 @@
 Deadline: Thu 5 Nov 10:00 SGT (= Wed 4 Nov 9:00 PM EST). Target submit 09:30.
 Source docs: admin/ (incl. the event Details PDF and submission form screenshots).
 
+## Status (4 Nov 10:00 SGT) - sections below are from 3 Nov and partly outdated
+- Built since: monochrome design with a traffic-light lamp; 4 languages chosen in Settings; distance in metres;
+  hands-free "Hey Eyes" Ask (muse-voice-transcribe-1.0 + muse-spark-1.3) in 4 languages; face blur on the phone;
+  light/dark and Larger Text; output cap on every model call.
+- Latency: muse-spark-1.3 takes ~4 s (reasoning can't be turned off). Two-speed design: SAM 3.1 finds stairs and
+  kerbs in ~1.5 s and speaks first; Muse adds detail. Three Meta models in use.
+- Prompt v5 names 11 hazard kinds; v6 (in progress) adds roads, crossings, cycle paths, escalators, uneven ground,
+  and never calls a road "clear". The app never guides crossings.
+- Tested outdoors on Android over Tailscale (phone -> the Mac at home). No hosting.
+- Next: v6 + heartbeat + spoken connection alerts; polish; video tonight; README, submission text, repo public on
+  the Owner's yes. Details: docs/HANDOFF.md, docs/KANBAN.md, docs/DECISIONS.md.
+
 ## Pitch
 A phone camera watches the path ahead, Meta's vision model spots steps and
 obstacles, draws a box around the hazard, and the phone speaks a short warning
