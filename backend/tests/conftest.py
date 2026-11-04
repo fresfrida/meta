@@ -26,6 +26,14 @@ ENV_VARS = (
     "DETECT_MODE",
     "MOCK_VISION_DELAY_MS",
     "MOCK_DETECT_DELAY_MS",
+    "PUBLIC_DEMO",
+    "DATA_DIR",
+    "DEMO_SLOT_S",
+    "DEMO_SLOTS_PER_DAY",
+    "DAILY_BUDGET_USD",
+    "DEMO_SECRET",
+    "VIDEO_URL",
+    "STATIC_DIR",
 )
 
 IMG = base64.b64encode(b"\xff\xd8\xff\xe0fake-jpeg").decode()

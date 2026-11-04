@@ -107,6 +107,12 @@ DOOR_CENTRE_MAX = 750
 BIG_HIT_FRAC = 0.35
 
 
+# Public demo (Brief 17): each visitor gets one slot of this many seconds (DEMO_SLOT_S env overrides, for tests).
+DEMO_SLOT_S_DEFAULT = 180
+# New-slot requests allowed per IP per minute (abuse guard on /api/slot).
+SLOT_REQUESTS_PER_MIN = 6
+
+
 @dataclass(frozen=True)
 class Prices:
     """USD per 1M tokens."""
@@ -137,6 +143,15 @@ class Settings:
     # Mock only: pretend latency, so the two-speed loop can be seen without live calls (0 = instant).
     mock_vision_delay_ms: int
     mock_detect_delay_ms: int
+    # Public demo (Brief 17): off on the Mac; on in the cloud container.
+    public_demo: bool
+    data_dir: Path | None
+    demo_slot_s: int
+    demo_slots_per_day: int
+    daily_budget_usd: float
+    demo_secret: str | None
+    video_url: str | None
+    static_dir: Path | None
 
     @property
     def key_present(self) -> bool:
@@ -157,6 +172,9 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         load_dotenv(env_file, override=False)
 
     mode = os.environ.get("VISION_MODE", "mock").strip().lower()
+    # Cloud container: DATA_DIR is the persistent volume (spend and demo counts); STATIC_DIR the built frontend.
+    data_dir = os.environ.get("DATA_DIR", "").strip() or None
+    static_dir = os.environ.get("STATIC_DIR", "").strip() or None
     if mode not in VISION_MODES:
         raise ValueError(f"VISION_MODE must be one of {VISION_MODES}, got {mode!r}")
     # Listen and Ask follow VISION_MODE unless set (e.g. a live Ask test while the camera loop stays on mock).
@@ -181,7 +199,9 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
             cached_input_per_m=_float("PRICE_CACHED_INPUT_PER_M", 0.15),
             output_per_m=_float("PRICE_OUTPUT_PER_M", 4.25),
         ),
-        spend_file=Path(os.environ.get("SPEND_FILE", "").strip() or DEFAULT_SPEND_FILE),
+        spend_file=Path(
+            os.environ.get("SPEND_FILE", "").strip() or (str(Path(data_dir) / "spend.json") if data_dir else DEFAULT_SPEND_FILE)
+        ),
         # Mock repeats each answer this many calls, so the frontend no-repeat rule can be seen.
         mock_hold_calls=max(1, int(_float("MOCK_HOLD_CALLS", 4))),
         listen_mode=listen_mode,  # type: ignore[arg-type]
@@ -193,4 +213,12 @@ def load_settings(env_file: Path | None = DEFAULT_ENV_FILE) -> Settings:
         detect_mode=detect_mode,  # type: ignore[arg-type]
         mock_vision_delay_ms=int(_float("MOCK_VISION_DELAY_MS", 0)),
         mock_detect_delay_ms=int(_float("MOCK_DETECT_DELAY_MS", 0)),
+        public_demo=os.environ.get("PUBLIC_DEMO", "").strip() in ("1", "true", "yes"),
+        data_dir=Path(data_dir) if data_dir else None,
+        demo_slot_s=int(_float("DEMO_SLOT_S", DEMO_SLOT_S_DEFAULT)),
+        demo_slots_per_day=int(_float("DEMO_SLOTS_PER_DAY", 10)),
+        daily_budget_usd=_float("DAILY_BUDGET_USD", 8.0),
+        demo_secret=os.environ.get("DEMO_SECRET", "").strip() or None,
+        video_url=os.environ.get("VIDEO_URL", "").strip() or None,
+        static_dir=Path(static_dir) if static_dir else None,
     )

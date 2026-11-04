@@ -22,6 +22,9 @@ def test_health_reports_mock_by_default(client):
         "key_present": False,
         "spent_usd": 0.0,
         "budget_usd": 25.0,
+        "public_demo": False,
+        "demo_slot_s": None,
+        "video_url": None,
     }
 
 

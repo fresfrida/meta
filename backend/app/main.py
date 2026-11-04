@@ -2,15 +2,20 @@
 
 import base64
 import binascii
+import json
 import logging
+import time
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 
 from fastapi import WebSocket
+from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .ask import Ask, EmptyAnswer, LiveAsk, MockAsk
 from .budget import Budget, cost_usd
-from .config import SAM_PRICE_PER_IMAGE, Settings, load_settings
+from .config import SAM_PRICE_PER_IMAGE, SLOT_REQUESTS_PER_MIN, Settings, load_settings
+from .demo import DailyCapBudget, DemoBook, RateLimit, SlotRefused
 from .detect import DetectFailed, Detector, LiveDetect, MockDetect
 from .listen import AsrConnect, default_asr_connect, run_listen
 from .schemas import (
@@ -20,6 +25,8 @@ from .schemas import (
     AskResponse,
     DetectRequest,
     DetectResponse,
+    SlotRequest,
+    SlotResponse,
     ErrorDetail,
     HealthResponse,
     resolve_side,
@@ -66,8 +73,40 @@ def create_app(
     )
     asr_connect = asr_connect or default_asr_connect
     budget = budget or Budget(settings.spend_file, settings.budget_usd)
+    # Public demo (Brief 17): slots, a daily cap on top of the total budget, a rate limit on new slots.
+    book: DemoBook | None = None
+    slot_limit = RateLimit(SLOT_REQUESTS_PER_MIN)
+    if settings.public_demo:
+        data_dir = settings.data_dir or settings.spend_file.parent
+        book = DemoBook(
+            data_dir / "demo.json",
+            settings.demo_slot_s,
+            settings.demo_slots_per_day,
+            settings.daily_budget_usd,
+            settings.demo_secret,
+        )
+        budget = DailyCapBudget(budget, book)  # type: ignore[assignment]
     app = FastAPI(title="Second Eyes")
     log.info("starting with %r", settings)
+
+    def require_slot(request: Request) -> None:
+        """Public demo: every live-capable call needs a valid, unexpired slot token."""
+        if book is not None and not book.check(request.headers.get("x-demo-slot")):
+            raise _error(403, "slot_ended", "your demo time is up")
+
+    @app.post("/api/slot", response_model=SlotResponse)
+    def slot(req: SlotRequest, request: Request) -> SlotResponse:
+        if book is None:
+            raise HTTPException(status_code=404)
+        forwarded = request.headers.get("x-forwarded-for", "")
+        ip = forwarded.split(",")[0].strip() or (request.client.host if request.client else "?")
+        if not slot_limit.allow(ip):
+            raise _error(429, "rate_limited", "too many requests; try again in a minute")
+        try:
+            given = book.issue(req.device_id)
+        except SlotRefused as exc:
+            raise _error(429, exc.code, exc.message)
+        return SlotResponse(token=given.token, expires_in_s=round(given.expires_at - time.time(), 1))
 
     @app.get("/api/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -78,10 +117,13 @@ def create_app(
             key_present=settings.key_present,
             spent_usd=round(budget.spent_usd, 6),
             budget_usd=settings.budget_usd,
+            public_demo=settings.public_demo,
+            demo_slot_s=settings.demo_slot_s if settings.public_demo else None,
+            video_url=settings.video_url if settings.public_demo else None,
         )
 
     @app.post("/api/analyze", response_model=AnalyzeResponse)
-    def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
+    def analyze(req: AnalyzeRequest, _: None = Depends(require_slot)) -> AnalyzeResponse:
         _valid_b64(req.image_b64)
 
         if live and budget.reached():
@@ -123,7 +165,7 @@ def create_app(
         )
 
     @app.post("/api/detect", response_model=DetectResponse)
-    def detect(req: DetectRequest) -> DetectResponse:
+    def detect(req: DetectRequest, _: None = Depends(require_slot)) -> DetectResponse:
         """Fast warning: SAM 3.1 steps and kerb boxes -> kept hits (detect_rule.py), nearest first."""
         _valid_b64(req.image_b64)
         if detect_live and budget.reached():
@@ -154,7 +196,7 @@ def create_app(
         )
 
     @app.post("/api/ask", response_model=AskResponse)
-    def ask(req: AskRequest) -> AskResponse:
+    def ask(req: AskRequest, _: None = Depends(require_slot)) -> AskResponse:
         _valid_b64(req.image_b64)
         if ask_live and budget.reached():
             raise _error(402, "budget_reached", f"live budget of ${settings.budget_usd:g} reached")
@@ -189,9 +231,29 @@ def create_app(
 
     @app.websocket("/api/listen")
     async def listen(ws: WebSocket) -> None:
-        await run_listen(ws, settings, budget, asr_connect)
+        if book is not None and not book.check(ws.query_params.get("slot")):
+            await ws.accept()  # browsers cannot send headers on a WebSocket: the token comes as ?slot=
+            await ws.send_text(json.dumps({"type": "error", "code": "slot_ended"}))
+            await ws.close(code=1008)
+            return
+        await run_listen(ws, settings, budget, asr_connect)  # type: ignore[arg-type]
+
+    if settings.static_dir and settings.static_dir.is_dir():
+        # Cloud container: the built frontend from the same origin (no CORS), with the SPA's index.html for any
+        # path that is not a file. Registered last, so every /api route wins.
+        app.mount("/", SpaStatic(directory=settings.static_dir, html=True), name="static")
 
     return app
+
+
+class SpaStatic(StaticFiles):
+    async def get_response(self, path: str, scope):  # type: ignore[override]
+        try:
+            return await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or path.startswith("api"):
+                raise
+            return await super().get_response("index.html", scope)
 
 
 app = create_app()

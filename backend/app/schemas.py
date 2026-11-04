@@ -54,6 +54,10 @@ ErrorCode = Literal[
     "model_billing",
     "model_error",
     "empty_answer",
+    "slot_ended",
+    "slots_full",
+    "daily_budget",
+    "rate_limited",
 ]
 
 
@@ -186,6 +190,19 @@ class HealthResponse(BaseModel):
     key_present: bool
     spent_usd: float
     budget_usd: float
+    # Public demo (Brief 17): the page shows the notice and asks for a slot when this is true.
+    public_demo: bool = False
+    demo_slot_s: Optional[int] = None
+    video_url: Optional[str] = None
+
+
+class SlotRequest(BaseModel):
+    device_id: str = Field(min_length=8, max_length=64)
+
+
+class SlotResponse(BaseModel):
+    token: str
+    expires_in_s: float
 
 
 class ErrorDetail(BaseModel):
