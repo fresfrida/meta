@@ -1,0 +1,163 @@
+/* Design tokens: monochrome design v2 (Owner approved 3 Nov). Components use only these.
+   Colour exists only in the traffic light. Errors are white text with an icon. */
+:root {
+  /* Path guide on the camera screen (Brief 15, TENTATIVE): faint, so it never competes with a hazard box. */
+  --path-guide: rgba(255, 255, 255, 0.22);
+  /* Colour */
+  --color-bg: #000;
+  --color-surface: #121212;
+  --color-scrim: rgba(0, 0, 0, 0.72);
+  --color-hairline: rgba(255, 255, 255, 0.14);
+  --color-text: #fff;
+  --color-text-muted: #9a9a9a;
+  --color-text-chip: rgba(255, 255, 255, 0.8);
+  --color-on-light: #000;
+  --color-halo: rgba(0, 0, 0, 0.7);
+  --color-control-off: #555;
+
+  /* Traffic light: the only colour in the UI */
+  --color-lamp-red: #ff453a;
+  --color-lamp-amber: #ffb340;
+  --color-lamp-green: #32d74b;
+  --color-lamp-off: #1e1e1e;
+  --color-light-housing: #050505;
+
+  /* Type: system font */
+  --font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-size-11: 11px;
+  --font-size-13: 13px;
+  --font-size-15: 15px;
+  --font-size-18: 18px;
+  --font-size-20: 20px;
+  --font-size-22: 22px;
+  --font-size-28: 28px;
+  --font-size-34: 34px;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --line-height-tight: 1.1;
+  --line-height-body: 1.4;
+  --tracking-tight: -0.01em;
+  --tracking-caps: 0.08em;
+  --tracking-label: 0.1em;
+  --tracking-numbers: 0.02em;
+
+  /* Space */
+  --space-2: 2px;
+  --space-4: 4px;
+  --space-6: 6px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-14: 14px;
+  --space-16: 16px;
+  --space-20: 20px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  /* Radius */
+  --radius-8: 8px;
+  --radius-12: 12px;
+  --radius-16: 16px;
+  --radius-24: 24px;
+  --radius-pill: 999px;
+
+  /* Size */
+  --size-touch: 64px;
+  --size-icon-button: 44px;
+  --size-row: 64px;
+  --size-lamp: 16px;
+  --size-light: 26px;
+  --size-radio: 22px;
+  --size-switch-w: 51px;
+  --size-switch-h: 31px;
+  --size-icon: 20px;
+  --size-meter: 12px;
+  --size-thumb: 72px;
+  --hairline: 1px;
+  --box-stroke: 2px;
+  --radio-on-stroke: 7px;
+  --lamp-glow: 10px;
+  --blur-card: 14px;
+  --opacity-disabled: 0.5;
+  --opacity-glow-dim: 0.75;
+
+  /* Motion */
+  --motion-fade: 200ms;
+  --motion-pulse: 1200ms;
+  --motion-ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Breakpoint used in media queries (kept here for reference): narrow < 360px */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fade: 0ms;
+    --motion-pulse: 0ms;
+  }
+}
+
+/* ---------- Appearance (Brief 7) ----------
+   The camera screen is always dark (the tokens above). Home, Settings and the mic test (.app--auto) follow the
+   phone's appearance: the light set below inverts the monochrome tokens; the traffic light keeps its colours. */
+:root {
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root:has(.app--auto) {
+    color-scheme: light;
+    --color-bg: #fff;
+    --color-surface: #f2f2f2;
+    --color-scrim: rgba(255, 255, 255, 0.72);
+    --color-hairline: rgba(0, 0, 0, 0.14);
+    --color-text: #000;
+    --color-text-muted: #6b6b6b;
+    --color-text-chip: rgba(0, 0, 0, 0.8);
+    --color-on-light: #fff;
+    --color-control-off: #b5b5b5;
+  }
+}
+
+/* Increase Contrast (iOS) / prefers-contrast: more - stronger hairlines and muted text. */
+@media (prefers-contrast: more) {
+  :root {
+    --path-guide: rgba(255, 255, 255, 0.5);
+    --color-hairline: rgba(255, 255, 255, 0.5);
+    --color-text-muted: #d0d0d0;
+    --color-text-chip: #fff;
+    --color-control-off: #9a9a9a;
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: light) {
+  :root:has(.app--auto) {
+    --color-hairline: rgba(0, 0, 0, 0.5);
+    --color-text-muted: #333;
+    --color-text-chip: #000;
+    --color-control-off: #6b6b6b;
+  }
+}
+
+/* ---------- Text size (Brief 7) ----------
+   Home, Settings and the mic test scale with the iPhone's Larger Text: the root size comes from
+   -apple-system-body (17px at the default size) and these screens use rem sizes. The camera screen keeps px. */
+html {
+  font-size: 106.25%; /* 17px where -apple-system-body is not supported */
+}
+
+@supports (font: -apple-system-body) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
+.app--auto {
+  --font-size-11: calc(11rem / 17);
+  --font-size-13: calc(13rem / 17);
+  --font-size-15: calc(15rem / 17);
+  --font-size-18: calc(18rem / 17);
+  --font-size-20: calc(20rem / 17);
+  --font-size-22: calc(22rem / 17);
+  --font-size-28: calc(28rem / 17);
+  --font-size-34: calc(34rem / 17);
+}

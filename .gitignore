@@ -1,0 +1,35 @@
+# Owner's private source docs
+admin/
+
+# Secrets and env files (keep .env.example files)
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Dependencies and builds
+node_modules/
+dist/
+dev-dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Local certificates
+*.pem
+*.key
+*.crt
+*.cert
+.cert/
+.certs/
+
+# OS / editor
+.DS_Store
+*.log
+
+# Local Claude tooling
+.claude/
+
+# Backend local data (live spend counter)
+backend/.data/
