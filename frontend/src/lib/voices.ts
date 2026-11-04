@@ -5,32 +5,99 @@ import type { VoiceStatus } from '../strings'
 type VoiceLike = Pick<SpeechSynthesisVoice, 'lang' | 'name'> &
   Partial<Pick<SpeechSynthesisVoice, 'localService' | 'voiceURI'>>
 
-const norm = (lang: string) => lang.replace('_', '-').toLowerCase()
+const norm = (tag: string) => tag.replace(/_/g, '-').toLowerCase()
 const QUALITY = /google|enhanced|premium|natural|neural/i
-const byName = <V extends VoiceLike>(a: V, b: V) => a.name.localeCompare(b.name)
 
-/** The phone's voices for this language: the exact lang (en-GB) if any, else the same base language (en-*). */
-export function voicesFor<V extends VoiceLike>(voices: readonly V[], lang: string): V[] {
-  const want = norm(lang)
-  const exact = voices.filter((v) => norm(v.lang) === want)
-  if (exact.length) return [...exact].sort(byName)
-  const base = want.split('-')[0]
-  return voices.filter((v) => norm(v.lang).split('-')[0] === base).sort(byName)
+/**
+ * Preferred regions per language, Singapore first (Brief 24, Advisor decision). Regions not listed come after, in
+ * name order. 中文 is Mandarin: Cantonese voices (yue, Hong Kong, Macao) are never offered for it.
+ */
+const REGION_ORDER: Record<string, readonly string[]> = {
+  zh: ['sg', 'cn', 'my', 'tw'],
+  en: ['sg', 'gb'],
+  ms: ['sg', 'my'],
+  ta: ['sg', 'in'],
+}
+/** Only when a language has no voice at all: Bahasa Melayu falls back to Indonesian. */
+const LAST_FALLBACK: Record<string, string> = { ms: 'id' }
+
+// Locale words in voice names ("Chinese Hong Kong", "Google UK English Female"), for phones whose tags don't help.
+const NAME_REGIONS: [RegExp, string][] = [
+  [/\bsingapore\b/i, 'sg'],
+  [/\bhong kong\b/i, 'hk'],
+  [/\bmaca[ou]\b/i, 'mo'],
+  [/\btaiwan\b/i, 'tw'],
+  [/\bmalaysia\b/i, 'my'],
+  [/\bindonesia\b/i, 'id'],
+  [/\bchina\b/i, 'cn'],
+  [/\b(united kingdom|uk|british)\b/i, 'gb'],
+  [/\b(united states|us|american)\b/i, 'us'],
+  [/\bindia\b/i, 'in'],
+]
+const NAME_LANGS: [RegExp, string][] = [
+  [/\bcantonese\b/i, 'yue'],
+  [/\b(chinese|mandarin)\b/i, 'zh'],
+  [/\benglish\b/i, 'en'],
+  [/\bindonesian\b/i, 'id'],
+  [/\bmalay\b/i, 'ms'],
+  [/\btamil\b/i, 'ta'],
+]
+const LANG_ALIAS: Record<string, string> = { cmn: 'zh', zho: 'zh', chi: 'zh', eng: 'en', msa: 'ms', may: 'ms', tam: 'ta', in: 'id' }
+
+export interface VoiceInfo {
+  /** Language (zh = Mandarin / written Chinese, yue = Cantonese), or null when neither tag nor name says. */
+  lang: string | null
+  /** Region, lower case (sg, cn, gb ...), or null. */
+  region: string | null
 }
 
 /**
- * The default voice (deterministic: the same list in any order gives the same voice): among the language's voices,
- * an on-device voice whose name suggests higher quality ("Google", "Enhanced", "Premium", "Natural", "Neural"),
- * else any on-device voice, else the first by name; null when the language has none.
+ * What a voice speaks, from its lang tag (lower case, "_" -> "-", "cmn" -> zh, "yue" kept) and the locale words in its
+ * name. A region named in the voice's name wins over the tag (some phones tag every Chinese voice zh-CN). Chinese
+ * from Hong Kong or Macao counts as Cantonese.
  */
+export function voiceInfo(v: VoiceLike): VoiceInfo {
+  const parts = norm(v.lang ?? '').split('-').filter(Boolean)
+  let lang: string | null = parts[0] && /^[a-z]{2,3}$/.test(parts[0]) ? (LANG_ALIAS[parts[0]] ?? parts[0]) : null
+  const tagRegion = parts.slice(1).find((p) => /^([a-z]{2}|\d{3})$/.test(p)) ?? null
+  const nameRegion = NAME_REGIONS.find(([re]) => re.test(v.name))?.[1] ?? null
+  if (!lang) lang = NAME_LANGS.find(([re]) => re.test(v.name))?.[1] ?? null
+  const region = nameRegion ?? tagRegion
+  if (lang === 'zh' && (region === 'hk' || region === 'mo' || /\bcantonese\b/i.test(v.name))) lang = 'yue'
+  return { lang, region }
+}
+
+const quality = (v: VoiceLike) => (v.localService !== false && QUALITY.test(v.name) ? 0 : v.localService !== false ? 1 : 2)
+
+/**
+ * The phone's voices for this speech language (en-GB, zh-CN, ms-MY, ta-IN), best first: by region (Singapore first,
+ * REGION_ORDER), then on-device higher-quality names, then on-device, then by name. Deterministic.
+ */
+export function voicesFor<V extends VoiceLike>(voices: readonly V[], lang: string): V[] {
+  const want = norm(lang).split('-')[0]
+  const infos = voices.map((v) => ({ v, info: voiceInfo(v) }))
+  let pool = infos.filter((x) => x.info.lang === want)
+  if (pool.length === 0 && LAST_FALLBACK[want]) pool = infos.filter((x) => x.info.lang === LAST_FALLBACK[want])
+  const order = REGION_ORDER[want] ?? []
+  const rank = (region: string | null) => {
+    const i = region ? order.indexOf(region) : -1
+    return i < 0 ? order.length : i
+  }
+  return pool
+    .map((x, i) => ({ ...x, i }))
+    .sort(
+      (a, b) =>
+        rank(a.info.region) - rank(b.info.region) ||
+        quality(a.v) - quality(b.v) ||
+        a.v.name.localeCompare(b.v.name) ||
+        a.i - b.i,
+    )
+    .map((x) => x.v)
+}
+
+/** The default voice: the first of voicesFor (Singapore first, then quality); null when the language has none. */
 export function recommendedVoice<V extends VoiceLike>(voices: readonly V[], lang: string): V | null {
-  const own = voicesFor(voices, lang)
-  return (
-    own.find((v) => v.localService !== false && QUALITY.test(v.name)) ??
-    own.find((v) => v.localService !== false) ??
-    own[0] ??
-    null
-  )
+  return voicesFor(voices, lang)[0] ?? null
 }
 
 /**
@@ -109,7 +176,10 @@ export function setVoicePref(lang: string, name: string | null): void {
   }
 }
 
-/** The voice to speak with: the user's choice for this language if still installed, else the recommended one. */
+/**
+ * The voice to speak with: the user's choice for this language if still offered, else the recommended one. A
+ * remembered choice the list no longer offers (e.g. a Cantonese voice for 中文, Brief 24) is simply not used.
+ */
 export function pickVoice<V extends VoiceLike>(voices: readonly V[], lang: string): V | null {
   return chooseVoice(voices, lang, typeof window === 'undefined' ? null : voicePref(lang))
 }
