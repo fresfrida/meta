@@ -34,6 +34,7 @@
 - Screenshots at 320 / 390 px in desktop browser with a fake camera (3 Nov)
 
 ## Blocked
+- Brief 9 (measure only): stopped after 8 calls - one muse-spark-1.1 call ran away (147,757 output tokens, $0.63; brief cap $0.05). Owner decides: SAM 3.1 timing (3 calls), muse-wonder-1.0, and an output cap in the app
 - Android (Chrome) live test: Owner runs it now (camera, speech, "Hey Eyes" in each language, `?mictest=1`); $2 cap
 - iPhone test (Owner runs the test script in `007-meta-artifacts/reports/brief-01.md`, now at `/?loop=0`): camera over self-signed HTTPS, speech on speaker and Bluetooth, silent switch, mock latency numbers
 - iPhone mic test (`/?mictest=1`): does speech get quieter or move to the earpiece with the mic open (speaker and Bluetooth) - Owner runs it; decides `HANDS_FREE_DEFAULT`

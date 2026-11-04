@@ -179,6 +179,7 @@ and open `http://localhost:5173` on the Mac.
 None. Later host: not decided. See ARCHITECTURE "Things that make deploying later hard".
 
 ## Known risks
+- No `max_completion_tokens` on the vision or Ask calls (`backend/app/vision.py`, `ask.py`). In Brief 9 one muse-spark-1.1 call ran away to 147,757 output tokens ($0.63). 1.3 has not done this in ~70 live calls, but nothing bounds one call's cost. Owner to decide on a cap of about 2000.
 - iOS speech: needs the Start tap to unlock; behaviour with the silent switch
   and Bluetooth is unmeasured.
 - The self-signed certificate must be accepted on the iPhone; camera access
