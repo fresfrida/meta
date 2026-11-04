@@ -119,6 +119,4 @@ Then open `https://<your-computer's-ip>:5173` on your phone and accept the certi
 
 If you try Second Eyes, try it the way it was meant: cane in one hand, phone on your chest, and someone you trust nearby. It is an early research prototype, not a mobility aid, and every walk teaches it something.
 
-Some will watch. Some will hear.
-
 **[Try Second Eyes](https://second-eyes.52.76.242.161.sslip.io)**
