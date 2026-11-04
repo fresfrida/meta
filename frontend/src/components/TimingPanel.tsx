@@ -1,6 +1,9 @@
 import type { AskTiming } from '../hooks/useAsk'
 import type { Timings, Usage } from '../hooks/useSecondEyes'
+import { useSyncExternalStore } from 'react'
+import { audioState } from '../lib/audio'
 import type { SentFrame } from '../lib/camera'
+import { onSpeechDebug, speechDebug } from '../lib/speech'
 import { stats } from '../lib/timing'
 import { strings } from '../strings'
 
@@ -24,6 +27,7 @@ export function TimingPanel({
   const last = history[0]
   const s = stats(history.map((r) => r.totalMs))
   const silent = stats(timings.silentRoundTrips)
+  const speech = useSyncExternalStore(onSpeechDebug, speechDebug)
 
   return (
     <section className="timing" aria-label={t.heading}>
@@ -72,6 +76,7 @@ export function TimingPanel({
           )}
         </div>
       )}
+      <div className="timing__breakdown">{t.speech(speech.unlocked, speech.last, speech.detail, audioState())}</div>
       {timings.spokenCount + timings.silentCount > 0 && (
         <div className="timing__row timing__breakdown">
           <span>

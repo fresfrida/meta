@@ -60,9 +60,17 @@ import { minutesText, setSlotToken } from '../lib/demoSlot'
 import { type SpokenSides, holdSide, rememberSide } from '../lib/sideHold'
 import { atSpeakingTime } from '../lib/distanceNow'
 import { WalkDetector } from '../lib/motion'
-import { SESSION_IDLE, type SessionVoice, greetingDone, holdForGreeting, onStart, onStop } from '../lib/sessionVoice'
+import {
+  SESSION_IDLE,
+  type SessionVoice,
+  greetAtOnce,
+  greetingDone,
+  holdForGreeting,
+  onStart,
+  onStop,
+} from '../lib/sessionVoice'
 import { connectionText, sessionText, strings } from '../strings'
-import { cancelSpeech, speak, speechSupported, unlockSpeech } from '../lib/speech'
+import { cancelSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
 import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus, waitForVoices } from '../lib/voices'
 import { type AskTiming, type AskView, type ListenState, useAsk } from './useAsk'
@@ -371,28 +379,36 @@ export function useSecondEyes(
     })
   }, [])
 
-  /** Speaks `speech` for the answer whose screen phrase is `text`. */
-  const say = useCallback((res: Shown, text: string, speech: string, onStart: (speechStart: number) => void) => {
-    const speechId = ++speechIdRef.current
-    announceRef.current = spoke(res, performance.now())
-    speakingTextRef.current = text
-    const done = (failed: boolean) => {
-      if (speechId !== speechIdRef.current) return // a newer phrase took over
-      announceRef.current = { ...announceRef.current, speaking: false }
-      setAnswer((a) => (a.kind === 'phrase' && a.text === text ? { ...a, speaking: false, speechFailed: failed } : a))
-    }
-    const speechLang = SPEECH_LANGS[langRef.current]
-    const handle = speak(speech, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
-    handle.started.then(
-      (speechStart) => {
-        if (speechId !== speechIdRef.current) return
-        setAnswer((a) => (a.kind === 'phrase' && a.text === text ? { ...a, speaking: true } : a))
-        onStart(speechStart)
-        void handle.ended.then(() => done(false))
-      },
-      () => done(true),
-    )
-  }, [])
+  /**
+   * Speaks `speech` for the answer whose screen phrase is `text`. If it never started (timeout, error, dropped), the
+   * repeat rule forgets it (`onFailed` undoes the caller's memory too), so the next answer tries again (Brief 25).
+   */
+  const say = useCallback(
+    (res: Shown, text: string, speech: string, onStart: (speechStart: number) => void, onFailed?: () => void) => {
+      const speechId = ++speechIdRef.current
+      const announceBefore = announceRef.current
+      announceRef.current = spoke(res, performance.now())
+      speakingTextRef.current = text
+      const done = (failed: boolean) => {
+        if (speechId !== speechIdRef.current) return // a newer phrase took over
+        announceRef.current = failed ? { ...announceBefore, speaking: false } : { ...announceRef.current, speaking: false }
+        if (failed) onFailed?.()
+        setAnswer((a) => (a.kind === 'phrase' && a.text === text ? { ...a, speaking: false, speechFailed: failed } : a))
+      }
+      const speechLang = SPEECH_LANGS[langRef.current]
+      const handle = speak(speech, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
+      handle.started.then(
+        (speechStart) => {
+          if (speechId !== speechIdRef.current) return
+          setAnswer((a) => (a.kind === 'phrase' && a.text === text ? { ...a, speaking: true } : a))
+          onStart(speechStart)
+          void handle.ended.then(() => done(false))
+        },
+        () => done(true),
+      )
+    },
+    [],
+  )
 
   /**
    * An answer from either channel: the merge rule decides whether it replaces what is shown, the repeat rule whether
@@ -449,16 +465,28 @@ export function useSecondEyes(
       // While waiting for the user's question, hazard speech stays quiet (and is not marked as spoken).
       if (decision.speak && speech !== null && !noVoice && !suppressRef.current) {
         if (fastCue(channel, decision)) playWarnCue()
+        const kindsBefore = spokenKindsRef.current
+        const sidesBefore = spokenSidesRef.current
         spokenKindsRef.current = rememberSpoken(spokenKindsRef.current, shown, now)
         spokenSidesRef.current = rememberSide(spokenSidesRef.current, shown)
-        say(shown, text, speech, (speechStart) => {
-          const record = toRecord({ ...marks, speechStart, modelMs: marks.serverMs })
-          setTimings((t) => ({
-            ...countAnswer(t),
-            spoken: pushHistory(t.spoken, record, TIMING_HISTORY_SIZE),
-            spokenCount: t.spokenCount + 1,
-          }))
-        })
+        say(
+          shown,
+          text,
+          speech,
+          (speechStart) => {
+            const record = toRecord({ ...marks, speechStart, modelMs: marks.serverMs })
+            setTimings((t) => ({
+              ...countAnswer(t),
+              spoken: pushHistory(t.spoken, record, TIMING_HISTORY_SIZE),
+              spokenCount: t.spokenCount + 1,
+            }))
+          },
+          () => {
+            // Not heard, so not remembered as said either.
+            spokenKindsRef.current = kindsBefore
+            spokenSidesRef.current = sidesBefore
+          },
+        )
       } else {
         const roundTrip = Math.round(marks.responseReceived - marks.requestSent)
         setTimings((t) => ({
@@ -714,8 +742,8 @@ export function useSecondEyes(
           handle.started.then(() => void handle.ended.then(done), done)
         }
         // The first speech waits (at most VOICE_WAIT_MS) for the phone's voices, so it never gets a random fallback
-        // voice (Brief 20). Already loaded: said at once, still inside the tap.
-        if (voicesRef.current.length || !speechSupported()) greetNow(voicesRef.current)
+        // voice (Brief 20). Already loaded, or WebKit (iPhone: said inside the tap, Brief 25): said at once.
+        if (greetAtOnce(voicesRef.current.length > 0, !speechSupported() || webKitSpeech())) greetNow(voicesRef.current)
         else void waitForVoices(window.speechSynthesis, VOICE_WAIT_MS).then(greetNow)
       }
       openRearCamera()
