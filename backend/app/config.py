@@ -93,6 +93,9 @@ SAM_MIN_CONF = 0.5  # hits below this confidence are dropped
 CAMERA_HEIGHT_M = 1.3
 VFOV_PORTRAIT_DEG = 67.0  # typical phone main camera (26 mm equivalent, 4:3), long side vertical
 VFOV_LANDSCAPE_DEG = 53.0  # short side vertical
+# Brief 26: the two angles above are for a 4:3 frame. A wider frame (16:9) is a crop of the short side, a squarer one a
+# crop of the long side; the field of view follows the frame's real aspect (frontend config.ts: VFOV_BASE_ASPECT).
+VFOV_BASE_ASPECT = 4 / 3
 BOTTOM_TOUCH_FRAC = 0.01  # a box ending within this fraction of the frame bottom touches it: "near", no metres
 # Only things in the walking path are warned about (Brief 15): a hit is kept when its box overlaps this half-width
 # either side of straight ahead, measured at the box's ground point. A box touching the frame bottom is in the path

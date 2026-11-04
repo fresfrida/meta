@@ -34,7 +34,15 @@ import {
 } from '../config'
 import { type AnnounceState, type Decision, INITIAL_ANNOUNCE, decide, spoke } from '../lib/announce'
 import type { Size } from '../lib/boxMap'
-import { CameraError, type CameraFailure, type SentFrame, captureGuarded, openRearCamera, stopStream } from '../lib/camera'
+import {
+  type CaptureStages,
+  CameraError,
+  type CameraFailure,
+  type SentFrame,
+  captureGuarded,
+  openRearCamera,
+  stopStream,
+} from '../lib/camera'
 import { warmUpFaceDetector } from '../lib/faceGuard'
 import { type FailureReason, failureReason } from '../lib/failure'
 import { type Lamp, lampFor } from '../lib/light'
@@ -51,7 +59,7 @@ import {
   replaces,
 } from '../lib/merge'
 import { type Shown, type WarningHazard, isWarning, phraseFor, speechFor } from '../lib/phrase'
-import { unlockAudio } from '../lib/audio'
+import { sessionStarted, sessionStopped, unlockAudio } from '../lib/audio'
 import { playTick, playWarnCue } from '../lib/earcon'
 import { type LinkState, onAnswer, onCheck, startLink } from '../lib/connection'
 import { shouldTick } from '../lib/heartbeat'
@@ -71,7 +79,7 @@ import {
 } from '../lib/sessionVoice'
 import { connectionText, sessionText, strings } from '../strings'
 import { cancelSpeech, speak, speechSupported, unlockSpeech, webKitSpeech } from '../lib/speech'
-import { type TimingRecord, pushHistory, toRecord } from '../lib/timing'
+import { type StageTimes, type TimingRecord, pushHistory, stageTimes, toRecord } from '../lib/timing'
 import { pickVoice, voiceStatus, waitForVoices } from '../lib/voices'
 import { type AskTiming, type AskView, type ListenState, useAsk } from './useAsk'
 
@@ -139,6 +147,8 @@ export interface Timings {
   silentCount: number
   /** Answers that arrived after a newer capture's answer had been handled (not shown, not spoken). */
   droppedCount: number
+  /** Debug (Brief 26): where the time of the last answer went. */
+  lastStages: StageTimes | null
 }
 
 export interface SecondEyes {
@@ -183,6 +193,7 @@ const EMPTY_TIMINGS: Timings = {
   spokenCount: 0,
   silentCount: 0,
   droppedCount: 0,
+  lastStages: null,
 }
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
@@ -215,6 +226,8 @@ export function useSecondEyes(
   const inFlightRef = useRef(0)
   const detailInFlightRef = useRef(0)
   const captureSeqRef = useRef(0)
+  /** Capture stages per frame seq, for the debug line (Brief 26); old entries are dropped. */
+  const frameStagesRef = useRef(new Map<number, CaptureStages>())
   const handledSeqRef = useRef<Record<Channel, number>>({ fast: 0, detail: 0 })
   // What is on screen (channel, frame, lamp, when), for the merge rule.
   const shownRef = useRef<ShownState>(NOTHING_SHOWN)
@@ -329,6 +342,22 @@ export function useSecondEyes(
     askActiveRef.current = askView !== null
   }, [askView])
 
+  /** Debug (Brief 26): the stages of the last answer; `sayAt` / `speechStart` when it was spoken. */
+  const noteStages = useCallback(
+    (
+      channel: Channel,
+      seq: number,
+      marks: { captureStart: number; requestSent: number; responseReceived: number; serverMs: number },
+      sayAt: number | null = null,
+      speechStart: number | null = null,
+    ) => {
+      const frame = frameStagesRef.current.get(seq)
+      if (!frame) return
+      setTimings((t) => ({ ...t, lastStages: stageTimes(channel, { ...marks, frame }, sayAt, speechStart) }))
+    },
+    [],
+  )
+
   /** Heartbeat: a soft tick for a fresh answer that is not spoken (never over speech or during Ask). */
   const maybeTick = useCallback(() => {
     const now = performance.now()
@@ -424,6 +453,7 @@ export function useSecondEyes(
       marks: { captureStart: number; requestSent: number; responseReceived: number; serverMs: number },
     ) => {
       const now = performance.now()
+      noteStages(channel, seq, marks)
       // Brief 16: say the metres left now, not the metres at capture (the person kept walking meanwhile).
       const atNow = atSpeakingTime(captured, marks.captureStart, now, walkRef.current.walking(now), WALK_SPEED_M_S, STALE_MS)
       const answerMs = Math.round(marks.responseReceived - marks.captureStart)
@@ -469,11 +499,13 @@ export function useSecondEyes(
         const sidesBefore = spokenSidesRef.current
         spokenKindsRef.current = rememberSpoken(spokenKindsRef.current, shown, now)
         spokenSidesRef.current = rememberSide(spokenSidesRef.current, shown)
+        const sayAt = performance.now()
         say(
           shown,
           text,
           speech,
           (speechStart) => {
+            noteStages(channel, seq, marks, sayAt, speechStart)
             const record = toRecord({ ...marks, speechStart, modelMs: marks.serverMs })
             setTimings((t) => ({
               ...countAnswer(t),
@@ -497,7 +529,7 @@ export function useSecondEyes(
         maybeTick()
       }
     },
-    [maybeTick, say, showAnswer, suppressRef],
+    [maybeTick, noteStages, say, showAnswer, suppressRef],
   )
 
   /** An answer older than one already handled on its channel is dropped: counted, not shown, not spoken. */
@@ -582,6 +614,7 @@ export function useSecondEyes(
         const answerMs = Math.round(responseReceived - captureStart)
         const nearest = res.hits[0]
         if (!nearest) {
+          noteStages('fast', seq, { captureStart, requestSent, responseReceived, serverMs: res.sam_ms })
           setTimings((t) => ({
             ...t,
             lastSamMs: Math.round(res.sam_ms),
@@ -602,7 +635,7 @@ export function useSecondEyes(
         onFailure(err, session, 'fast')
       }
     },
-    [isLate, maybeTick, noteAnswer, onFailure, present],
+    [isLate, maybeTick, noteAnswer, noteStages, onFailure, present],
   )
 
   /**
@@ -623,6 +656,8 @@ export function useSecondEyes(
         try {
           const sent = await captureGuarded(video)
           image = sent.imageB64
+          frameStagesRef.current.set(seq, sent.stages)
+          frameStagesRef.current.delete(seq - 20)
           setLastSent(sent)
         } catch {
           setAnswer({ kind: 'failed', reason: 'answer' })
@@ -705,6 +740,9 @@ export function useSecondEyes(
    * opens and the start line is said; false leaves everything off.
    */
   const start = useCallback((prepare?: () => Promise<boolean>) => {
+    // iOS (Brief 26): a 'playback' audio session first, so speech and tones play on the speaker and the silent
+    // switch cannot mute them. Feature-detected; nothing happens on Android.
+    sessionStarted()
     unlockSpeech() // must run synchronously inside the tap
     // iOS asks for motion access inside a tap; refused or unsupported -> the distance rule assumes walking.
     const motion = (window as unknown as { DeviceMotionEvent?: { requestPermission?: () => Promise<string> } })
@@ -764,7 +802,10 @@ export function useSecondEyes(
     void prepare().then((ok) => {
       if (session !== sessionRef.current) return
       if (ok) go()
-      else setCamera('off')
+      else {
+        setCamera('off')
+        sessionStopped()
+      }
     })
   }, [checkHealth, runLoop])
 
@@ -778,11 +819,16 @@ export function useSecondEyes(
     cancelSpeech()
     const [voice, bye] = onStop(sessionVoiceRef.current)
     sessionVoiceRef.current = voice
+    const stoppedSession = sessionRef.current
+    // Back to the 'auto' audio session once the stop line has played (unless Start was tapped again meanwhile).
+    const release = () => {
+      if (sessionRef.current === stoppedSession) sessionStopped()
+    }
     if (bye) {
       const speechLang = SPEECH_LANGS[langRef.current]
       const line = typeof say === 'string' ? say : sessionText[langRef.current].stop
-      speak(line, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) })
-    }
+      void speak(line, { lang: speechLang, voice: pickVoice(voicesRef.current, speechLang) }).ended.then(release)
+    } else release()
     stopStream(streamRef.current)
     streamRef.current = null
     if (videoRef.current) videoRef.current.srcObject = null

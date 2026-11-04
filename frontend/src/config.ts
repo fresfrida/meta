@@ -98,6 +98,8 @@ export const PATH_HALF_WIDTH_M = 0.75
 export const CAMERA_HEIGHT_M = 1.3
 export const VFOV_PORTRAIT_DEG = 67
 export const VFOV_LANDSCAPE_DEG = 53
+/** Brief 26: the two angles are for a 4:3 frame; other aspects crop one side (backend VFOV_BASE_ASPECT). */
+export const VFOV_BASE_ASPECT = 4 / 3
 
 /**
  * Distance at speaking time (Brief 16): metres are said as "metres at capture - walking speed x time since capture",
@@ -168,9 +170,14 @@ export const FACE_LOAD_TIMEOUT_MS = 8_000
 /** How many captures the on-screen timing list keeps. */
 export const TIMING_HISTORY_SIZE = 10
 
-/** Preferred camera resolution request (the browser may give less). */
+/**
+ * Camera request (Brief 26): every phone is asked for the same frame shape, 16:9 at 1280 x 720 (720 x 1280 when held
+ * upright), rear camera. "ideal", never "exact" (exact throws OverconstrainedError on some phones): the phone may give
+ * something else, and the app reads back what it got. The frame sent stays FRAME_LONG_EDGE_PX on its long side.
+ */
 export const CAMERA_IDEAL_WIDTH = 1280
 export const CAMERA_IDEAL_HEIGHT = 720
+export const CAMERA_ASPECT = 16 / 9
 
 function readFlag(name: string, fallback: boolean): boolean {
   if (typeof window === 'undefined') return fallback

@@ -5,7 +5,17 @@ import math
 import pytest
 
 from app.config import CAMERA_HEIGHT_M, PATH_HALF_WIDTH_M, SAM_MIN_CONF, VFOV_LANDSCAPE_DEG, VFOV_PORTRAIT_DEG
-from app.detect_rule import BESIDE, RawHit, ground_distance_m, keep, kept_hits, lateral_span_m, parse_sam_text, to_grid
+from app.detect_rule import (
+    BESIDE,
+    RawHit,
+    ground_distance_m,
+    keep,
+    kept_hits,
+    lateral_span_m,
+    parse_sam_text,
+    to_grid,
+    vfov_deg,
+)
 
 
 def raw(y2, x1=100, x2=260, y1=None, w=360, h=640, c=0.9, kind="steps"):
@@ -45,7 +55,7 @@ def test_distance_is_height_over_tan_of_angle_below_horizon(w, h, vfov):
     bottom = h * 0.7
     focal = (h / 2) / math.tan(math.radians(vfov) / 2)
     expected = CAMERA_HEIGHT_M / ((bottom - h / 2) / focal)
-    assert ground_distance_m(bottom, h, portrait=h > w) == pytest.approx(expected)
+    assert ground_distance_m(bottom, w, h) == pytest.approx(expected)
     hit = keep(RawHit("curb", w // 2 - 40, 10, w // 2 + 40, round(bottom) - 1, w, h, 0.9))
     assert hit.distance_m == round(expected) and hit.distance == "far"
 
@@ -124,7 +134,7 @@ def test_path_edge_is_path_half_width():
     # A box whose left edge sits just inside / just outside +PATH_HALF_WIDTH_M at its ground point (~4 m ahead).
     f = (640 / 2) / math.tan(math.radians(VFOV_PORTRAIT_DEG) / 2)
     bottom = 320 + round(CAMERA_HEIGHT_M * f / 4.0)
-    forward = ground_distance_m(bottom, 640, portrait=True)
+    forward = ground_distance_m(bottom, 360, 640)
     edge_px = 180 + PATH_HALF_WIDTH_M * f / forward
     assert keep(side_box(int(edge_px) - 2, 359, bottom, kind="curb")) != BESIDE  # overlap rule (steps / kerb)
     assert keep(side_box(int(edge_px) + 2, 359, bottom, kind="curb")) == BESIDE
@@ -178,3 +188,16 @@ def test_a_far_no_metres_hit_sorts_after_hits_with_metres():
     hits, _ = kept_hits([big_far, kerb_3m, touching])
     assert [(h.kind, h.distance, h.distance_m) for h in hits][0] == ("steps", "near", None)
     assert [h.kind for h in hits] == ["steps", "curb", "door"]
+
+
+def test_field_of_view_follows_the_frame_aspect_brief_26():
+    # 4:3 and portrait 16:9 keep the measured angles exactly (Android today: unchanged).
+    assert vfov_deg(480, 640) == pytest.approx(VFOV_PORTRAIT_DEG)
+    assert vfov_deg(640, 480) == pytest.approx(VFOV_LANDSCAPE_DEG)
+    assert vfov_deg(720, 1280) == pytest.approx(VFOV_PORTRAIT_DEG)
+    assert vfov_deg(360, 640) == pytest.approx(VFOV_PORTRAIT_DEG)
+    # Landscape 16:9 is a crop of the short side: a narrower vertical angle, so the same box bottom is further away.
+    assert vfov_deg(1280, 720) == pytest.approx(41.0, abs=0.1)
+    assert ground_distance_m(270, 640, 360) > ground_distance_m(360, 640, 480)  # same angle below centre in 4:3
+    # A squarer frame (1:1) crops the long side; its vertical angle is the short side's.
+    assert vfov_deg(640, 640) == pytest.approx(VFOV_LANDSCAPE_DEG)
