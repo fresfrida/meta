@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 5 Nov 2026 09:00 SGT. Briefs 34-35 merged into `claude/second-eyes` (2bb171b) and `claude/second-eyes-cloud` (90d1712); `main` is a13c4bb (through Brief 31, PR #2). Mac: backend 3b8357c (prompt v9), Vite serves 2bb171b, $10.92 of $15.91. Cloud demo serves Briefs 30-31 (bundle index-BTSWlPiJ), $9.57 of $100; Briefs 34-35 wait for the Owner's Deploy. Demo video: `007-meta-video` (local repo), launch cut 1:14.
+Last updated: 5 Nov 2026 09:30 SGT. Repo fresfrida/meta is PUBLIC (Owner yes, 5 Nov). `main` 734786f: Briefs 32-36 (PR #3) and the README with the video https://youtu.be/LhlPkksWQSo (PR #4). Branches left: `main`, `claude/second-eyes-cloud` (Coolify deploys from it, 90d1712). Cloud demo serves Briefs 34-35 (bundle index-oD3MKsQg), $9.57 of $100. Mac: backend 3b8357c (prompt v9), Vite serves the `007-meta` checkout (now `main`), $10.92 of $15.91. Tests: 509 frontend, 239 backend pass. Home IP removed from docs/DEPLOY.md (one old commit still has it; history not rewritten).
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
