@@ -13,7 +13,7 @@ Nothing is public until the Owner says yes. The image holds no secrets; everythi
 | Shared | for all the Owner's projects (~30 later), not only Second Eyes |
 
 Lightsail firewall (set by the Owner): 80 / 443 open to all; 22 key-only; **8000 and 6001-6002 only from the Owner's
-home IP** (138.75.4.94/32), so the Coolify registration page and dashboard are reachable only from home until the
+home IP**, so the Coolify registration page and dashboard are reachable only from home until the
 dashboard is moved behind a domain.
 
 Coolify install (official, from coolify.io/docs; run as root or with sudo on the server):
