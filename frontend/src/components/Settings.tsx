@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { LANGS, type Lang, SPEECH_LANGS } from '../config'
 import { speechFor } from '../lib/phrase'
+import { flipSetting, setFlipSetting } from '../lib/orientation'
 import { speak } from '../lib/speech'
 import { chooseVoice, setVoicePref, voicePref, voiceRows, voiceStatus } from '../lib/voices'
 import { languages, strings } from '../strings'
@@ -23,6 +24,7 @@ interface SettingsProps {
 
 export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMore, onTalkMore, onDone }: SettingsProps) {
   const [testFailed, setTestFailed] = useState(false)
+  const [upsideDown, setUpsideDown] = useState(flipSetting) // Brief 35
   const status = (l: Lang) => voiceStatus(voices, SPEECH_LANGS[l])
   const speechLang = SPEECH_LANGS[lang]
   // The chosen voice per language lives in storage (read on every speech); this state only re-renders the list.
@@ -141,6 +143,22 @@ export function Settings({ lang, voices, onLang, handsFree, onHandsFree, talkMor
             <span className="list__subtitle">{t.talkMoreLine}</span>
           </span>
           <i className={talkMore ? 'switch switch--on' : 'switch'} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={upsideDown}
+          className="list__item"
+          onClick={() => {
+            setFlipSetting(!upsideDown)
+            setUpsideDown(!upsideDown)
+          }}
+        >
+          <span className="list__text">
+            <span className="list__title">{t.upsideDown}</span>
+            <span className="list__subtitle">{t.upsideDownLine}</span>
+          </span>
+          <i className={upsideDown ? 'switch switch--on' : 'switch'} aria-hidden="true" />
         </button>
       </div>
 
