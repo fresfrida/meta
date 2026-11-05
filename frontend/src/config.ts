@@ -74,6 +74,8 @@ export const FLIP_ENTER_Y = -5
 export const FLIP_EXIT_Y = 3
 export const FLIP_STALE_MS = 3_000
 export const FLIP_OVERRIDE = readOptionalFlag('flip')
+/** Brief 35: the Settings switch "Phone hangs upside down" (off by default): on = every frame turned. */
+export const FLIP_SETTING_STORAGE_KEY = 'second-eyes.upsidedown'
 /**
  * Brief 34, a covered camera (TENTATIVE values, 0-255 luma over the captured frame). Covered = almost no detail
  * (standard deviation below COVER_FLAT_SD, unless the frame is bright: a plain lit wall stays a frame), or very dark

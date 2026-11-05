@@ -1,7 +1,7 @@
 // Brief 34: the upside-down rule (steady, hysteresis, no data) and the 180-degree frame turn.
 import { describe, expect, it } from 'vitest'
 import { FLIP_STALE_MS } from '../config'
-import { FlipDetector, flipBox, frameUpsideDown, rotate180, specY } from './orientation'
+import { FlipDetector, flipBox, flipSource, frameUpsideDown, rotate180, specY } from './orientation'
 
 /** Feeds `y` (spec sign) every 50 ms from `from` for `ms`. Returns the time after the last sample. */
 function feed(d: FlipDetector, y: number, from: number, ms: number): number {
@@ -53,6 +53,22 @@ describe('upside down on a lanyard', () => {
     expect(frameUpsideDown(0, true)).toBe(true)
     expect(frameUpsideDown(0, false)).toBe(false)
     expect(frameUpsideDown(0, null)).toBe(false) // no data yet
+  })
+})
+
+describe('Brief 35: the Settings switch "Phone hangs upside down"', () => {
+  it('on: every frame is turned, whatever the motion rule says (no data here)', () => {
+    expect(frameUpsideDown(0, null, true)).toBe(true)
+    expect(flipSource(null, true)).toBe('setting')
+  })
+  it('off: the motion rule decides (no data = upright)', () => {
+    expect(frameUpsideDown(0, null, false)).toBe(false)
+    expect(flipSource(null, false)).toBe('auto')
+  })
+  it('?flip=0 / ?flip=1 still win over the switch', () => {
+    expect(frameUpsideDown(0, false, true)).toBe(false)
+    expect(frameUpsideDown(0, true, false)).toBe(true)
+    expect(flipSource(false, true)).toBe('forced')
   })
 })
 

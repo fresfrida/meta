@@ -454,6 +454,9 @@ export const strings = {
     // TENTATIVE (Brief 13)
     talkMore: 'Talk more',
     talkMoreLine: 'Repeats the current warning every few seconds.',
+    // Brief 35 (TENTATIVE): for a phone worn on a lanyard, top end down
+    upsideDown: 'Phone hangs upside down',
+    upsideDownLine: 'Turns every picture the right way up before it is checked.',
   },
 
   // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.
