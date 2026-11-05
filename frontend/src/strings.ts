@@ -344,6 +344,10 @@ export const askText: Record<Lang, AskText> = {
 
 /** Connection alerts (Brief 13), spoken and shown in the chosen language. Owner approved 4 Nov, verbatim. */
 // Wording v2 (Brief 14): Owner approved 4 Nov, all 4 languages; ZH / MS / TA native check pending.
+/** Brief 34: the camera looks covered (2 s in a row). Owner approved 5 Nov, verbatim; spoken in English only for now,
+ *  shown in English in every language. */
+export const coveredText = "I can't see right now. Please check the camera."
+
 export const connectionText: Record<Lang, { lost: string; back: string }> = {
   en: { lost: "Connection lost. I can't warn you right now. Please use your cane.", back: "I'm back. Warnings are on again." },
   zh: { lost: '连接中断。我现在无法提醒您，请使用手杖。', back: '我回来了，提醒已恢复。' },
@@ -450,6 +454,9 @@ export const strings = {
     // TENTATIVE (Brief 13)
     talkMore: 'Talk more',
     talkMoreLine: 'Repeats the current warning every few seconds.',
+    // Brief 35 (TENTATIVE): for a phone worn on a lanyard, top end down
+    upsideDown: 'Phone hangs upside down',
+    upsideDownLine: 'Turns every picture the right way up before it is checked.',
   },
 
   // TENTATIVE (Brief 6), English in every language for now: the rest of asking. The card texts are in `askText`.
@@ -584,6 +591,10 @@ export const strings = {
     // Debug (Brief 27), English only: audio route changes, picture pauses, stuck phrases spoken again
     recovery: (changes: number, last: string | null, paused: number, recovered: number, respoken: number, failures: number) =>
       `route changes ${changes}${last ? ` (last: ${last})` : ''} · video paused ${paused} · recovered ${recovered} · re-spoken ${respoken} · not started in a row ${failures}`,
+    // Debug (Brief 34), English only: frame orientation and the covered-camera measure
+    orientation: (upsideDown: boolean, source: string, y: number | null, flipped: boolean) =>
+      `orientation: ${upsideDown ? 'upside down' : 'upright'} (${source}) · gravity y ${y === null ? '–' : y.toFixed(1)} · last frame ${flipped ? 'turned' : 'as is'}`,
+    cover: (mean: number, sd: number, covered: boolean) => `camera: ${covered ? 'covered' : 'clear'} · mean ${mean.toFixed(0)} · sd ${sd.toFixed(0)}`,
     // Debug (Brief 30), English only: phrases whose end never came (the safety net ended them)
     endsLost: (n: number) => `ends lost ${n}`,
     // Debug (Brief 30), English only: mic frames sent / dropped by the self-sound gate, the listen socket, capture rate

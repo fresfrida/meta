@@ -391,10 +391,13 @@ p {
   inset: calc(var(--space-8) * -1) calc(var(--space-4) * -1);
 }
 
-/* Brief 30: the quiet "Say "Hey Eyes", then ask" line above Stop. No background, so a hazard box behind it still shows;
-   the negative margins keep the footer almost as low as before. */
+/* Brief 30: the quiet "Say "Hey Eyes", then ask" line above Stop. No background, so a hazard box behind it still shows.
+   Brief 35: its own full gap above Stop (no negative margins), so a larger system text size never pushes it under the
+   button; it wraps instead of overflowing. */
 .ask-hint {
-  margin: calc(-1 * var(--space-6)) 0;
+  margin: 0;
+  padding-bottom: 2px;
+  overflow-wrap: anywhere;
   text-align: center;
   color: var(--color-text-chip);
   font-size: var(--font-size-13);
@@ -452,6 +455,12 @@ p {
 }
 
 /* ---------- Timing panel (expanded, and ?loop=0) ---------- */
+/* Brief 35: the open timing panel scrolls inside a capped height, so it never pushes Stop off the screen. */
+.bottom .timing {
+  max-height: 38dvh;
+  overflow-y: auto;
+}
+
 .timing {
   display: flex;
   flex-direction: column;

@@ -1,6 +1,6 @@
 # Handoff - Second Eyes
 
-Last updated: 5 Nov 2026 01:35 SGT. Briefs 30-31 merged into `claude/second-eyes` (3b8357c) and `claude/second-eyes-cloud` (9250538). Mac backend restarted 01:27 on 3b8357c (prompt v9), $5.19 of $15.91. Cloud demo serves Briefs 30-31 (prompt v9, bundle index-BTSWlPiJ), $9.57 of its $100 total.
+Last updated: 5 Nov 2026 09:00 SGT. Briefs 34-35 merged into `claude/second-eyes` (2bb171b) and `claude/second-eyes-cloud` (90d1712); `main` is a13c4bb (through Brief 31, PR #2). Mac: backend 3b8357c (prompt v9), Vite serves 2bb171b, $10.92 of $15.91. Cloud demo serves Briefs 30-31 (bundle index-BTSWlPiJ), $9.57 of $100; Briefs 34-35 wait for the Owner's Deploy. Demo video: `007-meta-video` (local repo), launch cut 1:14.
 
 ## What it is
 Hackathon prototype (deadline Thu 5 Nov 10:00 SGT). Phone camera frame ->
@@ -24,8 +24,27 @@ Each item is in the code on `claude/second-eyes` (3b8357c) unless marked.
 12. Accessibility: Larger Text, Increase Contrast, light and dark.
 13. Public demo with 3-minute slots and daily caps, so anyone can try it safely.
 14. Fast car warning: built but OFF by default (`CAR_FAST`; try with `?car=1`). The near-car test warned on 2 of 4 close cars and kept quiet on 2 of 4 parked ones, so do not show it as a feature.
+15. Phone on a lanyard: frames from an upside-down phone are turned the right way up (auto from the motion sensor, or Settings "Phone hangs upside down"; Brief 34-35). Covered camera: "I can't see right now. Please check the camera." (Brief 34).
 
 ## Current state (true of the code today)
+- **Briefs 34-35 (5 Nov, `claude/second-eyes` 2bb171b / cloud 90d1712), frontend only, not tested on a real phone by the Coder:**
+  - Upside-down phone (lanyard): `lib/orientation.ts` reads gravity from `devicemotion` (steady 1 s, hysteresis,
+    `FLIP_*` in config.ts, TENTATIVE); when upside down, `captureGuarded()` turns the frame 180 degrees before face blur
+    and JPEG, so SAM, Muse and Ask get an upright picture. `?flip=1` / `?flip=0` force it; Settings switch "Phone hangs
+    upside down" (TENTATIVE name, off by default, remembered) turns every frame. Owner test 5 Nov: `?flip=1` works;
+    the auto rule did not fire on the Owner's phone (likely no motion data in the browser), so the switch is the
+    dependable way.
+  - Covered camera: `lib/cover.ts` luma rule (`COVER_*`, TENTATIVE); covered for 2 s -> "I can't see right now. Please
+    check the camera." once (EN only, Owner approved), lamp dark, no tick, covered frames not sent. A very dark place
+    (about 10% brightness) also counts as covered.
+  - The "Hey Eyes" hint line has its own gap above Stop at 360-430 px wide and 150% text; the open timing panel scrolls.
+  - vitest 509, pytest 239.
+- **Demo video (Briefs 32-36, 5 Nov, local repo `/Users/ff/Desktop/ProjectsAI/ProjectsHackathons/007-meta-video`,
+  never pushed):** Remotion 4.0.539 (Free License for an individual). Final: `out/second-eyes-launch.mp4`, 1:14,
+  1920x1080 (commit 8502019; branding pass 36c in progress at 09:00). Story: the Owner's real "Hey Eyes" path answer as
+  the hook, title, the Owner's drawings of how the phone is worn, real steps, the fast warning, four languages, faces
+  blurred, the rule line, end card. Owner footage in `incoming/` (two screen recordings 07:57, drawings 9.png and
+  10.png). Music: Pixabay "Peaceful" (licence in `assets/LICENSES.md`).
 - **Briefs 30-31 (5 Nov, `claude/second-eyes` 3b8357c / cloud 9250538):**
   - Speech end safety net (`speech.ts`): a phrase that started but never sent onend / onerror is ended after
     max(4 s, characters x 120 ms) + 2 s (`SPEECH_END_*`, TENTATIVE); the mic gate reopens and ticks resume; debug
@@ -336,4 +355,4 @@ not shown by /api/health). The Mac version stays for filming (Tailscale / LAN li
 
 ## How to resume
 Start with the CURRENT STATE section of `007-meta-artifacts/reports/advisor-handoff.md`, then `docs/KANBAN.md`
-and the newest `007-meta-artifacts/reports/brief-*.md` (Brief 31 at 01:35, 5 Nov).
+and the newest `007-meta-artifacts/reports/brief-*.md` (Briefs 34-36, 5 Nov morning).

@@ -1,6 +1,13 @@
 # Kanban - Second Eyes
 
 ## Backlog
+- Brand the app itself like the video (amber ring logo on Home / welcome, amber accents) - Owner idea 5 Nov, not briefed
+- Auto upside-down detection did not fire on the Owner's phone (likely no motion data in the browser): find out which browser and why
+- Green light on a street when Muse misses the road (seen in a Malay take); README line "Near a road it is never green" needs "When it sees a road"
+- Quiet stretch: the card keeps the last warning while ticks play
+- "You asked: can": the speech recogniser kept one word of the Owner's path question (answer still right)
+- Evaluate HyperFrames (heygen-com/hyperframes, Apache 2.0) against Remotion for the video recipe
+- Vertical social cut of the launch video (dropped for the deadline)
 - Car warning: car-specific in-path rule (box centre within 0.75 m) and a re-test (~10 SAM calls, ~$0.025) before CAR_FAST can default on
 - Speech end safety net sized for English: give Chinese (CJK) text a longer allowance (Brief 30 risk)
 - 中文 / Bahasa Melayu / தமிழ் for the Ask hint (Brief 30, English only for now)
@@ -27,10 +34,16 @@
 - README (privacy note: no people or personal details in frames)
 
 ## Doing
-- (none waiting for Deploy)
-- Filming the 3-minute video on the Mac link (Mac backend on prompt v9 since 01:27)
+- Briefs 34 + 35 on the cloud demo: waiting for the Owner's Deploy (cloud 90d1712)
+- Submission before 10:00 SGT 5 Nov: YouTube upload of the demo video, README PR (plan/readme-changes-draft.md), repo public (secrets scan clean; home IP in docs/DEPLOY.md pending the Owner's call), form texts (plan/submission-draft.md), optional X post
+- Demo video branding pass (Brief 36c) in 007-meta-video
 
 ## Done
+- Brief 36 / 36b: 1:14 product launch video (path answer as the hook, Owner footage and drawings, one screen frame, captions beside it), 007-meta-video 8502019 (5 Nov)
+- Briefs 32 / 32b-d / 33: video skeleton, live desktop snippets ($0.99 of a $1 cap), killer feature "two speeds", script v3 "one walk"; superseded by Brief 36 (5 Nov)
+- Brief 35: Settings "Phone hangs upside down", hint line clear of Stop at 360-430 px; vitest 509 (5 Nov)
+- Brief 34: upside-down frames turned (auto + ?flip), covered-camera line (Owner approved); vitest 506 (5 Nov)
+- Repo tidy: PR #2 merged (main = Briefs through 31), branches v5, v6, v8, v9, v9-lift deleted with their local worktrees (5 Nov)
 - Brief 31 / 31b: prompt v9 lift sentence (Owner approved); lifts 10/12 vs v8 6/9, plain doors 6/6 stay door; live $0.0456; merged, Mac restarted 01:27 (5 Nov)
 - Brief 30: speech end safety net, tick no longer closes the mic (wake replay 0/2 -> 2/2), mic debug line, Ask hint (Owner approved, EN), lift investigation; vitest 491, pytest 239; live $0.0609; Mac restarted on v8 01:14 (5 Nov)
 - Briefs 30 + 31 deployed to the cloud demo by the Owner (bundle index-BTSWlPiJ, 01:40); Briefs 28 + 29 deployed earlier; cloud caps $100 total (confirmed), $20 a day (5 Nov)
