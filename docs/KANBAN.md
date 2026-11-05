@@ -39,6 +39,8 @@
 - Demo video branding pass (Brief 36c) in 007-meta-video
 
 ## Done
+- Repo public (Owner yes): PRs #3 (Briefs 32-36) and #4 (README, video link, What it does, practice screenshots removed) merged; claude/second-eyes and claude/readme deleted; home IP removed from DEPLOY.md; secrets scan of all 127 commits clean (5 Nov 09:30)
+- Brief 36c: branded launch video, on YouTube https://youtu.be/LhlPkksWQSo (5 Nov)
 - Brief 36 / 36b: 1:14 product launch video (path answer as the hook, Owner footage and drawings, one screen frame, captions beside it), 007-meta-video 8502019 (5 Nov)
 - Briefs 32 / 32b-d / 33: video skeleton, live desktop snippets ($0.99 of a $1 cap), killer feature "two speeds", script v3 "one walk"; superseded by Brief 36 (5 Nov)
 - Brief 35: Settings "Phone hangs upside down", hint line clear of Stop at 360-430 px; vitest 509 (5 Nov)
