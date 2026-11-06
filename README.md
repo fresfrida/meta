@@ -23,7 +23,7 @@ It will tell you a road is there. It will never tell you when to cross.
 
 ## How it works
 
-1. **Point the phone ahead.** About once a second it takes a picture. Every face is blurred on the phone before the picture leaves it.
+1. **Point the phone ahead.** About once a second it takes a picture. It blurs the faces it finds on the phone before the picture leaves it.
 2. **A fast first warning.** Meta's SAM 3.1 looks for stairs, kerbs and doors in your walking path. When it finds one, you hear a soft tone, feel a short buzz, and hear "Steps, about 3 metres ahead." in about 1.5 seconds.
 
 3. **Then the detail.** Meta's Muse Spark 1.3 takes a few seconds longer and fills in what the fast check cannot know: "Steps going down, very close, on your left." It can name twenty kinds of things, from open drains and escalators to something at head height, and says "There might be…" when it is not sure.
@@ -41,7 +41,7 @@ It will tell you a road is there. It will never tell you when to cross.
 - Honest words: "There might be..." when unsure, "Nothing seen in your path", and never "safe". Roads are always named.
 - Four languages, with Singapore voices first.
 - Hands-free "Hey Eyes" questions, such as "What's in front of me?" or "Where does the path go?"
-- Faces blurred on the phone before any picture leaves it.
+- Faces it finds are blurred on the phone before a picture leaves it.
 - A soft tick when all is quiet, and "Connection lost" if answers stop.
 - Lifts, escalators, glass doors and double doors.
 - Larger Text, Increase Contrast, light and dark.
@@ -63,7 +63,11 @@ And one evening the voice picked up a twang. The phone had quietly switched voic
 
 ## Privacy
 
-Faces are blurred on your phone before any picture leaves it. Pictures go to Meta's AI to be understood and are not kept. While hands-free listening is on, your voice is sent to Meta's speech recogniser to hear "Hey Eyes" questions; only the questions are used, and nothing is recorded.
+Second Eyes tries to blur every face on your phone before a picture leaves it. It can miss a face. If face blur is not working, pictures are still sent without blur, and the screen shows "Face blur off".
+
+Pictures are sent to Meta's AI to be understood. Second Eyes does not save them on its own server. What Meta keeps is set by Meta's own terms, not by Second Eyes.
+
+While hands-free listening is on, your voice is sent to Meta's speech recogniser to hear "Hey Eyes" questions. Second Eyes does not record or save it.
 
 ## Measured, not claimed
 
@@ -126,8 +130,12 @@ Then open `https://<your-computer's-ip>:5173` on your phone and accept the certi
 - A tiny detector that runs on the phone itself, taught by SAM 3.1, for warnings in a tenth of a second with no network.
 - Directions as clock positions ("at 2 o'clock"), the way mobility instructors teach.
 
+## A note to the organisers
+
+Our video and materials were submitted based on the code as of 9:25am on 5 November 2026, preserved at the `hackathon-submission` tag. The only change after that is a small update to this README, so that what it says about face blur and privacy is accurate. The app itself has not changed. Our apologies for the post-deadline activity, and thank you for having us.
+
 ## Please walk with it
 
-If you try Second Eyes, try it the way it was meant: cane in one hand, phone on your chest, and someone you trust nearby. It is an early research prototype, not a mobility aid, and every walk teaches it something.
+If you try Second Eyes, try it the way it was meant: cane in one hand, phone around your neck, and someone you trust nearby. It is an early research prototype, not a mobility aid, and every walk teaches it something.
 
 **[Try Second Eyes](https://second-eyes.52.76.242.161.sslip.io)**
