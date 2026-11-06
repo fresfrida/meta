@@ -132,7 +132,7 @@ Then open `https://<your-computer's-ip>:5173` on your phone and accept the certi
 
 ## A note to the organisers
 
-Our video and materials were submitted based on the code as of 9:25am on 5 November 2026, preserved at the `hackathon-submission` tag. The only change after that is a small update to this README, so that what it says about face blur and privacy is accurate. The app itself has not changed. Our apologies for the post-deadline activity, and thank you for having us.
+My video and materials were submitted based on the code as of 9:25am on 5 November 2026, preserved at the `hackathon-submission` tag. The only change after that is a small update to this README, so that what it says about face blur and privacy is accurate. The app itself has not changed. Apologies for the post-deadline activity, and thank you for having Second Eyes.
 
 ## Please walk with it
 
